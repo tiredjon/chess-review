@@ -28,6 +28,10 @@ def test_cli_prints_move_table(stockfish_path: str) -> None:
 
     text = out.getvalue()
     assert "Paul Morphy" in text
+    assert "Дебют: C41 Philidor Defense" in text
+    # Классы: начало партии — книжное, 16… Nxb8 — единственный ход.
+    assert "книга" in text.split("1. e4")[1].split("\n")[0]
+    assert "вынужд." in text.split("16... Nxb8")[1].split("\n")[0]
     assert "1. e4" in text
     assert "16... Nxb8" in text
     assert "17. Rd8#" in text

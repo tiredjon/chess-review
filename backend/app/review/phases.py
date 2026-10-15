@@ -4,6 +4,7 @@ from collections.abc import Sequence
 
 import chess
 
+from app.review.material import PIECE_VALUES
 from app.review.thresholds import (
     ENDGAME_MAX_MATERIAL,
     ENDGAME_MAX_PIECES_WITHOUT_QUEENS,
@@ -11,7 +12,7 @@ from app.review.thresholds import (
 )
 from app.review.types import Phase
 
-PIECE_VALUES = {chess.QUEEN: 9, chess.ROOK: 5, chess.BISHOP: 3, chess.KNIGHT: 3}
+_NON_PAWN = (chess.KNIGHT, chess.BISHOP, chess.ROOK, chess.QUEEN)
 
 _ORDER = (Phase.OPENING, Phase.MIDDLEGAME, Phase.ENDGAME)
 
@@ -19,8 +20,8 @@ _ORDER = (Phase.OPENING, Phase.MIDDLEGAME, Phase.ENDGAME)
 def non_pawn_material(board: chess.Board) -> int:
     """Материал без пешек и королей за обе стороны."""
     return sum(
-        value * len(board.pieces(piece, color))
-        for piece, value in PIECE_VALUES.items()
+        PIECE_VALUES[piece] * len(board.pieces(piece, color))
+        for piece in _NON_PAWN
         for color in chess.COLORS
     )
 

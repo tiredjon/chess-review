@@ -94,6 +94,8 @@ def test_move_fields() -> None:
     assert first.best_move is None
     assert second.best_move == chess.Move.from_uci("e2e4")
     assert second.lines == evals[1].lines
+    assert first.lines_after == evals[1].lines
+    assert second.lines_after == evals[2].lines
 
 
 def test_game_and_phase_accuracy() -> None:

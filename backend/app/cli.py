@@ -1,4 +1,4 @@
-"""CLI: `python -m app.cli analyze game.pgn` — таблица ходов с оценкой и точностью."""
+"""CLI: `python -m app.cli analyze game.pgn` — таблица ходов с оценкой, точностью и классом."""
 
 import argparse
 import asyncio
@@ -17,12 +17,26 @@ from app.core.config import get_settings
 from app.engine.analyzer import Analyzer
 from app.engine.cache import MemoryEvalCache
 from app.engine.pool import EnginePool
+from app.review.classify import MoveClassification, classify_game
 from app.review.evaluate import GameEval, MoveEval, evaluate_game, replay
-from app.review.types import Phase
+from app.review.openings import Opening, default_openings
+from app.review.types import MoveClass, Phase
 from app.review.winprob import format_score
 
 PHASE_LABELS = {Phase.OPENING: "дебют", Phase.MIDDLEGAME: "миттельшпиль", Phase.ENDGAME: "эндшпиль"}
 COLOR_LABELS = {chess.WHITE: "Белые", chess.BLACK: "Чёрные"}
+CLASS_LABELS = {
+    MoveClass.BOOK: "книга",
+    MoveClass.FORCED: "вынужд.",
+    MoveClass.BRILLIANT: "!! блестящий",
+    MoveClass.GREAT: "! отличный",
+    MoveClass.BEST: "лучший",
+    MoveClass.EXCELLENT: "точный",
+    MoveClass.GOOD: "хороший",
+    MoveClass.INACCURACY: "?! неточность",
+    MoveClass.MISTAKE: "? ошибка",
+    MoveClass.BLUNDER: "?? зевок",
+}
 
 
 def read_game(path: Path, index: int) -> chess.pgn.Game:
@@ -58,21 +72,34 @@ def _fmt_acc(value: float | None) -> str:
     return "—" if value is None else f"{value:.1f}"
 
 
-def print_report(game: chess.pgn.Game, result: GameEval, out: TextIO) -> None:
+def _class_label(classification: MoveClassification) -> str:
+    label = CLASS_LABELS[classification.move_class]
+    return f"{label}, упущено" if classification.is_miss else label
+
+
+def print_report(
+    game: chess.pgn.Game,
+    result: GameEval,
+    classes: Sequence[MoveClassification],
+    opening: Opening | None,
+    out: TextIO,
+) -> None:
     headers = game.headers
     out.write(
-        f"{headers.get('White', '?')} — {headers.get('Black', '?')}  {headers.get('Result')}\n\n"
+        f"{headers.get('White', '?')} — {headers.get('Black', '?')}  {headers.get('Result')}\n"
     )
+    out.write(f"Дебют: {f'{opening.eco} {opening.name}' if opening else '—'}\n\n")
     out.write(
         f"{'Ход':<14}{'Оценка':>8}  {'Win% до→после':>15}{'Δ':>7}{'Точн.':>7}  "
-        f"{'Фаза':<13}{'Лучше':<8}\n"
+        f"{'Фаза':<13}{'Класс':<22}{'Лучше':<8}\n"
     )
-    for move in result.moves:
+    for move, classification in zip(result.moves, classes, strict=True):
         delta = max(0.0, move.win_before - move.win_after)
         out.write(
             f"{_move_label(move):<14}{_white_pov(move):>8}  "
             f"{move.win_before:>6.1f} → {move.win_after:>5.1f}{delta:>7.1f}{move.accuracy:>7.1f}  "
-            f"{PHASE_LABELS[move.phase]:<13}{_best_san(move):<8}\n"
+            f"{PHASE_LABELS[move.phase]:<13}{_class_label(classification):<22}"
+            f"{_best_san(move):<8}\n"
         )
     out.write("\nТочность:\n")
     for color in chess.COLORS[::-1]:
@@ -114,7 +141,9 @@ async def analyze(args: argparse.Namespace, out: TextIO) -> None:
     if not args.quiet:
         sys.stderr.write("\n")
 
-    print_report(game, evaluate_game(game.board(), moves, evals), out)
+    book = default_openings()
+    result = evaluate_game(game.board(), moves, evals, book_plies=book.book_plies(positions))
+    print_report(game, result, classify_game(result.moves, book), book.identify(positions), out)
     out.write(
         f"\n{pool.version}, глубина {args.depth}, MultiPV {args.multipv}, "
         f"процессов {pool.size}: {elapsed:.1f} с\n"

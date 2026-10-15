@@ -31,6 +31,8 @@ class MoveEval:
     phase: Phase
     # MultiPV позиции перед ходом, лучшая линия первой.
     lines: tuple[EngineLine, ...]
+    # MultiPV позиции после хода — с точки зрения соперника (его лучший ответ первым).
+    lines_after: tuple[EngineLine, ...]
 
     @property
     def best_move(self) -> chess.Move | None:
@@ -106,6 +108,7 @@ def evaluate_game(
                 weight=weights[index],
                 phase=phases[index],
                 lines=evals[index].lines,
+                lines_after=evals[index + 1].lines,
             )
         )
 
