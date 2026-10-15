@@ -5,6 +5,8 @@
 """
 
 import asyncio
+import os
+import shutil
 from collections.abc import AsyncIterator
 from pathlib import Path
 
@@ -68,6 +70,17 @@ async def _recreate_database(database_url: str) -> None:
         await conn.execute(f'CREATE DATABASE "{url.database}"')
     finally:
         await conn.close()
+
+
+@pytest.fixture(scope="session")
+def stockfish_path(settings: Settings) -> str:
+    """Путь к Stockfish. В Docker-образе (REQUIRE_STOCKFISH=1) движок обязан быть."""
+    path = shutil.which(settings.stockfish_path)
+    if path is None:
+        if os.environ.get("REQUIRE_STOCKFISH") == "1":
+            pytest.fail(f"Stockfish не найден: {settings.stockfish_path}")
+        pytest.skip("Stockfish не установлен локально (brew install stockfish)")
+    return path
 
 
 @pytest.fixture(scope="session")

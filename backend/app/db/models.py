@@ -15,6 +15,7 @@ from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+from app.review.types import MoveClass, Phase
 
 
 class GameSource(StrEnum):
@@ -33,25 +34,6 @@ class AnalysisStatus(StrEnum):
     RUNNING = "running"
     DONE = "done"
     FAILED = "failed"
-
-
-class MoveClass(StrEnum):
-    BOOK = "book"
-    FORCED = "forced"
-    BRILLIANT = "brilliant"
-    GREAT = "great"
-    BEST = "best"
-    EXCELLENT = "excellent"
-    GOOD = "good"
-    INACCURACY = "inaccuracy"
-    MISTAKE = "mistake"
-    BLUNDER = "blunder"
-
-
-class Phase(StrEnum):
-    OPENING = "opening"
-    MIDDLEGAME = "middlegame"
-    ENDGAME = "endgame"
 
 
 def str_enum(enum_cls: type[StrEnum], name: str) -> sa.Enum:

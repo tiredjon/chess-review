@@ -39,6 +39,8 @@ class Settings(BaseSettings):
     engine_pool_size: int = Field(default=4, ge=1)
     engine_threads: int = Field(default=1, ge=1)
     engine_hash_mb: int = Field(default=128, ge=16)
+    # Таймаут анализа одной позиции; после него процесс перезапускается.
+    engine_timeout_s: float = Field(default=60.0, gt=0)
     analysis_depth: int = Field(default=18, ge=1, le=40)
     analysis_multipv: int = Field(default=3, ge=1, le=5)
 
