@@ -5,6 +5,7 @@ import { api, ApiError } from "@/lib/api";
 import { CLASS_META, displayClass } from "@/lib/classes";
 import { boardMoveUci, lineFens, sideToMove, uciSquares, type Ply } from "@/lib/chess";
 import { lineEval, positionEvals, type WhiteEval } from "@/lib/eval";
+import { playMove, playSound, preloadSounds, toggleMuted, useSoundMuted } from "@/lib/sounds";
 import type { Color, LineMove } from "@/lib/types";
 import { Board, NO_MARKS, type BoardMarks } from "./board";
 import { EvalBar } from "./eval-bar";
@@ -104,6 +105,22 @@ export function Review({
     [analysed, plies],
   );
   const current = cursor > 0 ? plies[cursor - 1] : null;
+  // «Свои» ходы для звука — за сторону пользователя (её же по умолчанию снизу на доске).
+  const selfColor = initialOrientation;
+  const muted = useSoundMuted();
+
+  // Звуки ходов как в Chess.com: при шаге вперёд — звук сделанного хода, назад — отменённого;
+  // на последнем ходе партии — ещё и звук конца партии.
+  useEffect(preloadSounds, []);
+  const prevCursor = useRef(cursor);
+  useEffect(() => {
+    const prev = prevCursor.current;
+    prevCursor.current = cursor;
+    if (prev === cursor) return;
+    const forward = cursor > prev;
+    const ply = plies[(forward ? cursor : prev) - 1];
+    if (ply) playMove(ply.san, ply.color, selfColor, forward && cursor === plies.length);
+  }, [cursor, plies, selfColor]);
 
   const goTo = useCallback(
     (index: number) => {
@@ -132,6 +149,24 @@ export function Review({
     }, EXPLAIN_DELAY_MS);
     return () => clearTimeout(timer);
   }, [currentMoveId]);
+
+  // Звук шага по линии (проигрывание и ручные шаги).
+  const lineKey = mode.kind === "line" ? `${mode.baseFen}|${mode.title}` : null;
+  const lineStep = mode.kind === "line" ? mode.step : null;
+  const prevLine = useRef({ key: lineKey, step: lineStep });
+  useEffect(() => {
+    const prev = prevLine.current;
+    prevLine.current = { key: lineKey, step: lineStep };
+    if (mode.kind !== "line" || lineStep === null || prev.key !== lineKey || prev.step === null) return;
+    if (prev.step === lineStep) return;
+    const index = lineStep > prev.step ? lineStep - 1 : prev.step - 1;
+    const move = mode.line[index];
+    if (!move) return;
+    // Ходы линии чередуются начиная со стороны на ходу в исходной позиции.
+    const first = sideToMove(mode.baseFen);
+    const color = index % 2 === 0 ? first : first === "white" ? "black" : "white";
+    playMove(move.san, color, selfColor);
+  }, [lineKey, lineStep, mode, selfColor]);
 
   // Проигрывание линии.
   useEffect(() => {
@@ -186,18 +221,22 @@ export function Review({
       const uci = boardMoveUci(mode.fen, from, to);
       if (!uci) {
         setMode({ ...mode, selected: null });
+        playSound("illegal");
         return false;
       }
       const best = ply.move?.best_uci ?? "";
       // Превращение с доски — всегда в ферзя; клетки «откуда-куда» достаточно.
       if (uci.slice(0, 4) === best.slice(0, 4)) {
         setMode({ ...mode, status: "solved", fen: lineFens(mode.fen, [{ uci: best, san: "" }]).at(-1)!, selected: null });
+        if (ply.move?.best_san) playMove(ply.move.best_san, ply.color, selfColor);
+        setTimeout(() => playSound("correct"), 200);
         return true;
       }
       setMode({ ...mode, status: "wrong", selected: null });
+      playSound("incorrect");
       return false;
     },
-    [mode, plies],
+    [mode, plies, selfColor],
   );
 
   const onSquareClick = useCallback(
@@ -216,13 +255,18 @@ export function Review({
     [mode, tryMove],
   );
 
-  // Клавиатура: ← → по ходам (или по линии), ↑/Home — начало, ↓/End — конец, Esc — к партии, F — перевернуть.
+  // Клавиатура: ← → по ходам (или по линии), ↑/Home — начало, ↓/End — конец, Esc — к партии,
+  // F — перевернуть, M — звук.
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
       if (event.metaKey || event.ctrlKey || event.altKey || isTyping(event.target)) return;
       const key = event.key;
       if (key === "f" || key === "F" || key === "а" || key === "А") {
         setOrientation((o) => (o === "white" ? "black" : "white"));
+        return;
+      }
+      if (key === "m" || key === "M" || key === "ь" || key === "Ь") {
+        toggleMuted();
         return;
       }
       if (key === "Escape") {
@@ -397,6 +441,19 @@ export function Review({
             </h2>
             <p className="truncate text-xs font-semibold text-muted">{subtitle}</p>
           </div>
+          <button
+            type="button"
+            onClick={toggleMuted}
+            aria-pressed={muted}
+            aria-label={muted ? "Включить звук (M)" : "Выключить звук (M)"}
+            title={muted ? "Включить звук (M)" : "Выключить звук (M)"}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-soft hover:bg-raised hover:text-ink"
+          >
+            <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor" />
+              {muted ? <path d="m16 9.5 5 5m0-5-5 5" /> : <path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" />}
+            </svg>
+          </button>
         </header>
 
         {showOverview ? (
