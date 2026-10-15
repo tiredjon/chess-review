@@ -1,0 +1,291 @@
+# Chess Review — ТЗ и архитектура
+
+> Документ для исполнителя (Claude Code / новая сессия). Работай строго по сессиям ниже. В конце каждой сессии: тесты зелёные, обнови раздел «Статус» в конце файла, сделай коммит.
+
+## 1. Цель продукта
+
+Веб-приложение для разбора шахматных партий, аналог Chess.com Game Review, но с open-source движком и честными объяснениями:
+- точность игрока за партию и по фазам;
+- классификация каждого хода (brilliant → blunder);
+- объяснение ошибок и тактик человеческим языком, **заземлённое на анализ движка** (без галлюцинаций);
+- импорт партий с Lichess / Chess.com / PGN;
+- статистика по многим партиям и пазлы из собственных ошибок.
+
+Языки интерфейса и объяснений: RU / EN (UZ — опционально позже).
+
+## 2. Стек
+
+| Слой | Технологии |
+|---|---|
+| Backend | Python 3.12, FastAPI, Pydantic v2, SQLAlchemy 2 (async) + Alembic |
+| Шахматы | `python-chess`, Stockfish 17+ (бинарник, UCI) |
+| Очередь | ARQ (Redis) — анализ асинхронный, партия ≈ 20–60 c |
+| БД | PostgreSQL (Supabase допустим) |
+| LLM | абстракция провайдера: Gemini / OpenAI / Claude, по умолчанию самая дешёвая быстрая модель |
+| Frontend | Next.js 15 (App Router), TypeScript, Tailwind, `react-chessboard` или `chessground`, Recharts |
+| Auth | Supabase Auth или простой JWT (email + OAuth Lichess позже) |
+| Инфра | Docker Compose: api, worker, redis, postgres, web |
+| Тесты | pytest, pytest-asyncio; фронт — Playwright smoke |
+
+## 3. Архитектура
+
+```
+[Next.js web] ──REST──> [FastAPI api] ──enqueue──> [Redis/ARQ] ──> [worker: Stockfish pool]
+       ▲                     │                                        │
+       └──── polling / SSE ──┘<────────── PostgreSQL <────────────────┘
+                                                   └── LLM explainer (по запросу, кэш)
+```
+
+### Модули backend (`backend/app/`)
+- `api/` — роуты: `games`, `analysis`, `imports`, `stats`, `puzzles`, `auth`.
+- `core/` — config (pydantic-settings), логирование, DI.
+- `db/` — модели, сессии, миграции.
+- `engine/` — пул Stockfish-процессов (`EnginePool`), анализ позиции, кэш по FEN.
+- `review/` — **чистая доменная логика без I/O**:
+  - `winprob.py` — cp/mate → win%;
+  - `accuracy.py` — точность хода и партии;
+  - `classify.py` — классификация ходов;
+  - `phases.py` — дебют / миттельшпиль / эндшпиль;
+  - `openings.py` — определение дебюта (ECO), «книжные» ходы;
+  - `motifs/` — детекторы тактических мотивов;
+  - `pipeline.py` — оркестрация анализа партии.
+- `explain/` — построение фактов для LLM, промпты, провайдеры, кэш.
+- `importers/` — Lichess API, Chess.com public API, PGN.
+- `workers/` — ARQ-задачи.
+
+### Ключевой принцип
+Вся логика в `review/` и `explain/facts.py` — детерминированная и покрыта юнит-тестами на фиксированных FEN/PGN. LLM получает **только проверенные факты** и переводит их в текст. LLM не оценивает позиции и не придумывает варианты.
+
+## 4. Доменная логика (точные формулы)
+
+### 4.1 Оценка движка
+- Анализ каждой позиции: `depth=18` (настраиваемо), `MultiPV=3`, `Threads` и `Hash` из конфига.
+- Оценка всегда нормализуется к точке зрения **игрока, делающего ход**.
+- Мат: `mate in N` → cp = ±(10000 − N·10) для win%, но в UI показывать `#N`.
+- Кэш: таблица `position_evals` (ключ: FEN без счётчиков ходов + depth + multipv).
+
+### 4.2 Win% (формула Lichess)
+```
+win% = 50 + 50 * (2 / (1 + exp(-0.00368208 * cp)) - 1)
+```
+cp обрезать до [-1000, 1000].
+
+### 4.3 Точность хода
+```
+Δ = max(0, win%_before - win%_after)      # с точки зрения ходящего
+acc = 103.1668 * exp(-0.04354 * Δ) - 3.1669
+acc = clamp(acc, 0, 100)
+```
+
+### 4.4 Точность партии (как у Lichess)
+- Окно волатильности: размер = clamp(len(moves)/10, 2, 8).
+- Вес хода = stdev(win%) в окне, clamp к [0.5, 12].
+- `game_acc = (weighted_mean(acc, weights) + harmonic_mean(acc)) / 2`.
+- Отдельно считать точность по фазам.
+
+### 4.5 Классификация ходов
+Порядок проверок важен (первое совпадение):
+
+| Класс | Условие |
+|---|---|
+| `book` | позиция после хода есть в книге дебютов и ход ≤ 15-го |
+| `forced` | единственный легальный ход |
+| `brilliant` | ход = best или Δ ≤ 2, **и** является жертвой (см. ниже), **и** позиция после хода не хуже −1.0 для ходящего, **и** до хода игрок не был уже в подавляющем выигрыше (win% < 97) |
+| `great` | ход = best, и второй вариант MultiPV хуже на ≥ 10 win% (единственный ход), или ход меняет результат (проигрыш → ничья, ничья → выигрыш) |
+| `best` | совпадает с PV1 |
+| `excellent` | Δ ≤ 2 |
+| `good` | Δ ≤ 5 |
+| `inaccuracy` | Δ ≤ 10 |
+| `mistake` | Δ ≤ 20 |
+| `blunder` | Δ > 20 |
+| `miss` | дополнительный флаг: соперник ошибся (prev move mistake/blunder), а игрок не наказал (Δ ≥ 10 относительно лучшей линии) |
+
+**Жертва**: после хода SEE (static exchange evaluation) на отданной фигуре отрицательный, или фигура остаётся под боем без адекватной защиты, и в PV1 материал временно падает минимум на 2 пешки, но оценка держится. Пешечные жертвы `brilliant` не дают.
+
+Все пороги вынести в конфиг `review/thresholds.py`.
+
+### 4.6 Фазы
+- Дебют: до выхода из книги или до 12-го хода, что раньше, пока не разменяны ферзи.
+- Эндшпиль: суммарный материал без пешек ≤ 13 (Ф=9, Л=5, С/К=3) или ферзей нет и лёгких/тяжёлых фигур ≤ 6.
+- Иначе миттельшпиль.
+
+### 4.7 Дебюты
+- Встроить TSV-базу дебютов Lichess (`lichess-org/chess-openings`, CC0): ECO, название, EPD.
+- Определение дебюта: самое глубокое совпадение по EPD.
+
+## 5. Тактические мотивы (`review/motifs/`)
+
+Каждый детектор — чистая функция `detect(board_before, move, pv) -> list[Motif]`, где `Motif {type, squares, pieces, gain_cp, line}`.
+
+Обязательные (MVP):
+1. **hanging_piece** — фигура без защиты под боем / зевок фигуры.
+2. **fork** — одна фигура атакует ≥ 2 ценных цели (с учётом шаха).
+3. **pin** — абсолютная / относительная связка.
+4. **skewer** — линейный удар.
+5. **discovered_attack** / discovered check.
+6. **double_check**.
+7. **mate_threat / mate_in_n** — из оценки движка + PV.
+8. **back_rank** — мат / угроза по последней горизонтали.
+9. **trapped_piece** — у фигуры нет безопасных полей.
+10. **removing_defender** / overload.
+11. **promotion** — продвижение / угроза превращения.
+
+Детекторы применяются: (а) к ходу игрока, (б) к лучшей линии PV1 (что упущено), (в) к ответу соперника в PV после ошибки (чем наказывается).
+
+Для каждого детектора — ≥ 3 тестовых FEN (положительные) и ≥ 2 отрицательных.
+
+## 6. Объяснения (`explain/`)
+
+### 6.1 Факты
+`facts.py` строит JSON на каждый ход с классом ≥ inaccuracy, а также для brilliant/great/miss:
+```json
+{
+  "move_san": "Nf3", "class": "blunder", "eval_before": "+0.8", "eval_after": "-3.2",
+  "best_move_san": "Bxf7+", "best_line_san": ["Bxf7+", "Kxf7", "Ng5+"],
+  "refutation_line_san": ["Qb6", "..."],
+  "motifs_in_refutation": [{"type": "fork", "piece": "N", "square": "e7", "targets": ["Kg8","Rc8"]}],
+  "motifs_missed": [...], "material_swing": "-5", "phase": "middlegame"
+}
+```
+
+### 6.2 LLM
+- Интерфейс `LLMProvider.generate(system, user, max_tokens) -> str`, реализации Gemini/OpenAI/Anthropic, выбор через env.
+- Системный промпт: «Ты шахматный тренер. Объясняй **только** на основе фактов. Не придумывай ходы и варианты. 2–4 предложения. Уровень — клубный игрок. Язык: {lang}.»
+- Валидация вывода: все SAN-ходы в ответе должны присутствовать в фактах; иначе ретрай 1 раз, затем шаблонное объяснение (fallback без LLM).
+- Шаблонные объяснения (`templates.py`) на каждый мотив — работают без LLM вообще.
+- Кэш по хешу фактов + язык. Генерация **ленивая**: по клику / при открытии ревью, батчем.
+
+### 6.3 Общий разбор партии
+Отдельный вызов: краткий итог (3–5 пунктов) по агрегатам: точность, ключевые моменты (наибольшие перепады), типичные ошибки.
+
+## 7. Данные (PostgreSQL)
+
+- `users` (id, email, lichess_username, chesscom_username, lang, created_at)
+- `games` (id, user_id, source[lichess|chesscom|pgn], external_id, pgn, white, black, white_elo, black_elo, result, time_control, played_at, user_color, opening_eco, opening_name, created_at; unique(source, external_id, user_id))
+- `analyses` (id, game_id, status[queued|running|done|failed], depth, engine_version, white_accuracy, black_accuracy, phase_accuracy jsonb, error, started_at, finished_at)
+- `moves` (id, analysis_id, ply, san, uci, fen_before, eval_before_cp, eval_after_cp, mate_before, mate_after, win_before, win_after, accuracy, class, is_miss, best_uci, best_san, pv jsonb, multipv jsonb, motifs jsonb, phase)
+- `explanations` (id, facts_hash, lang, text, provider, created_at)
+- `position_evals` (fen_key, depth, multipv, data jsonb) — кэш
+- `puzzles` (id, user_id, move_id, fen, solution_uci[], themes[], attempts, solved, next_review_at) — интервальное повторение
+
+## 8. API (v1)
+
+```
+POST /api/v1/games/pgn                {pgn}                 -> game[]
+POST /api/v1/imports/lichess          {username, max}       -> {imported, job_id}
+POST /api/v1/imports/chesscom         {username, months}    -> {imported, job_id}
+GET  /api/v1/games?cursor=            -> список
+GET  /api/v1/games/{id}               -> game + анализ (если есть)
+POST /api/v1/games/{id}/analyze       {depth?}              -> analysis (queued)
+GET  /api/v1/analyses/{id}            -> статус + результат
+GET  /api/v1/analyses/{id}/events     -> SSE прогресс (ply/total)
+POST /api/v1/moves/{id}/explain       {lang}                -> {text}
+GET  /api/v1/analyses/{id}/summary?lang=
+GET  /api/v1/stats/me                 -> агрегаты: точность по времени, по дебютам, по фазам, топ мотивов-ошибок
+GET  /api/v1/puzzles/next
+POST /api/v1/puzzles/{id}/attempt     {moves_uci}
+```
+
+## 9. Frontend (страницы)
+
+1. `/` — импорт: вставить PGN или ник Lichess / Chess.com.
+2. `/games` — список партий, фильтры, бейдж точности.
+3. `/games/[id]` — **экран разбора**:
+   - доска со стрелками (лучший ход — зелёная, сыгранный — по цвету класса);
+   - eval-бар;
+   - график оценки (клик → переход к ходу);
+   - список ходов с иконками классов;
+   - карточки игроков: точность, счётчики классов, точность по фазам;
+   - панель хода: класс, «лучше было …», объяснение (ленивая загрузка), кнопка «показать линию» (проигрывание PV);
+   - режим «Повтори лучший ход».
+   - навигация стрелками клавиатуры, мобильная вёрстка.
+4. `/stats` — дашборд: точность во времени, дебюты (винрейт + точность), фазы, частые мотивы ошибок.
+5. `/puzzles` — пазлы из своих ошибок.
+
+## 10. Нефункциональные требования
+- Анализ партии 40 ходов на depth 18 ≤ 60 c на 4 ядрах.
+- Пул движков: N процессов = env, переиспользование, таймауты, перезапуск при падении.
+- Идемпотентность импорта (unique ключи).
+- Rate limit на импорт и LLM.
+- Структурированные логи, `/health`.
+- Никаких секретов в коде; `.env.example`.
+- Покрытие `review/` и `explain/facts.py` ≥ 90%.
+
+## 11. Сессии реализации
+
+Каждая сессия — отдельный заход. Начинай с чтения этого файла и раздела «Статус».
+
+**Сессия 1 — Каркас**
+Монорепо `backend/`, `web/`, `docker-compose.yml` (postgres, redis, api, worker, web), FastAPI с `/health`, конфиг, Alembic, модели из §7, установка Stockfish в Docker-образ, линтеры (ruff, mypy), pytest, CI-скрипт `make test`.
+Готово, когда: `docker compose up` поднимается, миграции применяются, тест health зелёный.
+
+**Сессия 2 — Движок и win%/точность**
+`engine/` (EnginePool, анализ с MultiPV, кэш по FEN), `review/winprob.py`, `accuracy.py`, `phases.py`. CLI `python -m app.cli analyze game.pgn` печатает таблицу ходов с eval и точностью.
+Тесты: формулы на эталонных числах, нормализация оценок по сторонам, маты.
+
+**Сессия 3 — Классификация и дебюты**
+`classify.py` со всеми классами из §4.5, SEE и детектор жертвы, `openings.py` + встроенная база. Тест-набор: ≥ 10 известных партий/позиций с ожидаемыми классами (включая заведомые brilliant, например, жертвы ферзя из классики).
+
+**Сессия 4 — Мотивы**
+Все детекторы из §5 + тестовые FEN. Интеграция в pipeline: мотивы для хода, PV1 и опровержения.
+
+**Сессия 5 — Pipeline, воркер, API**
+`pipeline.py`, ARQ-задача, сохранение в БД, SSE-прогресс, роуты из §8 (кроме explain/stats/puzzles), импорт PGN.
+
+**Сессия 6 — Импорт Lichess / Chess.com**
+Клиенты публичных API, пагинация, дедупликация, определение цвета пользователя.
+
+**Сессия 7 — Объяснения**
+`facts.py`, шаблоны, провайдеры LLM, валидация SAN, кэш, эндпоинты explain и summary. Тест: при галлюцинированном ходе срабатывает fallback.
+
+**Сессия 8 — Frontend: экран разбора**
+Страницы `/`, `/games`, `/games/[id]` полностью по §9, вызовы API, SSE-прогресс анализа.
+
+**Сессия 9 — Статистика и пазлы**
+`/stats` + эндпоинт агрегатов; генерация пазлов из ошибок (позиция до ошибки, решение = PV1 до выигрыша материала / мата), интервальное повторение, страница `/puzzles`.
+
+**Сессия 10 — Полировка**
+Auth, rate limits, i18n RU/EN, мобильная вёрстка, Playwright smoke, README с запуском.
+
+## 12. Опционально после MVP
+- Stockfish WASM в браузере (анализ без сервера, бесплатный режим).
+- Анализ «на лету» в режиме исследования позиции.
+- Сравнение с рейтинговой группой (средняя точность для Elo).
+- Telegram-бот: прислал ник → получил разбор последней партии.
+
+## Принятые решения (уточнения к ТЗ, 2026-10-15)
+
+Имеют приоритет над формулировками выше.
+
+- **Пользователь до сессии 10**: один dev-пользователь (сид в начальной миграции, `DEFAULT_USER_ID` из env). Все роуты получают пользователя только через dependency `get_current_user()` (`app/api/deps.py`); в сессии 10 меняется только она.
+- **Auth (сессия 10)**: свой JWT (access + refresh), пароли — argon2. Supabase не используем.
+- **Книга дебютов**: в MVP только `lichess-org/chess-openings`. Проверка «книжного» хода — через интерфейс `OpeningBook.is_book(board, move)`, чтобы позже подключить Polyglot без переделок.
+- **LLM**: первый провайдер — Gemini (самая дешёвая актуальная Flash-модель), выбор через `LLM_PROVIDER`. Без ключа (`LLM_PROVIDER=none`) работают шаблонные объяснения, и это полноценный рабочий режим, а не заглушка.
+- **Frontend**: последняя стабильная версия Next.js (сейчас 16), App Router.
+- **Точность хода**: константы и формула берутся из исходников lila (`AccuracyPercent.scala`), включая «uncertainty bonus» +1 до clamp, если он там есть. Тест: партия с Lichess, их точность — эталон, допуск ±1.
+- **Производительность**: анализируется каждая позиция один раз (оценка «после хода» = оценка следующей позиции). Если не укладываемся в 60 с: сначала MultiPV=1 везде и MultiPV=3 только там, где нужно для great/brilliant (ход совпал с лучшим или Δ мал); снижать глубину — только после этого.
+- **Номера ходов** («ход ≤ 15», «12-й ход») — полные ходы, не полуходы.
+- **Окно волатильности** (§4.4): `len` = число позиций (полуходы + 1), как в Lichess.
+- **Эндшпиль** (§4.6): материал считается за обе стороны; фазы идут только вперёд.
+- **«Меняет результат»** для `great`: проигрыш — win% < 20, ничья — 20–80, выигрыш — > 80; пороги в `review/thresholds.py`.
+- **Ответы LLM**: ходы всегда в английском SAN, на любом языке объяснения.
+- **PGN-партии**: `external_id` = хеш нормализованного PGN.
+
+## Заметки по окружению
+
+- Запуск: `cp .env.example .env && make up`. Порты на хосте настраиваются в `.env` (`API_PORT`, `WEB_PORT`, `POSTGRES_PORT`, `REDIS_PORT`).
+- Проверки: `make test` (линтеры + pytest локально, поднимает postgres/redis), `make test-docker` (pytest в образе backend, где установлен Stockfish).
+- Stockfish в образе — официальный бинарник `sf_19` (amd64/arm64), версия задаётся `STOCKFISH_VERSION` в `backend/Dockerfile`. Локально — `brew install stockfish`, иначе тесты движка пропускаются (в Docker — падают).
+- Тестовая БД — `chess_review_test`, пересоздаётся на каждый прогон тестов.
+
+## Статус
+- [x] Сессия 1 — каркас: docker compose (postgres, redis, migrate, api, worker, web), FastAPI `/health` + `/health/ready`, модели §7 + миграция с dev-пользователем, `get_current_user`, ARQ-воркер с проверкой Stockfish, ruff + mypy strict, `make test`.
+- [ ] Сессия 2
+- [ ] Сессия 3
+- [ ] Сессия 4
+- [ ] Сессия 5
+- [ ] Сессия 6
+- [ ] Сессия 7
+- [ ] Сессия 8
+- [ ] Сессия 9
+- [ ] Сессия 10
