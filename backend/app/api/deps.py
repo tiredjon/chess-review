@@ -1,6 +1,7 @@
 from collections.abc import AsyncIterator
 from typing import Annotated
 
+from arq.connections import ArqRedis
 from fastapi import Depends, HTTPException, Request, status
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,9 +26,15 @@ def get_redis(request: Request) -> Redis:
     return redis
 
 
+def get_arq(request: Request) -> ArqRedis:
+    arq: ArqRedis = request.app.state.redis
+    return arq
+
+
 SettingsDep = Annotated[Settings, Depends(get_settings)]
 DatabaseDep = Annotated[Database, Depends(get_db)]
 RedisDep = Annotated[Redis, Depends(get_redis)]
+ArqDep = Annotated[ArqRedis, Depends(get_arq)]
 
 
 async def get_session(db: DatabaseDep) -> AsyncIterator[AsyncSession]:

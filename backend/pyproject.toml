@@ -67,3 +67,5 @@ markers = ["integration: требует PostgreSQL и Redis"]
 [tool.coverage.run]
 source = ["app"]
 branch = true
+# SQLAlchemy async переключает greenlet'ы — без этого строки после await теряются.
+concurrency = ["thread", "greenlet"]

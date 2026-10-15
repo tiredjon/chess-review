@@ -17,9 +17,12 @@ from alembic.config import Config
 from asgi_lifespan import LifespanManager
 from httpx import ASGITransport, AsyncClient
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from redis.asyncio import Redis
+from sqlalchemy import text
 from sqlalchemy.engine import make_url
 
 from app.core.config import Settings
+from app.db.session import Database
 from app.main import create_app
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
@@ -99,3 +102,23 @@ async def client(settings: Settings, migrated_db: str) -> AsyncIterator[AsyncCli
         AsyncClient(transport=ASGITransport(app=manager.app), base_url="http://test") as ac,
     ):
         yield ac
+
+
+@pytest.fixture
+async def db(migrated_db: str) -> AsyncIterator[Database]:
+    """Тестовая БД без партий и кэша оценок (пользователи из миграции остаются)."""
+    database = Database(migrated_db)
+    async with database.engine.begin() as conn:
+        await conn.execute(text("DELETE FROM games"))
+        await conn.execute(text("DELETE FROM position_evals"))
+    yield database
+    await database.dispose()
+
+
+@pytest.fixture
+async def redis(settings: Settings) -> AsyncIterator[Redis]:
+    """Пустая тестовая база Redis."""
+    client = Redis.from_url(settings.redis_url)
+    await client.flushdb()
+    yield client
+    await client.aclose()

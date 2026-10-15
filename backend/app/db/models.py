@@ -139,9 +139,12 @@ class Move(Base):
     is_miss: Mapped[bool] = mapped_column(default=False, server_default=sa.false())
     best_uci: Mapped[str | None] = mapped_column(String(8))
     best_san: Mapped[str | None] = mapped_column(String(16))
+    # Формат JSON-полей — в app/workers/serialize.py.
     pv: Mapped[list[Any] | None]
     multipv: Mapped[list[Any] | None]
-    motifs: Mapped[list[Any] | None]
+    # Лучшая линия соперника после хода (чем наказывается ошибка).
+    reply_pv: Mapped[list[Any] | None]
+    motifs: Mapped[dict[str, Any] | None]
     phase: Mapped[Phase] = mapped_column(str_enum(Phase, "phase"))
 
     analysis: Mapped[Analysis] = relationship(back_populates="moves")

@@ -43,6 +43,10 @@ class Settings(BaseSettings):
     engine_timeout_s: float = Field(default=60.0, gt=0)
     analysis_depth: int = Field(default=18, ge=1, le=40)
     analysis_multipv: int = Field(default=3, ge=1, le=5)
+    # Партий одновременно в одном воркере (они делят пул движков).
+    worker_max_jobs: int = Field(default=2, ge=1)
+    # Анализ дольше этого считается зависшим и помечается failed.
+    analysis_job_timeout_s: int = Field(default=1800, ge=60)
 
     llm_provider: LLMProviderName = LLMProviderName.NONE
     llm_model: str | None = None

@@ -17,10 +17,10 @@ from app.core.config import get_settings
 from app.engine.analyzer import Analyzer
 from app.engine.cache import MemoryEvalCache
 from app.engine.pool import EnginePool
-from app.review.classify import MoveClassification, classify_game
-from app.review.evaluate import GameEval, MoveEval, evaluate_game, replay
-from app.review.motifs.context import MoveMotifs, game_motifs
-from app.review.openings import Opening, default_openings
+from app.review.classify import MoveClassification
+from app.review.evaluate import MoveEval
+from app.review.motifs.context import MoveMotifs
+from app.review.pipeline import GameReview, analyse_game
 from app.review.types import MoveClass, Phase
 from app.review.winprob import format_score
 
@@ -93,16 +93,9 @@ def _motifs_label(motifs: MoveMotifs, classification: MoveClassification) -> str
     return "; ".join(parts)
 
 
-def print_report(
-    game: chess.pgn.Game,
-    result: GameEval,
-    classes: Sequence[MoveClassification],
-    motifs: Sequence[MoveMotifs],
-    *,
-    opening: Opening | None,
-    out: TextIO,
-) -> None:
+def print_report(game: chess.pgn.Game, review: GameReview, *, out: TextIO) -> None:
     headers = game.headers
+    opening = review.opening
     out.write(
         f"{headers.get('White', '?')} — {headers.get('Black', '?')}  {headers.get('Result')}\n"
     )
@@ -111,22 +104,23 @@ def print_report(
         f"{'Ход':<14}{'Оценка':>8}  {'Win% до→после':>15}{'Δ':>7}{'Точн.':>7}  "
         f"{'Фаза':<13}{'Класс':<22}{'Лучше':<8}Мотивы\n"
     )
-    for move, classification, move_motifs in zip(result.moves, classes, motifs, strict=True):
+    for item in review.moves:
+        move, classification = item.eval, item.classification
         delta = max(0.0, move.win_before - move.win_after)
         out.write(
             f"{_move_label(move):<14}{_white_pov(move):>8}  "
             f"{move.win_before:>6.1f} → {move.win_after:>5.1f}{delta:>7.1f}{move.accuracy:>7.1f}  "
             f"{PHASE_LABELS[move.phase]:<13}{_class_label(classification):<22}"
-            f"{_best_san(move):<8}{_motifs_label(move_motifs, classification)}\n"
+            f"{_best_san(move):<8}{_motifs_label(item.motifs, classification)}\n"
         )
     out.write("\nТочность:\n")
     for color in chess.COLORS[::-1]:
         phases = ", ".join(
-            f"{PHASE_LABELS[phase]} {_fmt_acc(result.phase_accuracy[color][phase])}"
+            f"{PHASE_LABELS[phase]} {_fmt_acc(review.phase_accuracy[color][phase])}"
             for phase in Phase
         )
         out.write(
-            f"  {COLOR_LABELS[color]:<7} {_fmt_acc(result.accuracy[color]):>5}   ({phases})\n"
+            f"  {COLOR_LABELS[color]:<7} {_fmt_acc(review.accuracy[color]):>5}   ({phases})\n"
         )
 
 
@@ -134,7 +128,6 @@ async def analyze(args: argparse.Namespace, out: TextIO) -> None:
     settings = get_settings()
     game = read_game(args.pgn, args.game - 1)
     moves = list(game.mainline_moves())
-    positions = replay(game.board(), moves)
 
     pool = EnginePool(
         args.engine or settings.stockfish_path,
@@ -152,24 +145,19 @@ async def analyze(args: argparse.Namespace, out: TextIO) -> None:
                 sys.stderr.write(f"\rАнализ: {done}/{total}")
                 sys.stderr.flush()
 
-        evals = await analyzer.analyse_game(
-            positions, moves, depth=args.depth, multipv=args.multipv, on_progress=progress
+        review = await analyse_game(
+            analyzer,
+            game.board(),
+            moves,
+            depth=args.depth,
+            multipv=args.multipv,
+            on_progress=progress,
         )
     elapsed = time.perf_counter() - started
     if not args.quiet:
         sys.stderr.write("\n")
 
-    book = default_openings()
-    result = evaluate_game(game.board(), moves, evals, book_plies=book.book_plies(positions))
-    classes = classify_game(result.moves, book)
-    print_report(
-        game,
-        result,
-        classes,
-        game_motifs(result.moves),
-        opening=book.identify(positions),
-        out=out,
-    )
+    print_report(game, review, out=out)
     out.write(
         f"\n{pool.version}, глубина {args.depth}, MultiPV {args.multipv}, "
         f"процессов {pool.size}: {elapsed:.1f} с\n"

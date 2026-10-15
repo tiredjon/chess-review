@@ -4,9 +4,10 @@ from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 
 import structlog
+from arq.connections import ArqRedis
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from redis.asyncio import Redis
+from redis.asyncio import ConnectionPool
 
 from app.api.health import router as health_router
 from app.api.router import api_router
@@ -24,7 +25,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.db = Database(settings.database_url)
-        app.state.redis = Redis.from_url(settings.redis_url)
+        # ArqRedis — тот же redis.asyncio.Redis плюс enqueue_job. Подключение ленивое:
+        # без Redis API стартует, а /health/ready сообщает об ошибке.
+        app.state.redis = ArqRedis(ConnectionPool.from_url(settings.redis_url))
         log.info("api.startup", env=settings.app_env)
         try:
             yield
