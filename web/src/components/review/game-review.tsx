@@ -5,12 +5,22 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import { pliesFromMoves, pliesFromPgn, START_FEN } from "@/lib/chess";
-import { formatDate, formatResult, formatTimeControl, outcome, OUTCOME_LABELS, SOURCE_NAMES } from "@/lib/format";
+import {
+  formatDate,
+  formatResult,
+  formatTimeControl,
+  outcome,
+  OUTCOME_LABELS,
+  playerElo,
+  playerName,
+  SOURCE_NAMES,
+} from "@/lib/format";
 import type { Color, GameDetail } from "@/lib/types";
+import { PlayerAvatar } from "../player-avatar";
 import { Button, ErrorText } from "../ui";
-import { PlayerCard } from "./player-card";
+import { Overview } from "./overview";
 import { Review } from "./review";
-import { GameSummary } from "./summary";
+import { CoachBubble, GameSummary } from "./summary";
 import { useAnalysis, type AnalysisState } from "./use-analysis";
 
 /** Экран разбора: загрузка партии, запуск анализа с прогрессом, сам разбор. */
@@ -24,7 +34,9 @@ export function GameReview({ id, autoAnalyze }: { id: string; autoAnalyze: boole
       .then(setGame)
       .catch((err) =>
         setError(
-          err instanceof ApiError ? { status: err.status, message: err.message } : { status: 0, message: "Не удалось загрузить партию" },
+          err instanceof ApiError
+            ? { status: err.status, message: err.message }
+            : { status: 0, message: "Не удалось загрузить партию" },
         ),
       );
   }, [id]);
@@ -34,9 +46,11 @@ export function GameReview({ id, autoAnalyze }: { id: string; autoAnalyze: boole
   if (error) {
     return (
       <div className="flex flex-col items-start gap-3 py-10">
-        <p className="text-xl font-semibold">{error.status === 404 ? "Партия не найдена" : "Не удалось открыть партию"}</p>
+        <p className="text-xl font-extrabold">
+          {error.status === 404 ? "Партия не найдена" : "Не удалось открыть партию"}
+        </p>
         <ErrorText>{error.status === 404 ? null : error.message}</ErrorText>
-        <Link href="/games" className="font-medium text-accent hover:underline">
+        <Link href="/games" className="font-bold text-green hover:underline">
           К списку партий
         </Link>
       </div>
@@ -58,12 +72,12 @@ function LoadedGame({
   const router = useRouter();
   const { state, start, starting, startError } = useAnalysis(game.id, game.analysis, onAnalysisDone);
 
-  // `?analyze=1` (после вставки PGN): запустить анализ один раз и убрать параметр из адреса.
+  // `?analyze=1` (из списков и после вставки PGN): запустить анализ один раз и убрать параметр.
   const autoStarted = useRef(false);
   useEffect(() => {
     if (!autoAnalyze || autoStarted.current) return;
     autoStarted.current = true;
-    if (!game.analysis) void start();
+    if (!game.analysis || game.analysis.status === "failed") void start();
     router.replace(`/games/${game.id}`, { scroll: false });
   }, [autoAnalyze, game.analysis, game.id, router, start]);
 
@@ -76,82 +90,64 @@ function LoadedGame({
     [analysis, game.pgn],
   );
 
-  const strip = (color: Color) => <PlayerStrip game={game} color={color} />;
-  const opposite = (color: Color): Color => (color === "white" ? "black" : "white");
+  const result = outcome(game);
+  const subtitle = [
+    `${formatResult(game.result)}${result ? ` (${OUTCOME_LABELS[result].toLowerCase()})` : ""}`,
+    game.opening_name,
+    formatTimeControl(game.time_control),
+    formatDate(game.played_at),
+    SOURCE_NAMES[game.source],
+  ]
+    .filter(Boolean)
+    .join(", ");
 
   return (
-    <div className="flex flex-col gap-5">
-      <GameHeader game={game} />
+    <>
+      <h1 className="sr-only">
+        {game.white} – {game.black}, {formatResult(game.result)}
+      </h1>
       <Review
         plies={plies}
         startFen={plies.length > 0 ? startFen : START_FEN}
         initialOrientation={game.user_color ?? "white"}
-        topPlayer={(orientation) => strip(opposite(orientation))}
-        bottomPlayer={(orientation) => strip(orientation)}
-        sidePanel={
-          analysis ? null : <AnalysisStatus state={state} starting={starting} error={startError} onStart={start} />
-        }
-        aside={
+        player={(color) => <PlayerBar game={game} color={color} />}
+        subtitle={subtitle}
+        status={<AnalysisStatus state={state} starting={starting} error={startError} onStart={start} />}
+        overview={
           analysis && (
-            <div className="grid gap-3 sm:grid-cols-2">
-              {(["white", "black"] as const).map((color) => (
-                <PlayerCard
-                  key={color}
-                  name={color === "white" ? game.white : game.black}
-                  elo={color === "white" ? game.white_elo : game.black_elo}
-                  color={color}
-                  isUser={game.user_color === color}
-                  accuracy={color === "white" ? analysis.white_accuracy : analysis.black_accuracy}
-                  phases={analysis.phase_accuracy}
-                  moves={analysis.moves}
-                />
-              ))}
-              <div className="sm:col-span-2">
-                <GameSummary analysisId={analysis.id} />
-              </div>
-            </div>
+            <>
+              <GameSummary analysisId={analysis.id} />
+              <Overview game={game} analysis={analysis} />
+            </>
           )
         }
       />
-    </div>
+    </>
   );
 }
 
-function GameHeader({ game }: { game: GameDetail }) {
-  const result = outcome(game);
-  const details = [
-    game.opening_name && `${game.opening_eco ? `${game.opening_eco} ` : ""}${game.opening_name}`,
-    formatTimeControl(game.time_control),
-    formatDate(game.played_at),
-    SOURCE_NAMES[game.source],
-  ].filter(Boolean);
+function PlayerBar({ game, color }: { game: GameDetail; color: Color }) {
+  const name = playerName(game, color);
+  const elo = playerElo(game, color);
+  const accuracy = color === "white" ? game.analysis?.white_accuracy : game.analysis?.black_accuracy;
   return (
-    <div className="flex flex-col gap-1">
-      <Link href="/games" className="text-sm text-muted hover:text-ink">
-        ← Все партии
-      </Link>
-      <h1 className="text-2xl font-semibold tracking-tight sm:text-[28px]">
-        {game.white} – {game.black}
-        <span className="ml-3 whitespace-nowrap text-muted">{formatResult(game.result)}</span>
-        {result && <span className="ml-3 text-base font-medium text-muted">{OUTCOME_LABELS[result]}</span>}
-      </h1>
-      <p className="text-sm text-muted">{details.join(", ")}</p>
+    <div className="flex min-h-10 items-center gap-2.5">
+      <PlayerAvatar name={name} color={color} size={36} />
+      <p className="min-w-0 flex-1 truncate text-[15px]">
+        <span className="font-bold">{name}</span>
+        {elo && <span className="ml-1.5 font-semibold text-muted">({elo})</span>}
+      </p>
+      {game.analysis?.status === "done" && accuracy != null && (
+        <span
+          title="Точность"
+          className={`rounded-md px-2.5 py-1 text-sm font-extrabold ${
+            color === "white" ? "bg-white text-[#2c2925]" : "bg-sunken text-ink"
+          }`}
+        >
+          {accuracy.toFixed(1)}
+        </span>
+      )}
     </div>
-  );
-}
-
-function PlayerStrip({ game, color }: { game: GameDetail; color: Color }) {
-  const name = color === "white" ? game.white : game.black;
-  const elo = color === "white" ? game.white_elo : game.black_elo;
-  return (
-    <p className="flex items-center gap-2 text-sm">
-      <span
-        aria-hidden
-        className={`h-3 w-3 rounded-sm border border-muted/50 ${color === "white" ? "bg-white" : "bg-[#2a3240]"}`}
-      />
-      <span className={game.user_color === color ? "font-semibold" : "font-medium"}>{name}</span>
-      {elo && <span className="text-muted">{elo}</span>}
-    </p>
   );
 }
 
@@ -169,59 +165,56 @@ function AnalysisStatus({
   if (state && (state.status === "queued" || state.status === "running")) {
     const percent = state.total > 0 ? Math.round((state.done / state.total) * 100) : 0;
     return (
-      <section aria-live="polite" className="flex flex-col gap-3 rounded-lg border border-line bg-surface p-4">
-        <div className="flex items-baseline justify-between gap-3">
-          <p className="font-semibold">{state.status === "queued" ? "Анализ в очереди" : "Stockfish анализирует партию"}</p>
-          {state.total > 0 && <span className="text-sm text-muted">{percent}%</span>}
-        </div>
-        <div
-          role="progressbar"
-          aria-label="Прогресс анализа"
-          aria-valuemin={0}
-          aria-valuemax={state.total || 1}
-          aria-valuenow={state.done}
-          className="h-2 overflow-hidden rounded-full bg-sunken"
-        >
+      <div aria-live="polite" className="flex flex-col gap-3">
+        <CoachBubble>
+          {state.status === "queued"
+            ? "Партия в очереди на анализ. Ходы уже можно листать."
+            : "Stockfish разбирает партию. Обычно это занимает до минуты."}
+        </CoachBubble>
+        <div className="flex items-center gap-3">
           <div
-            className={`h-full rounded-full bg-accent transition-[width] duration-500 ${state.total === 0 ? "w-1/5 animate-pulse" : ""}`}
-            style={state.total > 0 ? { width: `${percent}%` } : undefined}
-          />
+            role="progressbar"
+            aria-label="Прогресс анализа"
+            aria-valuemin={0}
+            aria-valuemax={state.total || 1}
+            aria-valuenow={state.done}
+            className="h-3 flex-1 overflow-hidden rounded-full bg-sunken"
+          >
+            <div
+              className={`h-full rounded-full bg-green transition-[width] duration-500 ${
+                state.total === 0 ? "w-1/5 animate-pulse" : ""
+              }`}
+              style={state.total > 0 ? { width: `${percent}%` } : undefined}
+            />
+          </div>
+          <span className="w-24 text-right text-sm font-bold text-soft">
+            {state.total > 0 ? `${state.done} из ${state.total}` : "…"}
+          </span>
         </div>
-        <p className="text-sm text-muted">
-          {state.total > 0
-            ? `Позиций: ${state.done} из ${state.total}. Обычно это занимает до минуты.`
-            : "Ходы партии уже можно листать."}
-        </p>
-      </section>
+      </div>
     );
   }
   const failed = state?.status === "failed";
   return (
-    <section className="flex flex-col gap-3 rounded-lg border border-line bg-surface p-4">
-      <p className="font-semibold">{failed ? "Анализ не удался" : "Партия ещё не разобрана"}</p>
-      {failed ? (
-        <ErrorText>{state.error ?? "Неизвестная ошибка"}</ErrorText>
-      ) : (
-        <p className="text-sm text-muted">Stockfish оценит каждый ход, найдёт ошибки и упущенную тактику.</p>
-      )}
+    <div className="flex flex-col gap-3">
+      <CoachBubble>
+        {failed
+          ? `Анализ не удался: ${state.error ?? "неизвестная ошибка"}`
+          : "Партия ещё не разобрана. Stockfish оценит каждый ход, найдёт ошибки и упущенную тактику."}
+      </CoachBubble>
       <ErrorText>{error}</ErrorText>
-      <div>
-        <Button onClick={onStart} disabled={starting}>
-          {starting ? "Запускаю…" : failed ? "Запустить заново" : "Запустить анализ"}
-        </Button>
-      </div>
-    </section>
+      <Button size="lg" onClick={onStart} disabled={starting}>
+        {starting ? "Запускаю…" : failed ? "Запустить заново" : "Запустить анализ"}
+      </Button>
+    </div>
   );
 }
 
 export function ReviewSkeleton() {
   return (
-    <div aria-busy className="flex flex-col gap-5">
-      <div className="h-8 w-72 animate-pulse rounded bg-sunken" />
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
-        <div className="mx-auto aspect-square w-full max-w-[min(100%,calc(100dvh-16rem))] animate-pulse rounded-md bg-sunken" />
-        <div className="h-64 animate-pulse rounded-lg bg-sunken" />
-      </div>
+    <div aria-busy className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
+      <div className="mx-auto aspect-square w-full max-w-[min(100%,calc(100dvh-8.5rem))] animate-pulse rounded bg-raised/50" />
+      <div className="h-96 animate-pulse rounded-xl bg-panel" />
     </div>
   );
 }

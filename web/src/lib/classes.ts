@@ -1,37 +1,41 @@
-// Классы ходов (SPEC §4.5): подписи, цвета и значки для доски, списка ходов и графика.
+// Классы ходов (SPEC §4.5): подписи и цвета для доски, списка ходов и графика.
+// Значки — src/components/review/class-badge.tsx.
 import type { MoveClass, MoveOut } from "./types";
 
 export type ClassKey = MoveClass | "miss";
 
-type ClassMeta = { label: string; color: string; glyph: string };
+type ClassMeta = { label: string; plural: string; color: string };
 
 export const CLASS_META: Record<ClassKey, ClassMeta> = {
-  brilliant: { label: "Блестящий", color: "#1baca6", glyph: "!!" },
-  great: { label: "Отличный", color: "#5b8bb4", glyph: "!" },
-  best: { label: "Лучший", color: "#7fa650", glyph: "★" },
-  excellent: { label: "Превосходный", color: "#96bc4b", glyph: "✓" },
-  good: { label: "Хороший", color: "#8fa98a", glyph: "✓" },
-  book: { label: "Теория", color: "#a88865", glyph: "≡" },
-  forced: { label: "Вынужденный", color: "#8e9ba5", glyph: "→" },
-  inaccuracy: { label: "Неточность", color: "#e6b32e", glyph: "?!" },
-  mistake: { label: "Ошибка", color: "#e5862a", glyph: "?" },
-  miss: { label: "Упущение", color: "#e2604b", glyph: "✕" },
-  blunder: { label: "Зевок", color: "#c93430", glyph: "??" },
+  brilliant: { label: "Блестящий", plural: "Блестящие", color: "#1fb5a0" },
+  great: { label: "Отличный", plural: "Отличные", color: "#6f98c2" },
+  best: { label: "Лучший", plural: "Лучшие", color: "#7fb04a" },
+  excellent: { label: "Превосходный", plural: "Превосходные", color: "#7fb04a" },
+  good: { label: "Хороший", plural: "Хорошие", color: "#95b47a" },
+  book: { label: "Теория", plural: "Теория", color: "#c99a72" },
+  forced: { label: "Вынужденный", plural: "Вынужденные", color: "#9a948c" },
+  inaccuracy: { label: "Неточность", plural: "Неточности", color: "#f1c232" },
+  mistake: { label: "Ошибка", plural: "Ошибки", color: "#f59a4c" },
+  miss: { label: "Упущение", plural: "Упущения", color: "#f2705e" },
+  blunder: { label: "Зевок", plural: "Зевки", color: "#e8402e" },
 };
 
-/** Порядок в счётчиках карточки игрока. */
+/** Порядок строк в таблице классов. */
 export const CLASS_ORDER: ClassKey[] = [
   "brilliant",
   "great",
+  "book",
   "best",
   "excellent",
   "good",
-  "book",
   "inaccuracy",
   "mistake",
   "miss",
   "blunder",
 ];
+
+/** Классы, которые в списке ходов отмечаются значком и цветом. */
+export const NOTABLE: ClassKey[] = ["brilliant", "great", "inaccuracy", "mistake", "miss", "blunder"];
 
 /** Класс для показа: флаг `miss` важнее класса хода, если ход не хуже неточности. */
 export function displayClass(move: MoveOut): ClassKey {
@@ -42,31 +46,9 @@ export function displayClass(move: MoveOut): ClassKey {
 export const isError = (move: MoveOut) =>
   move.class === "inaccuracy" || move.class === "mistake" || move.class === "blunder";
 
-/** Ходы, у которых есть содержательное объяснение (`explain/facts.is_explained`). */
-export const isExplained = (move: MoveOut) =>
-  isError(move) || move.is_miss || move.class === "brilliant" || move.class === "great";
-
-/** Ход, для которого имеет смысл «Повтори лучший ход». */
+/** Ход, для которого имеет смысл «Найти лучший ход». */
 export const canRetry = (move: MoveOut) =>
   move.best_uci !== null && move.best_uci !== move.uci && (isError(move) || move.is_miss);
-
-export const MOTIF_LABELS: Record<string, string> = {
-  hanging_piece: "незащищённая фигура",
-  fork: "вилка",
-  pin: "связка",
-  skewer: "линейный удар",
-  discovered_attack: "вскрытое нападение",
-  discovered_check: "вскрытый шах",
-  double_check: "двойной шах",
-  mate_in_n: "мат",
-  mate_threat: "угроза мата",
-  back_rank: "слабость последней горизонтали",
-  trapped_piece: "ловля фигуры",
-  removing_defender: "уничтожение защитника",
-  overload: "перегрузка",
-  promotion: "превращение пешки",
-  promotion_threat: "угроза превращения",
-};
 
 export const PHASE_LABELS = {
   opening: "Дебют",
@@ -74,11 +56,12 @@ export const PHASE_LABELS = {
   endgame: "Эндшпиль",
 } as const;
 
-/** Цвет бейджа точности. */
-export function accuracyTone(value: number): string {
-  if (value >= 90) return "#5f9f3a";
-  if (value >= 80) return "#8aa63c";
-  if (value >= 70) return "#c99a1d";
-  if (value >= 55) return "#d0742a";
-  return "#c03a2f";
+/** Значок фазы по её точности: как оценка хода (пороги — на глаз, для наглядности). */
+export function phaseClass(accuracy: number): ClassKey {
+  if (accuracy >= 90) return "best";
+  if (accuracy >= 80) return "excellent";
+  if (accuracy >= 70) return "good";
+  if (accuracy >= 55) return "inaccuracy";
+  if (accuracy >= 40) return "mistake";
+  return "blunder";
 }

@@ -1,17 +1,20 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { CLASS_META, canRetry, displayClass, isError } from "@/lib/classes";
 import { lineLabels, moveNumber, type Ply } from "@/lib/chess";
-import { evalAfter, formatEval } from "@/lib/eval";
+import { evalAfter, formatEval, leader } from "@/lib/eval";
 import type { LineMove } from "@/lib/types";
 import { Button } from "../ui";
 import { ClassBadge } from "./class-badge";
+import { Figurine } from "./move-list";
+import { BubbleSkeleton, CoachBubble } from "./summary";
 
 export type LineKind = "best" | "refutation";
 
 export type Explanation = { text: string } | { error: string } | undefined;
 
-/** Панель текущего хода: класс, «лучше было», объяснение, действия. */
+/** Панель текущего хода: класс, «лучше было», объяснение в облачке, действия. */
 export function MovePanel({
   ply,
   explanation,
@@ -24,25 +27,17 @@ export function MovePanel({
   onRetry: () => void;
 }) {
   if (!ply) {
-    return (
-      <PanelShell>
-        <p className="font-medium">Начальная позиция</p>
-        <p className="text-sm text-muted">
-          Листайте ходы кнопками под доской или клавишами ← →, переходите к ходу кликом по списку
-          или графику.
-        </p>
-      </PanelShell>
-    );
+    return <CoachBubble>Начальная позиция. Листайте ходы кнопками внизу или клавишами ← →.</CoachBubble>;
   }
   const move = ply.move;
   if (!move) {
     return (
-      <PanelShell>
-        <p className="font-medium">
+      <CoachBubble>
+        <span className="font-bold">
           {moveNumber(ply)} {ply.san}
-        </p>
-        <p className="text-sm text-muted">Оценка и объяснение появятся после анализа.</p>
-      </PanelShell>
+        </span>
+        . Оценка и объяснение появятся после анализа.
+      </CoachBubble>
     );
   }
 
@@ -51,63 +46,76 @@ export function MovePanel({
   const differsFromBest = move.best_san !== null && move.best_uci !== move.uci;
   const showBest = differsFromBest && !["book", "forced", "brilliant", "great"].includes(move.class);
   const errorLike = isError(move) || move.is_miss;
+  const evaluation = evalAfter(move);
 
   return (
-    <PanelShell accent={meta.color}>
+    <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2.5">
-        <ClassBadge value={value} size={26} />
-        <p className="min-w-0 flex-1 text-[17px] leading-tight">
-          <span className="font-semibold">
-            {moveNumber(ply)} {ply.san}
+        <ClassBadge value={value} size={30} />
+        <p className="min-w-0 flex-1 text-lg leading-tight font-extrabold" style={{ color: meta.color }}>
+          <span className="whitespace-nowrap">
+            {moveNumber(ply)} <Figurine san={ply.san} color={ply.color} />
           </span>{" "}
-          <span style={{ color: meta.color }} className="font-medium">
-            {meta.label.toLowerCase()}
-          </span>
+          — {meta.label.toLowerCase()}
         </p>
-        <span className="text-sm font-medium text-muted" title="Оценка после хода, за белых">
-          {formatEval(evalAfter(move))}
-        </span>
+        <EvalChip text={formatEval(evaluation)} white={leader(evaluation) === "white"} />
       </div>
 
       {showBest && (
-        <p className="text-sm">
-          {errorLike ? "Лучше было" : "Лучший ход"}{" "}
-          <span className="font-semibold">
-            {moveNumber(ply)} {move.best_san}
+        <p className="flex items-center gap-2 text-[15px] font-bold text-soft">
+          <ClassBadge value="best" size={20} />
+          {errorLike ? "Лучше было" : "Лучший ход"}
+          <span style={{ color: CLASS_META.best.color }}>
+            <Figurine san={move.best_san!} color={ply.color} />
           </span>
         </p>
       )}
 
-      <ExplanationText explanation={explanation} />
+      <CoachBubble busy={explanation === undefined}>
+        {explanation === undefined ? <BubbleSkeleton /> : "error" in explanation ? explanation.error : explanation.text}
+      </CoachBubble>
 
-      <div className="flex flex-wrap gap-2 pt-1">
+      <div className="flex flex-wrap gap-2">
         {move.pv && move.pv.length > 0 && (
-          <Button variant="quiet" onClick={() => onShowLine("best")}>
+          <Button variant="raised" size="sm" onClick={() => onShowLine("best")}>
             {differsFromBest ? "Лучшая линия" : "Продолжение"}
           </Button>
         )}
         {errorLike && move.reply_pv && move.reply_pv.length > 0 && (
-          <Button variant="quiet" onClick={() => onShowLine("refutation")}>
+          <Button variant="raised" size="sm" onClick={() => onShowLine("refutation")}>
             Чем наказывается
           </Button>
         )}
-        {canRetry(move) && <Button onClick={onRetry}>Найти лучший ход</Button>}
+        {canRetry(move) && (
+          <Button size="sm" onClick={onRetry}>
+            Найти лучший ход
+          </Button>
+        )}
       </div>
-    </PanelShell>
+    </div>
   );
 }
 
-function ExplanationText({ explanation }: { explanation: Explanation }) {
-  if (explanation === undefined) {
-    return (
-      <div aria-busy className="flex flex-col gap-1.5 py-1">
-        <span className="h-3 w-full animate-pulse rounded bg-sunken" />
-        <span className="h-3 w-2/3 animate-pulse rounded bg-sunken" />
-      </div>
-    );
-  }
-  if ("error" in explanation) return <p className="text-sm text-muted">{explanation.error}</p>;
-  return <p className="text-[15px] leading-relaxed">{explanation.text}</p>;
+function EvalChip({ text, white }: { text: string; white: boolean }) {
+  return (
+    <span
+      title="Оценка после хода, за белых"
+      className={`shrink-0 rounded-md px-2 py-1 text-sm font-extrabold ${white ? "bg-white text-[#2c2925]" : "bg-sunken text-ink"}`}
+    >
+      {text}
+    </span>
+  );
+}
+
+function ModeHeader({ title, onClose }: { title: ReactNode; onClose: () => void }) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <p className="text-lg font-extrabold">{title}</p>
+      <button type="button" onClick={onClose} className="text-sm font-bold text-green hover:underline">
+        Вернуться к партии
+      </button>
+    </div>
+  );
 }
 
 export function LinePanel({
@@ -131,36 +139,33 @@ export function LinePanel({
 }) {
   const labels = lineLabels(baseFen, line);
   return (
-    <PanelShell accent="var(--accent)">
-      <div className="flex items-center justify-between gap-3">
-        <p className="font-semibold">{title}</p>
-        <button type="button" onClick={onClose} className="text-sm text-accent hover:underline">
-          Вернуться к партии
-        </button>
-      </div>
-      <ol className="flex flex-wrap gap-1 text-[15px]" aria-label="Ходы линии">
+    <div className="flex flex-col gap-3">
+      <ModeHeader title={title} onClose={onClose} />
+      <ol className="flex flex-wrap gap-1 text-[15px] font-bold" aria-label="Ходы линии">
         {line.map((move, i) => (
           <li key={`${i}-${move.uci}`}>
             <button
               type="button"
               onClick={() => onStep(i + 1)}
               aria-current={step === i + 1 ? "true" : undefined}
-              className={`rounded px-1.5 py-0.5 ${step === i + 1 ? "bg-accent text-accent-ink" : "hover:bg-sunken"}`}
+              className={`rounded-md px-1.5 py-0.5 ${
+                step === i + 1 ? "bg-raised-hover text-ink" : "text-soft hover:bg-raised/60"
+              }`}
             >
               {labels[i]}
             </button>
           </li>
         ))}
       </ol>
-      <div className="flex gap-2">
-        <Button variant="quiet" aria-label="Ход назад" disabled={step === 0} onClick={() => onStep(step - 1)}>
+      <div className="grid grid-cols-[1fr_2fr_1fr] gap-2">
+        <Button variant="raised" aria-label="Ход назад" disabled={step === 0} onClick={() => onStep(step - 1)}>
           ←
         </Button>
-        <Button variant="quiet" onClick={onTogglePlay}>
+        <Button variant="raised" onClick={onTogglePlay}>
           {playing ? "Пауза" : step >= line.length ? "Сначала" : "Проиграть"}
         </Button>
         <Button
-          variant="quiet"
+          variant="raised"
           aria-label="Ход вперёд"
           disabled={step >= line.length}
           onClick={() => onStep(step + 1)}
@@ -168,7 +173,7 @@ export function LinePanel({
           →
         </Button>
       </div>
-    </PanelShell>
+    </div>
   );
 }
 
@@ -189,45 +194,32 @@ export function RetryPanel({
 }) {
   const side = ply.color === "white" ? "белых" : "чёрных";
   return (
-    <PanelShell accent={status === "solved" ? CLASS_META.best.color : "var(--accent)"}>
-      <div className="flex items-center justify-between gap-3">
-        <p className="font-semibold">Повтори лучший ход</p>
-        <button type="button" onClick={onClose} className="text-sm text-accent hover:underline">
-          Вернуться к партии
-        </button>
-      </div>
-      <p role="status" className="text-[15px] leading-relaxed">
-        {status === "waiting" && <>Ход {side}. Найдите ход сильнее, чем {ply.san}: перетащите фигуру или кликните по клеткам.</>}
-        {status === "wrong" && <>Не лучший ход. Попробуйте ещё раз.</>}
-        {status === "solved" && (
-          <>
-            Верно: <span className="font-semibold">{ply.move?.best_san}</span>.
-          </>
-        )}
-      </p>
-      <div className="flex flex-wrap gap-2">
+    <div className="flex flex-col gap-3">
+      <ModeHeader title="Найдите лучший ход" onClose={onClose} />
+      <CoachBubble>
+        <span role="status">
+          {status === "waiting" && (
+            <>Ход {side}. В партии было {ply.san} — найдите сильнее: перетащите фигуру или кликните по клеткам.</>
+          )}
+          {status === "wrong" && <>Не лучший ход. Попробуйте ещё раз.</>}
+          {status === "solved" && (
+            <>
+              Верно: <span className="font-extrabold">{ply.move?.best_san}</span>.
+            </>
+          )}
+        </span>
+      </CoachBubble>
+      <div>
         {status === "solved" ? (
-          <Button variant="quiet" onClick={onShowLine}>
+          <Button variant="raised" onClick={onShowLine}>
             Показать линию
           </Button>
         ) : (
-          <Button variant="quiet" onClick={onShowAnswer}>
+          <Button variant="raised" onClick={onShowAnswer}>
             Показать ответ
           </Button>
         )}
       </div>
-    </PanelShell>
-  );
-}
-
-function PanelShell({ children, accent }: { children: React.ReactNode; accent?: string }) {
-  return (
-    <section
-      aria-live="polite"
-      className="flex flex-col gap-2.5 rounded-lg border border-line bg-surface p-4"
-      style={accent ? { borderTop: `3px solid ${accent}` } : undefined}
-    >
-      {children}
-    </section>
+    </div>
   );
 }

@@ -1,7 +1,39 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { api, ApiError } from "@/lib/api";
+
+/** Реплика «тренера»: значок слева, облачко с текстом справа. */
+export function CoachBubble({ children, busy = false }: { children: ReactNode; busy?: boolean }) {
+  return (
+    <div className="flex items-start gap-3">
+      <span
+        aria-hidden
+        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-raised text-[30px] leading-none text-green"
+      >
+        ♞
+      </span>
+      <div
+        aria-busy={busy || undefined}
+        className="relative min-w-0 flex-1 rounded-xl bg-white px-4 py-3 text-[15px] font-medium leading-snug text-[#2c2925] before:absolute before:top-4 before:-left-1.5 before:h-3 before:w-3 before:rotate-45 before:bg-white"
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+export function BubbleSkeleton() {
+  return (
+    <div className="flex flex-col gap-2 py-1">
+      <span className="h-3 w-full animate-pulse rounded bg-[#e3ded6]" />
+      <span className="h-3 w-2/3 animate-pulse rounded bg-[#e3ded6]" />
+    </div>
+  );
+}
+
+// Пунктов итога в свёрнутом виде; первые — точность и ошибки, дальше — переломы.
+const SUMMARY_PREVIEW = 2;
 
 /** Общий разбор партии (§6.3): 3–5 пунктов, строки «- …». */
 export function GameSummary({ analysisId }: { analysisId: string }) {
@@ -27,25 +59,33 @@ export function GameSummary({ analysisId }: { analysisId: string }) {
     };
   }, [analysisId]);
 
+  const [expanded, setExpanded] = useState(false);
   const current = result?.id === analysisId ? result : null;
+  const points = current && "points" in current ? current.points : [];
+  const shown = expanded ? points : points.slice(0, SUMMARY_PREVIEW);
   return (
-    <section aria-label="Итог партии" className="flex flex-col gap-2 rounded-lg border border-line bg-surface p-4">
-      <h2 className="font-semibold">Итог партии</h2>
-      {current === null && (
-        <div aria-busy className="flex flex-col gap-2">
-          <span className="h-3 w-full animate-pulse rounded bg-sunken" />
-          <span className="h-3 w-5/6 animate-pulse rounded bg-sunken" />
-          <span className="h-3 w-2/3 animate-pulse rounded bg-sunken" />
-        </div>
+    <CoachBubble busy={current === null}>
+      {current === null && <BubbleSkeleton />}
+      {current && "error" in current && <p>{current.error}</p>}
+      {points.length > 0 && (
+        <>
+          <ul className="flex flex-col gap-1.5">
+            {shown.map((point) => (
+              <li key={point}>{point}</li>
+            ))}
+          </ul>
+          {points.length > SUMMARY_PREVIEW && (
+            <button
+              type="button"
+              onClick={() => setExpanded(!expanded)}
+              aria-expanded={expanded}
+              className="mt-1.5 text-sm font-bold text-[#557a2f] hover:underline"
+            >
+              {expanded ? "Свернуть" : `Ещё ${points.length - SUMMARY_PREVIEW}`}
+            </button>
+          )}
+        </>
       )}
-      {current && "error" in current && <p className="text-sm text-muted">{current.error}</p>}
-      {current && "points" in current && (
-        <ul className="flex list-disc flex-col gap-1.5 pl-5 text-[15px] leading-relaxed marker:text-muted">
-          {current.points.map((point) => (
-            <li key={point}>{point}</li>
-          ))}
-        </ul>
-      )}
-    </section>
+    </CoachBubble>
   );
 }

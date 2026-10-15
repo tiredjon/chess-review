@@ -1,15 +1,10 @@
-import { ImportForm } from "@/components/import-form";
+import { HomeDashboard } from "@/components/home-dashboard";
 
 export default function Home() {
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8 px-4 py-10 sm:py-14">
-      <div className="max-w-2xl">
-        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Разбор партии</h1>
-        <p className="mt-3 text-base leading-relaxed text-muted sm:text-lg">
-          Stockfish оценит каждый ход, найдёт ошибки и покажет, что было лучше и почему.
-        </p>
-      </div>
-      <ImportForm />
+    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-5 px-3 py-5 sm:px-6 sm:py-8">
+      <h1 className="text-2xl font-extrabold sm:text-3xl">Разбор партий</h1>
+      <HomeDashboard />
     </main>
   );
 }

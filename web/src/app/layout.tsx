@@ -1,11 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { Golos_Text } from "next/font/google";
-import { SiteHeader } from "@/components/site-header";
+import { Montserrat } from "next/font/google";
+import { AppShell } from "@/components/app-shell";
 import "./globals.css";
 
-const golos = Golos_Text({
-  variable: "--font-golos",
+const montserrat = Montserrat({
+  variable: "--font-main",
   subsets: ["latin", "cyrillic"],
+  weight: ["400", "500", "600", "700", "800"],
 });
 
 export const metadata: Metadata = {
@@ -13,19 +14,13 @@ export const metadata: Metadata = {
   description: "Разбор шахматных партий на Stockfish с объяснениями ошибок",
 };
 
-export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#eef1f4" },
-    { media: "(prefers-color-scheme: dark)", color: "#141920" },
-  ],
-};
+export const viewport: Viewport = { themeColor: "#2c2925" };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="ru" className={`${golos.variable} h-full antialiased`}>
-      <body className="flex min-h-full flex-col">
-        <SiteHeader />
-        {children}
+    <html lang="ru" className={`${montserrat.variable} h-full antialiased`}>
+      <body className="min-h-full">
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

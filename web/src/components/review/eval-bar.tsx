@@ -16,7 +16,7 @@ export function EvalBar({ evaluation, orientation }: { evaluation: WhiteEval | n
       aria-valuemax={100}
       aria-valuenow={Math.round(white)}
       aria-valuetext={evaluation ? formatEval(evaluation) : "нет оценки"}
-      className="relative h-full w-full overflow-hidden rounded-[4px] bg-[var(--graph-black)]"
+      className="relative h-full w-full overflow-hidden rounded-[3px] bg-[var(--graph-black)]"
     >
       <div
         className="absolute inset-x-0 bg-[var(--graph-white)] transition-[height] duration-300 ease-out"
@@ -24,7 +24,7 @@ export function EvalBar({ evaluation, orientation }: { evaluation: WhiteEval | n
       />
       {evaluation && (
         <span
-          className={`absolute inset-x-0 text-center text-[10px] font-semibold leading-none ${
+          className={`absolute inset-x-0 text-center text-[10px] font-extrabold leading-none sm:text-[11px] ${
             labelAtBottom ? "bottom-1.5" : "top-1.5"
           } ${ahead === "white" ? "text-[var(--graph-black)]" : "text-[var(--graph-white)]"}`}
         >

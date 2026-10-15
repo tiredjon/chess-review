@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { displayClass } from "@/lib/classes";
+import { defaultPieces } from "react-chessboard";
+import { CLASS_META, displayClass, NOTABLE } from "@/lib/classes";
 import type { Ply } from "@/lib/chess";
+import type { Color } from "@/lib/types";
 import { ClassBadge } from "./class-badge";
 
 type Row = { fullmove: number; white: Ply | null; black: Ply | null };
@@ -24,21 +26,47 @@ function rows(plies: Ply[]): Row[] {
   return result;
 }
 
-/** Бланк записи: ход белых и чёрных в строке; `cursor` — число сыгранных полуходов. */
+const PIECE_STYLE = {
+  white: { width: "1.3em", height: "1.3em" },
+  // Чёрная фигура на тёмной панели — со светлым контуром.
+  black: {
+    width: "1.3em",
+    height: "1.3em",
+    filter: "drop-shadow(0 0 0.7px #e8e3db) drop-shadow(0 0 0.7px #e8e3db)",
+  },
+};
+
+/** Фигурная нотация: буква фигуры заменяется её изображением (те же фигуры, что на доске). */
+export function Figurine({ san, color }: { san: string; color: Color }) {
+  const render = "KQRBN".includes(san[0]) ? defaultPieces[`${color === "white" ? "w" : "b"}${san[0]}`] : undefined;
+  if (!render) return <>{san}</>;
+  return (
+    <>
+      <span aria-hidden className="mr-px inline-block align-[-0.3em]">
+        {render({ svgStyle: PIECE_STYLE[color] })}
+      </span>
+      <span className="sr-only">{san[0]}</span>
+      {san.slice(1)}
+    </>
+  );
+}
+
+/** Список ходов; `cursor` — число сыгранных полуходов (-1 — не выделять). */
 export function MoveList({
   plies,
   cursor,
   onSelect,
+  className = "",
 }: {
   plies: Ply[];
   cursor: number;
   onSelect: (index: number) => void;
+  className?: string;
 }) {
   const container = useRef<HTMLDivElement>(null);
 
-  // Держать текущий ход в зоне видимости, не прокручивая страницу.
-  // Высота списка меняется, когда панель хода над ним подгружает объяснение, — поэтому
-  // и по ResizeObserver.
+  // Держать текущий ход в зоне видимости, не прокручивая страницу; высота списка меняется
+  // вместе с панелью над ним, поэтому и по ResizeObserver.
   useEffect(() => {
     const box = container.current;
     if (!box) return;
@@ -61,17 +89,14 @@ export function MoveList({
   }, [cursor]);
 
   return (
-    <div
-      ref={container}
-      className="relative max-h-[22rem] overflow-y-auto rounded-lg border border-line bg-surface lg:max-h-none lg:min-h-32 lg:flex-1"
-    >
-      <ol className="text-[15px]">
+    <div ref={container} className={`relative overflow-y-auto ${className}`}>
+      <ol className="py-1 text-[15px] font-bold">
         {rows(plies).map((row) => (
           <li
             key={`${row.fullmove}-${row.white?.index ?? row.black?.index}`}
-            className="grid grid-cols-[3rem_1fr_1fr] items-center odd:bg-paper/60"
+            className="grid grid-cols-[2.75rem_1fr_1fr] items-center"
           >
-            <span className="pl-3 text-sm text-muted">{row.fullmove}.</span>
+            <span className="pl-3 text-muted">{row.fullmove}.</span>
             <MoveCell ply={row.white} cursor={cursor} onSelect={onSelect} />
             <MoveCell ply={row.black} cursor={cursor} onSelect={onSelect} />
           </li>
@@ -81,31 +106,25 @@ export function MoveList({
   );
 }
 
-function MoveCell({
-  ply,
-  cursor,
-  onSelect,
-}: {
-  ply: Ply | null;
-  cursor: number;
-  onSelect: (index: number) => void;
-}) {
+function MoveCell({ ply, cursor, onSelect }: { ply: Ply | null; cursor: number; onSelect: (index: number) => void }) {
   if (!ply) return <span className="px-2 py-1.5 text-muted">…</span>;
   const current = cursor === ply.index + 1;
   const value = ply.move ? displayClass(ply.move) : null;
-  // Значок — только там, где он что-то сообщает.
-  const showBadge = value !== null && !["good", "excellent", "forced"].includes(value);
+  const notable = value !== null && NOTABLE.includes(value);
   return (
     <button
       type="button"
       aria-current={current ? "true" : undefined}
       onClick={() => onSelect(ply.index + 1)}
-      className={`m-0.5 flex items-center gap-1.5 rounded-md px-2 py-1 text-left ${
-        current ? "bg-accent font-semibold text-accent-ink" : "hover:bg-sunken"
+      className={`my-0.5 mr-1 flex items-center gap-1.5 rounded-md px-1.5 py-1 text-left ${
+        current ? "bg-raised-hover shadow-[0_2px_0_0_rgba(0,0,0,0.4)]" : "hover:bg-raised/60"
       }`}
+      style={notable ? { color: CLASS_META[value].color } : { color: "var(--soft)" }}
     >
-      <span className="w-[18px]">{showBadge && <ClassBadge value={value} size={16} />}</span>
-      {ply.san}
+      <span className="flex w-[22px] justify-center">{notable && <ClassBadge value={value} size={22} />}</span>
+      <span className="whitespace-nowrap">
+        <Figurine san={ply.san} color={ply.color} />
+      </span>
     </button>
   );
 }

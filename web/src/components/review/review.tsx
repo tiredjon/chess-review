@@ -9,6 +9,8 @@ import type { Color, LineMove } from "@/lib/types";
 import { Board, NO_MARKS, type BoardMarks } from "./board";
 import { EvalBar } from "./eval-bar";
 import { EvalGraph } from "./eval-graph";
+import { Button } from "../ui";
+import { ClassBadge } from "./class-badge";
 import { MoveList } from "./move-list";
 import { LinePanel, MovePanel, RetryPanel, type Explanation, type LineKind, type RetryStatus } from "./move-panel";
 
@@ -26,16 +28,14 @@ type Mode =
   | { kind: "retry"; plyIndex: number; status: RetryStatus; fen: string; selected: string | null };
 
 const GAME: Mode = { kind: "game" };
-// Доска с панелью навигации помещается в экран по высоте.
-const BOARD_WIDTH = { maxWidth: "min(100%, calc(100dvh - 16rem))" };
-// Карточкам игроков под доской нужно хотя бы 36rem даже на низком экране.
-const BELOW_BOARD_WIDTH = { maxWidth: "min(100%, max(36rem, calc(100dvh - 16rem)))" };
+// Доска с плашками игроков помещается в экран по высоте.
+const BOARD_WIDTH = { maxWidth: "min(100%, calc(100dvh - 8.5rem))" };
 const LINE_STEP_MS = 900;
 const EXPLAIN_DELAY_MS = 250;
 
-const LAST_MOVE = "rgba(234, 196, 74, 0.42)";
-const LINE_MOVE = "rgba(91, 139, 180, 0.45)";
-const SELECTED = "rgba(43, 78, 181, 0.35)";
+const LAST_MOVE = "rgba(247, 214, 92, 0.6)";
+const LINE_MOVE = "rgba(111, 152, 194, 0.6)";
+const SELECTED = "rgba(127, 176, 74, 0.6)";
 
 const alpha = (hex: string, value: string) => `${hex}${value}`;
 
@@ -47,7 +47,7 @@ function moveMarks(ply: Ply): BoardMarks {
   const color = CLASS_META[value].color;
   const marks: BoardMarks = {
     arrows: [],
-    highlights: { [from]: alpha(color, "55"), [to]: alpha(color, "77") },
+    highlights: { [from]: alpha(color, "88"), [to]: alpha(color, "bb") },
     badge: { square: to, value },
   };
   // Лучший ход — зелёной стрелкой, сыгранный — стрелкой цвета класса (если они разные).
@@ -70,22 +70,26 @@ export function Review({
   plies,
   startFen,
   initialOrientation,
-  topPlayer,
-  bottomPlayer,
-  sidePanel,
-  aside,
+  player,
+  subtitle,
+  status,
+  overview,
 }: {
   plies: Ply[];
   startFen: string;
   initialOrientation: Color;
-  topPlayer: (orientation: Color) => ReactNode;
-  bottomPlayer: (orientation: Color) => ReactNode;
-  /** Вместо панели хода, пока анализа нет (статус, кнопка запуска). */
-  sidePanel: ReactNode;
-  /** Карточки игроков и итог — под списком ходов. */
-  aside: ReactNode;
+  /** Плашка игрока над / под доской. */
+  player: (color: Color) => ReactNode;
+  /** Дебют, дата — под заголовком панели. */
+  subtitle: ReactNode;
+  /** Пока анализа нет: статус и кнопка запуска. */
+  status: ReactNode;
+  /** Обзор партии (итог, точность, классы), когда анализ готов. */
+  overview: ReactNode;
 }) {
   const [cursor, setCursor] = useState(0);
+  // Панель: обзор партии или разбор по ходам (как «Начать разбор»).
+  const [view, setView] = useState<"overview" | "moves">("overview");
   const [mode, setMode] = useState<Mode>(GAME);
   const [playing, setPlaying] = useState(false);
   const [orientation, setOrientation] = useState<Color>(initialOrientation);
@@ -103,6 +107,7 @@ export function Review({
     (index: number) => {
       setMode(GAME);
       setPlaying(false);
+      setView("moves");
       setCursor(Math.max(0, Math.min(plies.length, index)));
     },
     [plies.length],
@@ -231,6 +236,7 @@ export function Review({
         setPlaying(false);
         setMode({ ...mode, step: Math.max(0, Math.min(mode.line.length, mode.step + delta)) });
       } else if (mode.kind === "game") {
+        setView("moves");
         setCursor((c) => Math.max(0, Math.min(plies.length, c + delta)));
       }
     }
@@ -267,7 +273,7 @@ export function Review({
       const { from, to } = uciSquares(ply.move.best_uci);
       marks = {
         arrows: [],
-        highlights: { [from]: alpha(CLASS_META.best.color, "55"), [to]: alpha(CLASS_META.best.color, "77") },
+        highlights: { [from]: alpha(CLASS_META.best.color, "88"), [to]: alpha(CLASS_META.best.color, "bb") },
         badge: { square: to, value: "best" },
       };
     }
@@ -309,8 +315,6 @@ export function Review({
         onClose={() => goTo(cursor)}
       />
     );
-  } else if (sidePanel && !analysed) {
-    panel = sidePanel;
   } else {
     panel = (
       <MovePanel
@@ -322,14 +326,22 @@ export function Review({
     );
   }
 
-  // Сетка: доска (слева сверху), панель и список ходов (справа, вровень с доской),
-  // график, карточки и итог (слева под доской). На телефоне — в этом же порядке DOM.
+  const showOverview = analysed && view === "overview" && mode.kind === "game";
+  const flip = () => setOrientation((o) => (o === "white" ? "black" : "white"));
+
+  // Десктоп: доска слева, панель справа высотой с блок доски, но не ниже экрана
+  // (h-0 + min-h), внутри панели прокручивается список ходов или обзор.
+  // Телефон: доска, затем панель целиком.
   return (
-    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-x-6">
-      <div className="mx-auto flex w-full flex-col gap-2 lg:col-start-1 lg:row-start-1" style={BOARD_WIDTH}>
-        {topPlayer(orientation)}
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
+      {/* На телефоне доска липнет под шапкой, панель прокручивается под ней. */}
+      <div
+        className="z-20 mx-auto flex w-full flex-col gap-2 max-lg:sticky max-lg:top-14 max-lg:-mx-3 max-lg:w-auto max-lg:bg-page max-lg:px-3 max-lg:pb-2"
+        style={BOARD_WIDTH}
+      >
+        {player(orientation === "white" ? "black" : "white")}
         <div className="flex gap-1.5 sm:gap-2">
-          <div className="w-4 shrink-0 sm:w-6">
+          <div className="w-4 shrink-0 sm:w-7">
             <EvalBar evaluation={evaluation} orientation={orientation} />
           </div>
           <div className="min-w-0 flex-1">
@@ -343,25 +355,72 @@ export function Review({
             />
           </div>
         </div>
-        {bottomPlayer(orientation)}
-        <NavBar
-          cursor={cursor}
-          total={plies.length}
-          onGo={goTo}
-          onFlip={() => setOrientation((o) => (o === "white" ? "black" : "white"))}
-        />
+        {player(orientation)}
       </div>
 
-      {/* h-0 + min-h-full: высота колонки = высота блока доски, список ходов прокручивается внутри. */}
-      <div className="flex min-w-0 flex-col gap-3 lg:col-start-2 lg:row-start-1 lg:h-0 lg:min-h-full">
-        {panel}
-        <MoveList plies={plies} cursor={mode.kind === "game" ? cursor : -1} onSelect={goTo} />
-      </div>
+      <section
+        aria-label="Разбор партии"
+        className="flex min-w-0 flex-col rounded-xl bg-panel lg:h-0 lg:min-h-[max(100%,calc(100dvh-2rem))] lg:overflow-hidden"
+      >
+        <header className="flex items-center gap-3 rounded-t-xl border-b border-line bg-sunken/60 px-4 py-3">
+          {analysed && view === "moves" && (
+            <button
+              type="button"
+              onClick={() => {
+                setMode(GAME);
+                setPlaying(false);
+                setView("overview");
+              }}
+              aria-label="К обзору партии"
+              title="К обзору партии"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-soft hover:bg-raised hover:text-ink"
+            >
+              <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5">
+                <path d="M15 5 8 12l7 7" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          )}
+          <div className="min-w-0 flex-1">
+            <h2 className="flex items-center gap-2 text-lg font-extrabold">
+              <ClassBadge value="best" size={22} title={false} />
+              Разбор партии
+            </h2>
+            <p className="truncate text-xs font-semibold text-muted">{subtitle}</p>
+          </div>
+        </header>
 
-      <div className="mx-auto flex w-full min-w-0 flex-col gap-3 lg:col-start-1 lg:row-start-2" style={BELOW_BOARD_WIDTH}>
-        {analysed && <EvalGraph evals={evals} plies={plies} cursor={cursor} onSelect={goTo} />}
-        {aside}
-      </div>
+        {showOverview ? (
+          <>
+            <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
+              {overview}
+              <EvalGraph evals={evals} plies={plies} cursor={cursor} onSelect={goTo} />
+            </div>
+            {/* На телефоне главная кнопка и навигация липнут к низу экрана. */}
+            <div className="sticky bottom-0 rounded-b-xl border-t border-line bg-panel p-4 lg:static">
+              <Button size="lg" className="w-full" onClick={() => goTo(Math.max(cursor, 1))}>
+                Начать разбор
+              </Button>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Верх (ход, объяснение, график) уступает место списку ходов и прокручивается сам. */}
+            <div className="flex min-h-0 flex-1 flex-col">
+              <div className="flex flex-col gap-3 p-4 pb-3 lg:min-h-0 lg:shrink lg:overflow-y-auto">
+                {analysed || mode.kind !== "game" ? panel : status}
+                {analysed && <EvalGraph evals={evals} plies={plies} cursor={cursor} onSelect={goTo} compact />}
+              </div>
+              <MoveList
+                plies={plies}
+                cursor={mode.kind === "game" ? cursor : -1}
+                onSelect={goTo}
+                className="max-h-80 border-t border-line lg:max-h-none lg:flex-[1_0_13rem]"
+              />
+            </div>
+            <NavBar cursor={cursor} total={plies.length} onGo={goTo} onFlip={flip} />
+          </>
+        )}
+      </section>
     </div>
   );
 }
@@ -381,6 +440,14 @@ function pieceAt(fen: string, square: string): string | null {
   return null;
 }
 
+const NAV_ICONS = {
+  first: "M7 6v12M18 6l-7 6 7 6z",
+  prev: "M16 6l-8 6 8 6z",
+  next: "M8 6l8 6-8 6z",
+  last: "M17 6v12M6 6l7 6-7 6z",
+  flip: "M8 4v14m0 0-3-3m3 3 3-3M16 20V6m0 0-3 3m3-3 3 3",
+};
+
 function NavBar({
   cursor,
   total,
@@ -392,25 +459,41 @@ function NavBar({
   onGo: (index: number) => void;
   onFlip: () => void;
 }) {
-  const button =
-    "flex h-11 flex-1 items-center justify-center rounded-lg border border-line bg-surface text-lg hover:bg-sunken disabled:opacity-40 disabled:hover:bg-surface";
+  const buttons: [keyof typeof NAV_ICONS, string, () => void, boolean][] = [
+    ["first", "К началу (↑)", () => onGo(0), cursor === 0],
+    ["prev", "Ход назад (←)", () => onGo(cursor - 1), cursor === 0],
+    ["next", "Ход вперёд (→)", () => onGo(cursor + 1), cursor >= total],
+    ["last", "К концу (↓)", () => onGo(total), cursor >= total],
+    ["flip", "Перевернуть доску (F)", onFlip, false],
+  ];
   return (
-    <div className="flex gap-1.5" role="toolbar" aria-label="Навигация по ходам">
-      <button type="button" className={button} onClick={() => onGo(0)} disabled={cursor === 0} aria-label="К началу (↑)" title="К началу (↑)">
-        ⏮
-      </button>
-      <button type="button" className={button} onClick={() => onGo(cursor - 1)} disabled={cursor === 0} aria-label="Ход назад (←)" title="Ход назад (←)">
-        ◀
-      </button>
-      <button type="button" className={button} onClick={() => onGo(cursor + 1)} disabled={cursor >= total} aria-label="Ход вперёд (→)" title="Ход вперёд (→)">
-        ▶
-      </button>
-      <button type="button" className={button} onClick={() => onGo(total)} disabled={cursor >= total} aria-label="К концу (↓)" title="К концу (↓)">
-        ⏭
-      </button>
-      <button type="button" className={`${button} max-w-14`} onClick={onFlip} aria-label="Перевернуть доску (F)" title="Перевернуть доску (F)">
-        ⇅
-      </button>
+    <div
+      className="sticky bottom-0 grid grid-cols-[1fr_1fr_1.4fr_1fr_0.8fr] gap-1.5 rounded-b-xl border-t border-line bg-panel p-3 lg:static"
+      role="toolbar"
+      aria-label="Навигация по ходам"
+    >
+      {buttons.map(([icon, label, action, disabled]) => (
+        <button
+          key={icon}
+          type="button"
+          onClick={action}
+          disabled={disabled}
+          aria-label={label}
+          title={label}
+          className="flex h-12 items-center justify-center rounded-lg bg-raised text-soft shadow-[0_3px_0_0_rgba(0,0,0,0.35)] hover:bg-raised-hover hover:text-ink active:translate-y-[2px] active:shadow-none disabled:opacity-35 disabled:hover:bg-raised"
+        >
+          <svg aria-hidden viewBox="0 0 24 24" className="h-6 w-6">
+            <path
+              d={NAV_ICONS[icon]}
+              fill={icon === "flip" ? "none" : "currentColor"}
+              stroke="currentColor"
+              strokeWidth={icon === "flip" ? 2.2 : 1.5}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+      ))}
     </div>
   );
 }

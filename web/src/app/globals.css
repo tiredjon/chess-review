@@ -1,63 +1,54 @@
 @import "tailwindcss";
 
-/* Палитра: холодная «турнирная» бумага, синие чернила бланка записи, сине-серая доска.
-   Цвета классов ходов — в src/lib/classes.ts. */
+/* Тёмная тёплая тема «клубного зала»: тёмное дерево, светлое дерево доски, зелёные
+   объёмные кнопки. Цвета классов ходов — в src/lib/classes.ts. */
 :root {
-  --paper: #eef1f4;
-  --surface: #ffffff;
-  --sunken: #e4e8ed;
-  --ink: #18202c;
-  --muted: #5d6877;
-  --line: #d3dae2;
-  --accent: #2b4eb5;
-  --accent-ink: #ffffff;
-  --danger: #b8322c;
-  --board-light: #dde4ea;
-  --board-dark: #8aa0b2;
-  --graph-black: #2a3240;
-  --graph-white: #f4f6f8;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --paper: #141920;
-    --surface: #1c232d;
-    --sunken: #11161c;
-    --ink: #e5e9ef;
-    --muted: #97a3b2;
-    --line: #2c3644;
-    --accent: #87a2ff;
-    --accent-ink: #0d1424;
-    --danger: #f07a70;
-    --board-light: #c9d3dc;
-    --board-dark: #6f879b;
-    --graph-black: #0e1217;
-    --graph-white: #d9dfe6;
-  }
+  color-scheme: dark;
+  --page: #2c2925;
+  --panel: #23211e;
+  --raised: #3b3833;
+  --raised-hover: #46423c;
+  --sunken: #1c1a17;
+  --ink: #ffffff;
+  --soft: #d8d3cb;
+  --muted: #9b958c;
+  --line: rgba(255, 255, 255, 0.08);
+  --green: #7fb04a;
+  --green-hover: #8fc057;
+  --green-edge: #557a2f;
+  --danger: #f0705f;
+  --board-light: #ebd5b0;
+  --board-dark: #b48a62;
+  --graph-black: #403d39;
+  --graph-white: #ffffff;
 }
 
 @theme inline {
-  --color-paper: var(--paper);
-  --color-surface: var(--surface);
+  --color-page: var(--page);
+  --color-panel: var(--panel);
+  --color-raised: var(--raised);
+  --color-raised-hover: var(--raised-hover);
   --color-sunken: var(--sunken);
   --color-ink: var(--ink);
+  --color-soft: var(--soft);
   --color-muted: var(--muted);
   --color-line: var(--line);
-  --color-accent: var(--accent);
-  --color-accent-ink: var(--accent-ink);
+  --color-green: var(--green);
+  --color-green-hover: var(--green-hover);
+  --color-green-edge: var(--green-edge);
   --color-danger: var(--danger);
-  --font-sans: var(--font-golos);
+  --font-sans: var(--font-main);
 }
 
 body {
-  background: var(--paper);
+  background: var(--page);
   color: var(--ink);
-  font-family: var(--font-golos), system-ui, sans-serif;
+  font-family: var(--font-main), system-ui, sans-serif;
   font-feature-settings: "tnum" 1;
 }
 
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--green);
   outline-offset: 2px;
 }
 

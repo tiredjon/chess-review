@@ -16,11 +16,14 @@ export function EvalGraph({
   plies,
   cursor,
   onSelect,
+  compact = false,
 }: {
   evals: WhiteEval[];
   plies: Ply[];
   cursor: number;
   onSelect: (index: number) => void;
+  /** Пониже — в режиме разбора по ходам. */
+  compact?: boolean;
 }) {
   const data: Point[] = evals.map((evaluation, index) => {
     const ply = index > 0 ? plies[index - 1] : null;
@@ -35,11 +38,11 @@ export function EvalGraph({
   });
 
   return (
-    <div className="overflow-hidden rounded-lg bg-[var(--graph-black)]">
+    <div className="shrink-0 overflow-hidden rounded-md bg-[var(--graph-black)]">
       <AreaChart
         data={data}
         responsive
-        style={{ width: "100%", height: 112 }}
+        style={{ width: "100%", height: compact ? 72 : 104 }}
         margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
         cursor="pointer"
         accessibilityLayer={false}
@@ -50,7 +53,7 @@ export function EvalGraph({
       >
         <XAxis dataKey="index" type="number" domain={[0, Math.max(1, data.length - 1)]} hide />
         <YAxis domain={[0, 100]} hide />
-        <ReferenceLine y={50} stroke="#7d8896" strokeOpacity={0.6} strokeDasharray="3 3" />
+        <ReferenceLine y={50} stroke="#8d877e" strokeOpacity={0.7} />
         <Area
           type="monotone"
           dataKey="white"
@@ -60,10 +63,10 @@ export function EvalGraph({
           fillOpacity={1}
           isAnimationActive={false}
           dot={renderDot}
-          activeDot={{ r: 4, fill: "var(--accent)", stroke: "white", strokeWidth: 1.5 }}
+          activeDot={{ r: 4, fill: "var(--green)", stroke: "white", strokeWidth: 1.5 }}
         />
-        <ReferenceLine x={cursor} stroke="var(--accent)" strokeWidth={2} />
-        <Tooltip content={TooltipBox} cursor={{ stroke: "#7d8896", strokeWidth: 1 }} isAnimationActive={false} />
+        <ReferenceLine x={cursor} stroke="var(--green)" strokeWidth={2} />
+        <Tooltip content={TooltipBox} cursor={{ stroke: "#8d877e", strokeWidth: 1 }} isAnimationActive={false} />
       </AreaChart>
     </div>
   );
@@ -77,10 +80,9 @@ function renderDot(props: { cx?: number; cy?: number; payload?: Point; index?: n
       key={`dot-${index}`}
       cx={cx}
       cy={cy}
-      r={3.5}
+      r={4}
       fill={CLASS_META[payload.mark].color}
-      stroke="var(--graph-black)"
-      strokeWidth={1}
+      stroke="none"
     />
   );
 }
@@ -89,8 +91,8 @@ function TooltipBox({ active, payload }: TooltipContentProps) {
   const point = payload?.[0]?.payload as Point | undefined;
   if (!active || !point) return null;
   return (
-    <div className="rounded-md border border-line bg-surface px-2 py-1 text-xs shadow-md">
-      <span className="font-medium">{point.label}</span>
+    <div className="rounded-md bg-sunken px-2 py-1 text-xs font-bold text-ink shadow-md">
+      <span>{point.label}</span>
       <span className="ml-2 text-muted">{point.eval}</span>
     </div>
   );

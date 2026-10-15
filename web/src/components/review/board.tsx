@@ -28,7 +28,7 @@ type BoardProps = {
 
 const darkSquare: CSSProperties = { backgroundColor: "var(--board-dark)" };
 const lightSquare: CSSProperties = { backgroundColor: "var(--board-light)" };
-const notation: CSSProperties = { fontSize: "11px", fontWeight: 600 };
+const notation: CSSProperties = { fontSize: "13px", fontWeight: 800, fontFamily: "var(--font-main), sans-serif" };
 
 export function Board({ fen, orientation, marks, interactive = false, onMove, onSquareClick }: BoardProps) {
   const { badge, highlights } = marks;
@@ -47,7 +47,7 @@ export function Board({ fen, orientation, marks, interactive = false, onMove, on
         {children}
         {badge?.square === square && (
           <span className="pointer-events-none absolute -top-[14%] -right-[14%] z-10 drop-shadow-md">
-            <ClassBadge value={badge.value} size={26} title={false} />
+            <ClassBadge value={badge.value} size={30} title={false} />
           </span>
         )}
       </div>
@@ -67,17 +67,17 @@ export function Board({ fen, orientation, marks, interactive = false, onMove, on
         lightSquareStyle: lightSquare,
         darkSquareNotationStyle: { ...notation, color: "var(--board-light)" },
         lightSquareNotationStyle: { ...notation, color: "var(--board-dark)" },
-        boardStyle: { borderRadius: "6px", overflow: "visible" },
+        boardStyle: { borderRadius: "3px", overflow: "visible" },
         allowDragging: interactive,
         // Клик по фигуре — выбор (ход кликами), а не перетаскивание на ту же клетку.
         dragActivationDistance: 4,
         allowDrawingArrows: false,
         animationDurationInMs: 160,
         arrowOptions: {
-          colors: { default: "#7fa650", shift: "#5b8bb4", ctrl: "#e5862a", alt: "#c93430", meta: "#1baca6" },
-          color: "#7fa650",
-          secondaryColor: "#5b8bb4",
-          tertiaryColor: "#e5862a",
+          colors: { default: "#7fb04a", shift: "#6f98c2", ctrl: "#f59a4c", alt: "#e8402e", meta: "#1fb5a0" },
+          color: "#7fb04a",
+          secondaryColor: "#6f98c2",
+          tertiaryColor: "#f59a4c",
           arrowLengthReducerDenominator: 8,
           sameTargetArrowLengthReducerDenominator: 4,
           arrowWidthDenominator: 6,
