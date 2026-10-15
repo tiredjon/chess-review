@@ -47,6 +47,89 @@ body {
   font-feature-settings: "tnum" 1;
 }
 
+/* --- Анимации разбора (как в Game Review Chess.com) ---
+   Фигура едет 200 мс (react-chessboard); подсветка клеток, стрелки и значок класса
+   появляются, когда она доехала. */
+.cc-highlight {
+  animation: cc-fade 160ms ease-out 120ms both;
+}
+.cc-badge {
+  animation: cc-pop 380ms cubic-bezier(0.34, 1.56, 0.64, 1) 170ms both;
+}
+.cc-badge-shine svg {
+  animation: cc-glow 900ms ease-out 550ms 2;
+}
+.cc-board svg path[marker-end] {
+  animation: cc-arrow 220ms ease-out both;
+}
+.cc-bubble {
+  animation: cc-bubble-in 240ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.cc-slide-in {
+  animation: cc-slide-in 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.cc-rise {
+  animation: cc-rise 320ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.cc-graph-draw {
+  animation: cc-draw 1100ms cubic-bezier(0.4, 0, 0.2, 1) 150ms both;
+}
+
+@keyframes cc-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes cc-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes cc-glow {
+  50% {
+    filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.9));
+  }
+}
+@keyframes cc-arrow {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 0.85;
+  }
+}
+@keyframes cc-bubble-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+}
+/* Без transform: Recharts меряет положение графика на каждом кадре и зацикливается. */
+@keyframes cc-slide-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes cc-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes cc-draw {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
 :focus-visible {
   outline: 2px solid var(--green);
   outline-offset: 2px;
@@ -57,6 +140,7 @@ body {
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
     transition-duration: 0.01ms !important;
   }
 }

@@ -6,7 +6,7 @@ import { api, ApiError } from "@/lib/api";
 /** Реплика «тренера»: значок слева, облачко с текстом справа. */
 export function CoachBubble({ children, busy = false }: { children: ReactNode; busy?: boolean }) {
   return (
-    <div className="flex items-start gap-3">
+    <div className="cc-bubble flex items-start gap-3">
       <span
         aria-hidden
         className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-raised text-[30px] leading-none text-green"

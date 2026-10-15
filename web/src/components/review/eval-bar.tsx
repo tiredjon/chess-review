@@ -19,7 +19,7 @@ export function EvalBar({ evaluation, orientation }: { evaluation: WhiteEval | n
       className="relative h-full w-full overflow-hidden rounded-[3px] bg-[var(--graph-black)]"
     >
       <div
-        className="absolute inset-x-0 bg-[var(--graph-white)] transition-[height] duration-300 ease-out"
+        className="absolute inset-x-0 bg-[var(--graph-white)] transition-[height] duration-700 ease-[cubic-bezier(0.4,0,0.2,1)]"
         style={{ height: `${white}%`, [whiteAtBottom ? "bottom" : "top"]: 0 }}
       />
       {evaluation && (

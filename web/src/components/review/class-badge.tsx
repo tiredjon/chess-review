@@ -43,7 +43,16 @@ const GLYPHS: Record<ClassKey, ReactNode> = {
 };
 
 /** Круглый значок класса хода: на доске, в списке ходов и в таблицах. */
-export function ClassBadge({ value, size = 18, title = true }: { value: ClassKey; size?: number; title?: boolean }) {
+export function ClassBadge({
+  value,
+  size = 18,
+  title = true,
+}: {
+  value: ClassKey;
+  /** Пиксели или CSS-длина («100%» — по ширине родителя). */
+  size?: number | string;
+  title?: boolean;
+}) {
   const meta = CLASS_META[value];
   return (
     <svg
@@ -51,8 +60,8 @@ export function ClassBadge({ value, size = 18, title = true }: { value: ClassKey
       aria-label={meta.label}
       viewBox="0 0 24 24"
       width={size}
-      height={size}
-      className="shrink-0"
+      height={typeof size === "number" ? size : undefined}
+      className="block shrink-0"
     >
       {title && <title>{meta.label}</title>}
       <circle cx="12" cy="12" r="12" fill={meta.color} />

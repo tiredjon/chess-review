@@ -11,3 +11,6 @@ __pycache__/
 .coverage
 coverage.xml
 htmlcov/
+
+# Тема Chess.com (фигуры, доска) — только локально, для личного использования, в git не идёт
+web/public/chesscom/

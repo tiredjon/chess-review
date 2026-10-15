@@ -17,6 +17,7 @@ export function EvalGraph({
   cursor,
   onSelect,
   compact = false,
+  draw = false,
 }: {
   evals: WhiteEval[];
   plies: Ply[];
@@ -24,6 +25,8 @@ export function EvalGraph({
   onSelect: (index: number) => void;
   /** Пониже — в режиме разбора по ходам. */
   compact?: boolean;
+  /** Прорисовать график слева направо при появлении (обзор партии). */
+  draw?: boolean;
 }) {
   const data: Point[] = evals.map((evaluation, index) => {
     const ply = index > 0 ? plies[index - 1] : null;
@@ -38,7 +41,7 @@ export function EvalGraph({
   });
 
   return (
-    <div className="shrink-0 overflow-hidden rounded-md bg-[var(--graph-black)]">
+    <div className={`shrink-0 overflow-hidden rounded-md bg-[var(--graph-black)] ${draw ? "cc-graph-draw" : ""}`}>
       <AreaChart
         data={data}
         responsive

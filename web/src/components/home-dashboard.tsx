@@ -7,6 +7,7 @@ import { api, ApiError } from "@/lib/api";
 import { pliesFromPgn, START_FEN } from "@/lib/chess";
 import { gameHref, opposite, outcome, OUTCOME_LABELS, playerName } from "@/lib/format";
 import type { Color, GameOut } from "@/lib/types";
+import { useBoardTheme } from "./board-theme";
 import { EmptyGames } from "./games-list";
 import { GamesTable, GamesTableSkeleton } from "./games-table";
 import { ImportCard } from "./import-form";
@@ -72,6 +73,7 @@ export function HomeDashboard() {
 /** Карточка последней партии: финальная позиция, соперник, кнопка разбора. */
 function RecentGame({ game }: { game: GameOut }) {
   const [fen, setFen] = useState<string | null>(null);
+  const boardTheme = useBoardTheme();
   const me: Color = game.user_color ?? "white";
   const result = outcome(game);
 
@@ -103,8 +105,7 @@ function RecentGame({ game }: { game: GameOut }) {
               showNotation: false,
               allowDragging: false,
               showAnimations: false,
-              darkSquareStyle: { backgroundColor: "var(--board-dark)" },
-              lightSquareStyle: { backgroundColor: "var(--board-light)" },
+              ...boardTheme,
             }}
           />
         )}

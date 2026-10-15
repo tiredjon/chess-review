@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { defaultPieces } from "react-chessboard";
 import { CLASS_META, displayClass, NOTABLE } from "@/lib/classes";
 import type { Ply } from "@/lib/chess";
+import type { PieceCode } from "@/lib/theme";
 import type { Color } from "@/lib/types";
+import { PieceImage } from "../board-theme";
 import { ClassBadge } from "./class-badge";
 
 type Row = { fullmove: number; white: Ply | null; black: Ply | null };
@@ -27,23 +28,19 @@ function rows(plies: Ply[]): Row[] {
 }
 
 const PIECE_STYLE = {
-  white: { width: "1.3em", height: "1.3em" },
+  white: {},
   // Чёрная фигура на тёмной панели — со светлым контуром.
-  black: {
-    width: "1.3em",
-    height: "1.3em",
-    filter: "drop-shadow(0 0 0.7px #e8e3db) drop-shadow(0 0 0.7px #e8e3db)",
-  },
+  black: { filter: "drop-shadow(0 0 0.7px #e8e3db) drop-shadow(0 0 0.7px #e8e3db)" },
 };
 
 /** Фигурная нотация: буква фигуры заменяется её изображением (те же фигуры, что на доске). */
 export function Figurine({ san, color }: { san: string; color: Color }) {
-  const render = "KQRBN".includes(san[0]) ? defaultPieces[`${color === "white" ? "w" : "b"}${san[0]}`] : undefined;
-  if (!render) return <>{san}</>;
+  if (!"KQRBN".includes(san[0])) return <>{san}</>;
+  const code = `${color === "white" ? "w" : "b"}${san[0]}` as PieceCode;
   return (
     <>
-      <span aria-hidden className="mr-px inline-block align-[-0.3em]">
-        {render({ svgStyle: PIECE_STYLE[color] })}
+      <span aria-hidden className="mr-px inline-block h-[1.3em] w-[1.3em] align-[-0.3em]">
+        <PieceImage code={code} style={PIECE_STYLE[color]} />
       </span>
       <span className="sr-only">{san[0]}</span>
       {san.slice(1)}

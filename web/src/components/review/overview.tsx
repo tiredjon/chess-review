@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { CLASS_META, CLASS_ORDER, displayClass, PHASE_LABELS, phaseClass, type ClassKey } from "@/lib/classes";
 import type { AnalysisOut, Color, GameDetail, Phase } from "@/lib/types";
 import { PlayerAvatar } from "../player-avatar";
@@ -39,7 +42,7 @@ export function Overview({ game, analysis }: { game: GameDetail; analysis: Analy
               color === "white" ? "bg-white text-[#2c2925]" : "col-start-4 bg-raised text-ink"
             }`}
           >
-            {accuracy[color]?.toFixed(1) ?? "—"}
+            {accuracy[color] == null ? "—" : <CountUp value={accuracy[color]} />}
           </span>
         ))}
       </div>
@@ -47,10 +50,10 @@ export function Overview({ game, analysis }: { game: GameDetail; analysis: Analy
       <hr className="my-2 border-line" />
 
       <ul aria-label="Ходы по классам">
-        {CLASS_ORDER.map((key) => {
+        {CLASS_ORDER.map((key, i) => {
           const meta = CLASS_META[key];
           return (
-            <li key={key} className={`${ROW} py-1.5`}>
+            <li key={key} className={`${ROW} cc-rise py-1.5`} style={{ animationDelay: `${150 + i * 45}ms` }}>
               <span className="text-soft">{meta.plural}</span>
               <span className="text-center" style={{ color: meta.color }}>
                 {counts.white.get(key) ?? 0}
@@ -95,4 +98,27 @@ export function Overview({ game, analysis }: { game: GameDetail; analysis: Analy
       </dl>
     </div>
   );
+}
+
+const COUNT_MS = 900;
+
+const reducedMotion = () =>
+  typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/** Число, «набегающее» от 0 до значения (как точность в обзоре Chess.com). */
+function CountUp({ value }: { value: number }) {
+  const [shown, setShown] = useState(() => (reducedMotion() ? value : 0));
+  useEffect(() => {
+    if (reducedMotion()) return;
+    let frame = 0;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / COUNT_MS);
+      setShown(value * (1 - (1 - t) ** 3));
+      if (t < 1) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [value]);
+  return <>{shown.toFixed(1)}</>;
 }

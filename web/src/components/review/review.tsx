@@ -42,10 +42,12 @@ const alpha = (hex: string, value: string) => `${hex}${value}`;
 function moveMarks(ply: Ply): BoardMarks {
   const { from, to } = uciSquares(ply.uci);
   const move = ply.move;
-  if (!move) return { arrows: [], highlights: { [from]: LAST_MOVE, [to]: LAST_MOVE }, badge: null };
+  const key = `ply-${ply.index}`;
+  if (!move) return { key, arrows: [], highlights: { [from]: LAST_MOVE, [to]: LAST_MOVE }, badge: null };
   const value = displayClass(move);
   const color = CLASS_META[value].color;
   const marks: BoardMarks = {
+    key,
     arrows: [],
     highlights: { [from]: alpha(color, "88"), [to]: alpha(color, "bb") },
     badge: { square: to, value },
@@ -259,6 +261,7 @@ export function Review({
       highlights[to] = LINE_MOVE;
     }
     marks = {
+      key: `line-${mode.baseFen}-${mode.step}`,
       arrows: next && !effectivePlaying ? [{ startSquare: next.uci.slice(0, 2), endSquare: next.uci.slice(2, 4), color: "rgba(91,139,180,0.75)" }] : [],
       highlights,
       badge: null,
@@ -268,10 +271,16 @@ export function Review({
     fen = mode.fen;
     const ply = plies[mode.plyIndex];
     evaluation = evals[mode.plyIndex] ?? null;
-    marks = { arrows: [], highlights: mode.selected ? { [mode.selected]: SELECTED } : {}, badge: null };
+    marks = {
+      key: `retry-${mode.plyIndex}-${mode.selected ?? ""}`,
+      arrows: [],
+      highlights: mode.selected ? { [mode.selected]: SELECTED } : {},
+      badge: null,
+    };
     if (mode.status === "solved" && ply.move?.best_uci) {
       const { from, to } = uciSquares(ply.move.best_uci);
       marks = {
+        key: `retry-${mode.plyIndex}-solved`,
         arrows: [],
         highlights: { [from]: alpha(CLASS_META.best.color, "88"), [to]: alpha(CLASS_META.best.color, "bb") },
         badge: { square: to, value: "best" },
@@ -318,6 +327,7 @@ export function Review({
   } else {
     panel = (
       <MovePanel
+        key={current?.index ?? "start"}
         ply={current}
         explanation={current?.move ? explanations[current.move.id] : undefined}
         onShowLine={showLine}
@@ -391,9 +401,9 @@ export function Review({
 
         {showOverview ? (
           <>
-            <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
+            <div key="overview" className="cc-slide-in flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
               {overview}
-              <EvalGraph evals={evals} plies={plies} cursor={cursor} onSelect={goTo} />
+              <EvalGraph evals={evals} plies={plies} cursor={cursor} onSelect={goTo} draw />
             </div>
             {/* На телефоне главная кнопка и навигация липнут к низу экрана. */}
             <div className="sticky bottom-0 rounded-b-xl border-t border-line bg-panel p-4 lg:static">
@@ -405,7 +415,7 @@ export function Review({
         ) : (
           <>
             {/* Верх (ход, объяснение, график) уступает место списку ходов и прокручивается сам. */}
-            <div className="flex min-h-0 flex-1 flex-col">
+            <div key="moves" className="cc-slide-in flex min-h-0 flex-1 flex-col">
               <div className="flex flex-col gap-3 p-4 pb-3 lg:min-h-0 lg:shrink lg:overflow-y-auto">
                 {analysed || mode.kind !== "game" ? panel : status}
                 {analysed && <EvalGraph evals={evals} plies={plies} cursor={cursor} onSelect={goTo} compact />}
