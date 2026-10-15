@@ -72,3 +72,12 @@ def best_capture_gain(board: chess.Board, square: chess.Square) -> int:
     или все невыгодны)."""
     captures = board.generate_legal_captures(to_mask=chess.BB_SQUARES[square])
     return max([0, *(see(board, move) for move in captures)])
+
+
+def capture_gain(board: chess.Board, by: chess.Color, square: chess.Square) -> int:
+    """Как `best_capture_gain`, но за сторону `by`, даже если сейчас ход соперника."""
+    if board.turn != by:
+        board = board.copy(stack=False)
+        board.turn = by
+        board.ep_square = None
+    return best_capture_gain(board, square)

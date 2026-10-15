@@ -19,6 +19,7 @@ from app.engine.cache import MemoryEvalCache
 from app.engine.pool import EnginePool
 from app.review.classify import MoveClassification, classify_game
 from app.review.evaluate import GameEval, MoveEval, evaluate_game, replay
+from app.review.motifs.context import MoveMotifs, game_motifs
 from app.review.openings import Opening, default_openings
 from app.review.types import MoveClass, Phase
 from app.review.winprob import format_score
@@ -77,10 +78,27 @@ def _class_label(classification: MoveClassification) -> str:
     return f"{label}, упущено" if classification.is_miss else label
 
 
+ERROR_CLASSES = frozenset({MoveClass.INACCURACY, MoveClass.MISTAKE, MoveClass.BLUNDER})
+
+
+def _motifs_label(motifs: MoveMotifs, classification: MoveClassification) -> str:
+    """Мотивы хода; упущенные — у не лучших ходов, опровержение — у ошибок."""
+    parts = []
+    if motifs.played:
+        parts.append(", ".join(m.type for m in motifs.played))
+    if motifs.missed:
+        parts.append("упущено: " + ", ".join(m.type for m in motifs.missed))
+    if motifs.refutation and classification.move_class in ERROR_CLASSES:
+        parts.append("наказание: " + ", ".join(m.type for m in motifs.refutation))
+    return "; ".join(parts)
+
+
 def print_report(
     game: chess.pgn.Game,
     result: GameEval,
     classes: Sequence[MoveClassification],
+    motifs: Sequence[MoveMotifs],
+    *,
     opening: Opening | None,
     out: TextIO,
 ) -> None:
@@ -91,15 +109,15 @@ def print_report(
     out.write(f"Дебют: {f'{opening.eco} {opening.name}' if opening else '—'}\n\n")
     out.write(
         f"{'Ход':<14}{'Оценка':>8}  {'Win% до→после':>15}{'Δ':>7}{'Точн.':>7}  "
-        f"{'Фаза':<13}{'Класс':<22}{'Лучше':<8}\n"
+        f"{'Фаза':<13}{'Класс':<22}{'Лучше':<8}Мотивы\n"
     )
-    for move, classification in zip(result.moves, classes, strict=True):
+    for move, classification, move_motifs in zip(result.moves, classes, motifs, strict=True):
         delta = max(0.0, move.win_before - move.win_after)
         out.write(
             f"{_move_label(move):<14}{_white_pov(move):>8}  "
             f"{move.win_before:>6.1f} → {move.win_after:>5.1f}{delta:>7.1f}{move.accuracy:>7.1f}  "
             f"{PHASE_LABELS[move.phase]:<13}{_class_label(classification):<22}"
-            f"{_best_san(move):<8}\n"
+            f"{_best_san(move):<8}{_motifs_label(move_motifs, classification)}\n"
         )
     out.write("\nТочность:\n")
     for color in chess.COLORS[::-1]:
@@ -143,7 +161,15 @@ async def analyze(args: argparse.Namespace, out: TextIO) -> None:
 
     book = default_openings()
     result = evaluate_game(game.board(), moves, evals, book_plies=book.book_plies(positions))
-    print_report(game, result, classify_game(result.moves, book), book.identify(positions), out)
+    classes = classify_game(result.moves, book)
+    print_report(
+        game,
+        result,
+        classes,
+        game_motifs(result.moves),
+        opening=book.identify(positions),
+        out=out,
+    )
     out.write(
         f"\n{pool.version}, глубина {args.depth}, MultiPV {args.multipv}, "
         f"процессов {pool.size}: {elapsed:.1f} с\n"
