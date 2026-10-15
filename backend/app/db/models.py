@@ -90,6 +90,9 @@ class Game(Base):
     user_color: Mapped[Color | None] = mapped_column(str_enum(Color, "color"))
     opening_eco: Mapped[str | None] = mapped_column(String(8))
     opening_name: Mapped[str | None] = mapped_column(String(255))
+    # Точность по версии площадки (Chess.com — у партий, разобранных там).
+    source_white_accuracy: Mapped[float | None]
+    source_black_accuracy: Mapped[float | None]
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
     user: Mapped[User] = relationship(back_populates="games")
@@ -110,8 +113,12 @@ class Analysis(Base):
     )
     depth: Mapped[int]
     engine_version: Mapped[str | None] = mapped_column(String(64))
+    # Точность по формуле Lichess (SPEC §4.3–4.4).
     white_accuracy: Mapped[float | None]
     black_accuracy: Mapped[float | None]
+    # Точность «как у Chess.com» — приближение их формулы (`review/cc_accuracy.py`).
+    cc_white_accuracy: Mapped[float | None]
+    cc_black_accuracy: Mapped[float | None]
     phase_accuracy: Mapped[dict[str, Any] | None]
     error: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())

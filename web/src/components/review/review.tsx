@@ -5,6 +5,7 @@ import { api, ApiError } from "@/lib/api";
 import { CLASS_META, displayClass } from "@/lib/classes";
 import { boardMoveUci, lineFens, sideToMove, uciSquares, type Ply } from "@/lib/chess";
 import { lineEval, positionEvals, type WhiteEval } from "@/lib/eval";
+import { threats } from "@/lib/threats";
 import { playMove, playSound, preloadSounds, toggleMuted, useSoundMuted } from "@/lib/sounds";
 import type { Color, LineMove } from "@/lib/types";
 import { Board, NO_MARKS, type BoardMarks } from "./board";
@@ -40,28 +41,33 @@ const SELECTED = "rgba(127, 176, 74, 0.6)";
 
 const alpha = (hex: string, value: string) => `${hex}${value}`;
 
+const BEST_ARROW = "rgba(92, 168, 222, 0.85)";
+const THREAT_ARROW = "rgba(232, 72, 56, 0.8)";
+
 function moveMarks(ply: Ply): BoardMarks {
   const { from, to } = uciSquares(ply.uci);
   const move = ply.move;
   const key = `ply-${ply.index}`;
-  if (!move) return { key, arrows: [], highlights: { [from]: LAST_MOVE, [to]: LAST_MOVE }, badge: null };
+  // Угрозы сделавшего ход — красными стрелками (как «Показывать угрозы» в Chess.com).
+  const arrows = threats(ply.fenAfter, ply.color).map((threat) => ({
+    startSquare: threat.from,
+    endSquare: threat.to,
+    color: THREAT_ARROW,
+  }));
+  if (!move) return { key, arrows, highlights: { [from]: LAST_MOVE, [to]: LAST_MOVE }, badge: null };
   const value = displayClass(move);
   const color = CLASS_META[value].color;
-  const marks: BoardMarks = {
+  // Лучший ход — синей стрелкой, если сыграно другое; сыгранный виден по подсветке и значку.
+  if (move.best_uci && move.best_uci !== move.uci && !["book", "forced"].includes(move.class)) {
+    const best = uciSquares(move.best_uci);
+    arrows.unshift({ startSquare: best.from, endSquare: best.to, color: BEST_ARROW });
+  }
+  return {
     key,
-    arrows: [],
+    arrows,
     highlights: { [from]: alpha(color, "88"), [to]: alpha(color, "bb") },
     badge: { square: to, value },
   };
-  // Лучший ход — зелёной стрелкой, сыгранный — стрелкой цвета класса (если они разные).
-  if (move.best_uci && move.best_uci !== move.uci && !["book", "forced"].includes(move.class)) {
-    const best = uciSquares(move.best_uci);
-    marks.arrows = [
-      { startSquare: from, endSquare: to, color: alpha(color, "cc") },
-      { startSquare: best.from, endSquare: best.to, color: alpha(CLASS_META.best.color, "dd") },
-    ];
-  }
-  return marks;
 }
 
 function isTyping(target: EventTarget | null) {

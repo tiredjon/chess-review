@@ -24,8 +24,12 @@ export type AnalysisSummary = {
   id: string;
   status: JobStatus;
   depth: number;
+  /** Точность по формуле Lichess. */
   white_accuracy: number | null;
   black_accuracy: number | null;
+  /** Точность «как у Chess.com» — приближение их формулы (backend/app/review/cc_accuracy.py). */
+  cc_white_accuracy: number | null;
+  cc_black_accuracy: number | null;
   created_at: string;
   finished_at: string | null;
 };
@@ -102,6 +106,11 @@ export type GameOut = {
   user_color: Color | null;
   opening_eco: string | null;
   opening_name: string | null;
+  /** Точность по версии Chess.com — у партий, разобранных там. */
+  source_white_accuracy: number | null;
+  source_black_accuracy: number | null;
+  /** Рейтинг партии по точности (как «Game Rating» Chess.com); null — точности нет. */
+  game_rating: { white: number | null; black: number | null } | null;
   created_at: string;
   analysis: AnalysisSummary | null;
 };

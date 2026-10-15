@@ -115,6 +115,8 @@ def accuracy_fields(review: GameReview) -> dict[str, Any]:
     return {
         "white_accuracy": review.accuracy[chess.WHITE],
         "black_accuracy": review.accuracy[chess.BLACK],
+        "cc_white_accuracy": review.cc_accuracy[chess.WHITE],
+        "cc_black_accuracy": review.cc_accuracy[chess.BLACK],
         "phase_accuracy": {
             COLOR_NAMES[color]: {phase.value: value for phase, value in phases.items()}
             for color, phases in review.phase_accuracy.items()

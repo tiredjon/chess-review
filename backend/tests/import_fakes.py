@@ -95,6 +95,7 @@ class FakeChessCom:
         white: str | None = None,
         black: str = "opponent",
         rules: str = "chess",
+        accuracies: dict[str, float] | None = None,
     ) -> None:
         months = self.users.setdefault(username.lower(), {})
         white = white or username
@@ -107,6 +108,7 @@ class FakeChessCom:
                 "pgn": make_pgn(white, black, date=f"{year}.{month:02d}.01"),
                 "white": {"username": white},
                 "black": {"username": black},
+                **({"accuracies": accuracies} if accuracies is not None else {}),
             }
         )
 

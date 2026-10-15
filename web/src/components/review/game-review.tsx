@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { shownAccuracy } from "@/lib/accuracy";
 import { api, ApiError } from "@/lib/api";
 import { pliesFromMoves, pliesFromPgn, START_FEN } from "@/lib/chess";
 import {
@@ -129,7 +130,7 @@ function LoadedGame({
 function PlayerBar({ game, color }: { game: GameDetail; color: Color }) {
   const name = playerName(game, color);
   const elo = playerElo(game, color);
-  const accuracy = color === "white" ? game.analysis?.white_accuracy : game.analysis?.black_accuracy;
+  const accuracy = shownAccuracy(game, color);
   return (
     <div className="flex min-h-10 items-center gap-2.5">
       <PlayerAvatar name={name} color={color} size={36} />
@@ -137,14 +138,14 @@ function PlayerBar({ game, color }: { game: GameDetail; color: Color }) {
         <span className="font-bold">{name}</span>
         {elo && <span className="ml-1.5 font-semibold text-muted">({elo})</span>}
       </p>
-      {game.analysis?.status === "done" && accuracy != null && (
+      {accuracy && (
         <span
-          title="Точность"
+          title={accuracy.official ? "Точность по данным Chess.com" : "Точность"}
           className={`rounded-md px-2.5 py-1 text-sm font-extrabold ${
             color === "white" ? "bg-white text-[#2c2925]" : "bg-sunken text-ink"
           }`}
         >
-          {accuracy.toFixed(1)}
+          {accuracy.value.toFixed(1)}
         </span>
       )}
     </div>

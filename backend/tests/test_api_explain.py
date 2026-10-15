@@ -235,3 +235,24 @@ async def test_summary_and_batch_need_finished_analysis(
     assert summary.status_code == 409
     assert batch.status_code == 409
     assert missing.status_code == 404
+
+
+async def test_summary_uses_shown_accuracy(
+    client: AsyncClient, db: Database, review: tuple[uuid.UUID, dict[str, int]]
+) -> None:
+    # Как на плашках: официальная точность Chess.com, иначе наша «как у Chess.com».
+    analysis_id, _ = review
+    async with db.sessionmaker() as session:
+        analysis = await session.get(Analysis, analysis_id)
+        assert analysis is not None
+        analysis.cc_black_accuracy = 55.55
+        game = await session.get(Game, analysis.game_id)
+        assert game is not None
+        game.source_white_accuracy = 77.23
+        await session.commit()
+
+    response = await client.get(f"/api/v1/analyses/{analysis_id}/summary")
+
+    first = response.json()["text"].splitlines()[0]
+    assert "(белые) — 77.2%" in first
+    assert "(чёрные) — 55.5%" in first or "(чёрные) — 55.6%" in first

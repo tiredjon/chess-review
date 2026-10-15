@@ -13,6 +13,7 @@ from typing import Protocol
 
 import chess
 
+from app.review.cc_accuracy import side_accuracy
 from app.review.classify import MoveClassification, classify_game
 from app.review.evaluate import MoveEval, evaluate_game, replay
 from app.review.motifs.context import MoveMotifs, game_motifs
@@ -49,6 +50,8 @@ class GameReview:
     accuracy: dict[chess.Color, float | None]
     phase_accuracy: dict[chess.Color, dict[Phase, float | None]]
     opening: Opening | None
+    # Точность «как у Chess.com» (`cc_accuracy.py`).
+    cc_accuracy: dict[chess.Color, float | None]
 
 
 def review_game(
@@ -75,6 +78,12 @@ def review_game(
         accuracy=game.accuracy,
         phase_accuracy=game.phase_accuracy,
         opening=book.identify(positions),
+        cc_accuracy={
+            color: side_accuracy(
+                [(m.eval_before, m.eval_after) for m in game.moves if m.color == color]
+            )
+            for color in chess.COLORS
+        },
     )
 
 

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { shownAccuracy } from "@/lib/accuracy";
 import { formatDate, formatTimeControl, gameHref, outcome, OUTCOME_LABELS, score, SOURCE_NAMES } from "@/lib/format";
 import type { Color, GameOut } from "@/lib/types";
 import { ColorSquare } from "./player-avatar";
@@ -85,6 +86,19 @@ function Player({ game, color }: { game: GameOut; color: Color }) {
 
 function Accuracy({ game }: { game: GameOut }) {
   const analysis = game.analysis;
+  const white = shownAccuracy(game, "white");
+  const black = shownAccuracy(game, "black");
+  if (white && black) {
+    return (
+      <span
+        className="flex flex-col text-center font-semibold leading-6 text-soft"
+        title={white.official ? "Точность по данным Chess.com" : "Точность"}
+      >
+        <span>{white.value.toFixed(1)}</span>
+        <span>{black.value.toFixed(1)}</span>
+      </span>
+    );
+  }
   if (!analysis || analysis.status === "failed") {
     return (
       <span className="rounded-md bg-raised px-2.5 py-1.5 text-sm font-bold text-soft shadow-[0_2px_0_0_rgba(0,0,0,0.35)]">
@@ -92,13 +106,7 @@ function Accuracy({ game }: { game: GameOut }) {
       </span>
     );
   }
-  if (analysis.status !== "done") return <span className="text-xs font-semibold text-muted">Анализ…</span>;
-  return (
-    <span className="flex flex-col text-center font-semibold leading-6 text-soft">
-      <span>{analysis.white_accuracy?.toFixed(1) ?? "—"}</span>
-      <span>{analysis.black_accuracy?.toFixed(1) ?? "—"}</span>
-    </span>
-  );
+  return <span className="text-xs font-semibold text-muted">Анализ…</span>;
 }
 
 function OutcomeIcon({ outcome: value }: { outcome: NonNullable<ReturnType<typeof outcome>> }) {

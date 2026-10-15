@@ -146,6 +146,8 @@ async def test_worker_saves_review(
     assert result["started_at"] is not None
     assert result["finished_at"] is not None
     assert result["white_accuracy"] is not None
+    assert 0 <= result["cc_white_accuracy"] <= 100
+    assert 0 <= result["cc_black_accuracy"] <= 100
     assert set(result["phase_accuracy"]) == {"white", "black"}
     assert result["progress"] is None
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { shownAccuracy } from "@/lib/accuracy";
 import { CLASS_META, CLASS_ORDER, displayClass, PHASE_LABELS, phaseClass, type ClassKey } from "@/lib/classes";
 import type { AnalysisOut, Color, GameDetail, Phase } from "@/lib/types";
 import { PlayerAvatar } from "../player-avatar";
@@ -16,7 +17,8 @@ export function Overview({ game, analysis }: { game: GameDetail; analysis: Analy
     const value = displayClass(move);
     counts[move.color].set(value, (counts[move.color].get(value) ?? 0) + 1);
   }
-  const accuracy = { white: analysis.white_accuracy, black: analysis.black_accuracy };
+  const accuracy = { white: shownAccuracy(game, "white"), black: shownAccuracy(game, "black") };
+  const official = accuracy.white?.official && accuracy.black?.official;
   const name = { white: game.white, black: game.black };
 
   return (
@@ -42,9 +44,14 @@ export function Overview({ game, analysis }: { game: GameDetail; analysis: Analy
               color === "white" ? "bg-white text-[#2c2925]" : "col-start-4 bg-raised text-ink"
             }`}
           >
-            {accuracy[color] == null ? "—" : <CountUp value={accuracy[color]} />}
+            {accuracy[color] == null ? "—" : <CountUp value={accuracy[color].value} />}
           </span>
         ))}
+        {accuracy.white && (
+          <span className="col-span-4 pt-1.5 text-xs font-semibold text-muted">
+            {official ? "по данным Chess.com" : "оценка по формуле, близкой к Chess.com"}
+          </span>
+        )}
       </div>
 
       <hr className="my-2 border-line" />
@@ -70,6 +77,23 @@ export function Overview({ game, analysis }: { game: GameDetail; analysis: Analy
       </ul>
 
       <hr className="my-2 border-line" />
+
+      {game.game_rating && (
+        <div className={`${ROW} py-1.5`} title="Какой рейтинг в среднем играет с такой точностью">
+          <span className="text-soft">Рейтинг партии</span>
+          {COLORS.map((color) => (
+            <span
+              key={color}
+              className={`justify-self-center rounded-lg px-3 py-2 text-lg font-extrabold ${
+                color === "white" ? "bg-white text-[#2c2925]" : "col-start-4 bg-raised text-ink"
+              }`}
+            >
+              {game.game_rating?.[color] ?? "—"}
+            </span>
+          ))}
+        </div>
+      )}
+
 
       <dl>
         {(Object.keys(PHASE_LABELS) as Phase[]).map((phase) => (

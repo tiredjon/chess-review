@@ -18,6 +18,9 @@ class SourceGame:
     pgn: str
     # Классические шахматы; варианты (Chess960, crazyhouse, …) пропускаются.
     standard: bool = True
+    # Точность белых и чёрных по версии площадки, если она есть.
+    white_accuracy: float | None = None
+    black_accuracy: float | None = None
 
 
 def convert(game: SourceGame, username: str) -> ImportedGame | None:
@@ -31,7 +34,11 @@ def convert(game: SourceGame, username: str) -> ImportedGame | None:
     imported = to_imported(parsed)
     # Цвет — по нику, с которого импортируем, а не по профилю пользователя.
     return dataclasses.replace(
-        imported, external_id=game.external_id, user_color=user_color(imported, [username])
+        imported,
+        external_id=game.external_id,
+        user_color=user_color(imported, [username]),
+        source_white_accuracy=game.white_accuracy,
+        source_black_accuracy=game.black_accuracy,
     )
 
 

@@ -91,6 +91,13 @@ def _external_id(row: dict[str, Any]) -> str | None:
     return str(uuid) if uuid else None
 
 
+def _accuracy(row: dict[str, Any], color: str) -> float | None:
+    """Точность из `accuracies` — есть только у партий, разобранных на Chess.com."""
+    accuracies = row.get("accuracies")
+    value = accuracies.get(color) if isinstance(accuracies, dict) else None
+    return float(value) if isinstance(value, int | float) and 0 <= value <= 100 else None
+
+
 def _source_game(row: dict[str, Any]) -> SourceGame | None:
     external_id = _external_id(row)
     if external_id is None:
@@ -99,4 +106,6 @@ def _source_game(row: dict[str, Any]) -> SourceGame | None:
         external_id=external_id,
         pgn=str(row.get("pgn", "")),
         standard=row.get("rules", "chess") == "chess",
+        white_accuracy=_accuracy(row, "white"),
+        black_accuracy=_accuracy(row, "black"),
     )

@@ -84,6 +84,12 @@ async def explain_analysis(
     ]
 
 
+def _shown_accuracy(*candidates: float | None) -> float | None:
+    """Та же точность, что на плашках (`GameOut.accuracy_of`): официальная Chess.com,
+    иначе наша «как у Chess.com», иначе — по формуле Lichess."""
+    return next((value for value in candidates if value is not None), None)
+
+
 @router.get("/analyses/{analysis_id}/summary")
 async def analysis_summary(
     analysis: OwnedAnalysis,
@@ -105,8 +111,12 @@ async def analysis_summary(
         result=game.result,
         opening_name=game.opening_name,
         user_color=game.user_color.value if game.user_color else None,
-        white_accuracy=analysis.white_accuracy,
-        black_accuracy=analysis.black_accuracy,
+        white_accuracy=_shown_accuracy(
+            game.source_white_accuracy, analysis.cc_white_accuracy, analysis.white_accuracy
+        ),
+        black_accuracy=_shown_accuracy(
+            game.source_black_accuracy, analysis.cc_black_accuracy, analysis.black_accuracy
+        ),
         phase_accuracy=phase_accuracy,
     )
     await session.close()

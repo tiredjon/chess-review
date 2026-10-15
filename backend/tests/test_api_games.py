@@ -8,8 +8,9 @@ from httpx import AsyncClient
 from sqlalchemy import update
 
 from app.core.config import Settings
-from app.db.models import User
+from app.db.models import Game, User
 from app.db.session import Database
+from app.review.game_rating import game_rating
 
 pytestmark = pytest.mark.integration
 
@@ -161,3 +162,29 @@ async def test_get_game(client: AsyncClient, db: Database) -> None:
     assert "17. Rd8#" in detail["pgn"]
     assert detail["analysis"] is None
     assert missing.status_code == 404
+
+
+async def test_game_rating_from_accuracy(client: AsyncClient, db: Database) -> None:
+    """Рейтинг партии — по точности Chess.com (если есть) и контролю времени; без точности — нет."""
+    pgn = '[White "A"]\n[Black "B"]\n[Result "1-0"]\n[TimeControl "600"]\n\n1. e4 e5 1-0\n'
+    (game,) = await import_pgn(client, pgn)
+    assert game["game_rating"] is None
+    assert game["source_white_accuracy"] is None
+
+    async with db.sessionmaker() as session:
+        await session.execute(
+            update(Game)
+            .where(Game.id == uuid.UUID(str(game["id"])))
+            .values(source_white_accuracy=77.23, source_black_accuracy=71.37)
+        )
+        await session.commit()
+    detail = (await client.get(f"/api/v1/games/{game['id']}")).json()
+    assert detail["game_rating"] == {
+        "white": game_rating(77.23, "rapid"),
+        "black": game_rating(71.37, "rapid"),
+    }
+    listed = (await client.get("/api/v1/games")).json()["items"]
+    assert (
+        next(item for item in listed if item["id"] == game["id"])["game_rating"]
+        == detail["game_rating"]
+    )

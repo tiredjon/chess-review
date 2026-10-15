@@ -7,6 +7,7 @@ from typing import Annotated, Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 from app.db.models import AnalysisStatus, Color, GameSource, ImportStatus
+from app.review.game_rating import game_rating, time_class
 from app.review.types import MoveClass, Phase
 
 # Вставленный PGN: ~1 МБ — это сотни партий, больше через этот эндпоинт не нужно.
@@ -53,8 +54,12 @@ class AnalysisSummary(ORMModel):
     id: uuid.UUID
     status: AnalysisStatus
     depth: int
+    # Точность по формуле Lichess.
     white_accuracy: float | None
     black_accuracy: float | None
+    # Точность «как у Chess.com» (`review/cc_accuracy.py`); у старых анализов может не быть.
+    cc_white_accuracy: float | None = None
+    cc_black_accuracy: float | None = None
     created_at: datetime
     finished_at: datetime | None
 
@@ -110,6 +115,11 @@ class AnalysisOut(AnalysisSummary):
     moves: list[MoveOut] = []
 
 
+class GameRating(BaseModel):
+    white: int | None
+    black: int | None
+
+
 class GameOut(ORMModel):
     id: uuid.UUID
     source: GameSource
@@ -123,9 +133,42 @@ class GameOut(ORMModel):
     user_color: Color | None
     opening_eco: str | None
     opening_name: str | None
+    # Точность по версии площадки (Chess.com), если там партию разбирали.
+    source_white_accuracy: float | None
+    source_black_accuracy: float | None
     created_at: datetime
     # Последний анализ партии.
     analysis: AnalysisSummary | None = None
+
+    def accuracy_of(self, color: Color) -> float | None:
+        """Точность для показа: официальная Chess.com, иначе наша «как у Chess.com»,
+        иначе (старый анализ) — по формуле Lichess."""
+        white = color == Color.WHITE
+        official = self.source_white_accuracy if white else self.source_black_accuracy
+        if official is not None:
+            return official
+        analysis = self.analysis
+        if analysis is None or analysis.status != AnalysisStatus.DONE:
+            return None
+        cc = analysis.cc_white_accuracy if white else analysis.cc_black_accuracy
+        return (
+            cc
+            if cc is not None
+            else (analysis.white_accuracy if white else analysis.black_accuracy)
+        )
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def game_rating(self) -> GameRating | None:
+        """Рейтинг партии по точности, как «Game Rating» Chess.com; None — точности нет."""
+        white, black = self.accuracy_of(Color.WHITE), self.accuracy_of(Color.BLACK)
+        if white is None and black is None:
+            return None
+        tc = time_class(self.time_control)
+        return GameRating(
+            white=None if white is None else game_rating(white, tc),
+            black=None if black is None else game_rating(black, tc),
+        )
 
 
 class GameDetail(GameOut):

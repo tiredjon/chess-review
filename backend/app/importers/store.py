@@ -3,7 +3,7 @@
 import dataclasses
 from collections.abc import Iterable, Sequence
 
-from sqlalchemy import select
+from sqlalchemy import Boolean, literal_column, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -28,7 +28,9 @@ def _unique(games: Iterable[ImportedGame]) -> list[ImportedGame]:
 async def insert_games(
     session: AsyncSession, user: User, source: GameSource, games: Sequence[ImportedGame]
 ) -> int:
-    """Вставляет партии, которых ещё нет; возвращает число новых. Коммит — за вызывающим."""
+    """Вставляет партии, которых ещё нет; возвращает число новых. У уже сохранённых партий
+    обновляется точность площадки, если она появилась (партию разобрали там позже).
+    Коммит — за вызывающим."""
     unique = _unique(games)
     if not unique:
         return 0
@@ -42,10 +44,19 @@ async def insert_games(
         }
         for game in unique
     ]
-    inserted = await session.execute(
-        insert(Game).values(rows).on_conflict_do_nothing().returning(Game.id)
+    stmt = insert(Game).values(rows)
+    stmt = stmt.on_conflict_do_update(
+        index_elements=[Game.source, Game.external_id, Game.user_id],
+        set_={
+            "source_white_accuracy": stmt.excluded.source_white_accuracy,
+            "source_black_accuracy": stmt.excluded.source_black_accuracy,
+        },
+        where=stmt.excluded.source_white_accuracy.is_not(None)
+        | stmt.excluded.source_black_accuracy.is_not(None),
     )
-    return len(inserted.all())
+    # xmax = 0 — строка вставлена, иначе — обновлена существующая.
+    result = await session.scalars(stmt.returning(literal_column("xmax = 0", Boolean)))
+    return sum(1 for inserted in result if inserted)
 
 
 async def save_games(

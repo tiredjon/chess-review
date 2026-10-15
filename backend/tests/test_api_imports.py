@@ -218,6 +218,45 @@ async def test_chesscom_import(
 
 
 @pytest.mark.usefixtures("clean_user")
+async def test_chesscom_accuracies(
+    client: AsyncClient,
+    db: Database,
+    settings: Settings,
+    ctx: dict[str, Any],
+    chesscom: FakeChessCom,
+) -> None:
+    """Точность Chess.com сохраняется; появившаяся позже (партию разобрали на Chess.com)
+    обновляет уже сохранённую партию и не считается новой."""
+    now = datetime.now(UTC)
+    chesscom.add_game("Bob", now.year, now.month, 1, accuracies={"white": 77.23, "black": 71.37})
+    chesscom.add_game("Bob", now.year, now.month, 2)
+    job = await start(client, "chesscom", username="Bob", months=1)
+    assert await import_games(ctx, job["job_id"]) == "done"
+    games = {g.external_id: g for g in await user_games(db, settings)}
+    assert (games["live/1"].source_white_accuracy, games["live/1"].source_black_accuracy) == (
+        77.23,
+        71.37,
+    )
+    assert games["live/2"].source_white_accuracy is None
+
+    chesscom.users["bob"][(now.year, now.month)][1]["accuracies"] = {"white": 90.0, "black": 60.5}
+    again = await start(client, "chesscom", username="Bob", months=1)
+    assert await import_games(ctx, again["job_id"]) == "done"
+    done = await status_of(client, again)
+    assert (done["fetched"], done["imported"]) == (2, 0)
+    games = {g.external_id: g for g in await user_games(db, settings)}
+    assert (games["live/2"].source_white_accuracy, games["live/2"].source_black_accuracy) == (
+        90.0,
+        60.5,
+    )
+    assert games["live/1"].source_white_accuracy == 77.23
+
+    response = await client.get("/api/v1/games", params={"source": "chesscom"})
+    by_id = {item["id"]: item for item in response.json()["items"]}
+    assert by_id[str(games["live/1"].id)]["source_white_accuracy"] == 77.23
+
+
+@pytest.mark.usefixtures("clean_user")
 async def test_import_keeps_existing_username(
     client: AsyncClient,
     db: Database,
