@@ -10,6 +10,8 @@ from app.core.config import get_settings
 from app.core.logging import configure_logging
 from app.db.session import Database
 from app.engine.pool import EnginePool
+from app.importers.http import make_http_client
+from app.workers import imports
 from app.workers.analysis import TASK_NAME, analyze_game
 
 log = structlog.get_logger(__name__)
@@ -26,18 +28,26 @@ async def startup(ctx: dict[str, Any]) -> None:
     ctx["engine"] = pool
     ctx["engine_version"] = pool.version
     ctx["db"] = Database(settings.database_url)
+    ctx["http"] = make_http_client(settings)
     log.info("worker.startup", engine=pool.version, pool=pool.size)
 
 
 async def shutdown(ctx: dict[str, Any]) -> None:
     await ctx["engine"].close()
     await ctx["db"].dispose()
+    await ctx["http"].aclose()
     log.info("worker.shutdown")
 
 
 class WorkerSettings:
     functions: ClassVar[list[Any]] = [
         func(analyze_game, name=TASK_NAME, timeout=settings.analysis_job_timeout_s, max_tries=3),
+        func(
+            imports.import_games,
+            name=imports.TASK_NAME,
+            timeout=settings.import_job_timeout_s,
+            max_tries=3,
+        ),
     ]
     on_startup = startup
     on_shutdown = shutdown

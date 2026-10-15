@@ -21,6 +21,7 @@ EXPECTED_TABLES = {
     "explanations",
     "position_evals",
     "puzzles",
+    "import_jobs",
 }
 
 

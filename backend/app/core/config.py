@@ -48,6 +48,20 @@ class Settings(BaseSettings):
     # Анализ дольше этого считается зависшим и помечается failed.
     analysis_job_timeout_s: int = Field(default=1800, ge=60)
 
+    # Импорт партий. Lichess отвечает 404 на дефолтные User-Agent библиотек
+    # (curl/…, python-httpx/…) — нужен собственный.
+    import_user_agent: str = "ChessReview/0.1 (self-hosted game review)"
+    lichess_api_url: str = "https://lichess.org"
+    # Необязателен: с токеном Lichess отдаёт партии быстрее (30 в секунду вместо 20).
+    lichess_token: SecretStr | None = None
+    chesscom_api_url: str = "https://api.chess.com"
+    import_http_timeout_s: float = Field(default=30.0, gt=0)
+    # Попыток на запрос при 429 / 5xx / сетевой ошибке.
+    import_max_attempts: int = Field(default=3, ge=1)
+    # Пауза после 429 без Retry-After: Lichess просит ждать минуту.
+    import_rate_limit_wait_s: float = Field(default=60.0, ge=0)
+    import_job_timeout_s: int = Field(default=1800, ge=60)
+
     llm_provider: LLMProviderName = LLMProviderName.NONE
     llm_model: str | None = None
     gemini_api_key: SecretStr | None = None

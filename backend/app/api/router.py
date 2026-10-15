@@ -1,8 +1,9 @@
 from fastapi import APIRouter
 
-from app.api import analyses, games
+from app.api import analyses, games, imports
 
-# Роуты §8; imports, explain, stats, puzzles подключаются в следующих сессиях.
+# Роуты §8; explain, stats, puzzles подключаются в следующих сессиях.
 api_router = APIRouter(prefix="/api/v1")
 api_router.include_router(games.router)
 api_router.include_router(analyses.router)
+api_router.include_router(imports.router)

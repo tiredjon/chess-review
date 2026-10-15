@@ -21,14 +21,17 @@ def user_color(game: ImportedGame, usernames: Iterable[str | None]) -> Color | N
     return Color.WHITE if white else Color.BLACK
 
 
-async def save_games(
+def _unique(games: Iterable[ImportedGame]) -> list[ImportedGame]:
+    return list({game.external_id: game for game in games}.values())
+
+
+async def insert_games(
     session: AsyncSession, user: User, source: GameSource, games: Sequence[ImportedGame]
-) -> list[Game]:
-    """Сохраняет партии и возвращает их строки — новые и уже бывшие — в порядке входа,
-    без повторов. Коммит — за вызывающим."""
-    unique = list({game.external_id: game for game in games}.values())
+) -> int:
+    """Вставляет партии, которых ещё нет; возвращает число новых. Коммит — за вызывающим."""
+    unique = _unique(games)
     if not unique:
-        return []
+        return 0
     usernames = (user.lichess_username, user.chesscom_username)
     rows = [
         {
@@ -39,7 +42,21 @@ async def save_games(
         }
         for game in unique
     ]
-    await session.execute(insert(Game).values(rows).on_conflict_do_nothing())
+    inserted = await session.execute(
+        insert(Game).values(rows).on_conflict_do_nothing().returning(Game.id)
+    )
+    return len(inserted.all())
+
+
+async def save_games(
+    session: AsyncSession, user: User, source: GameSource, games: Sequence[ImportedGame]
+) -> list[Game]:
+    """Сохраняет партии и возвращает их строки — новые и уже бывшие — в порядке входа,
+    без повторов. Коммит — за вызывающим."""
+    unique = _unique(games)
+    if not unique:
+        return []
+    await insert_games(session, user, source, unique)
     ids = [game.external_id for game in unique]
     found = await session.scalars(
         select(Game).where(

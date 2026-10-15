@@ -36,6 +36,13 @@ class AnalysisStatus(StrEnum):
     FAILED = "failed"
 
 
+class ImportStatus(StrEnum):
+    QUEUED = "queued"
+    RUNNING = "running"
+    DONE = "done"
+    FAILED = "failed"
+
+
 def str_enum(enum_cls: type[StrEnum], name: str) -> sa.Enum:
     return sa.Enum(
         enum_cls,
@@ -148,6 +155,35 @@ class Move(Base):
     phase: Mapped[Phase] = mapped_column(str_enum(Phase, "phase"))
 
     analysis: Mapped[Analysis] = relationship(back_populates="moves")
+
+
+class ImportJob(Base):
+    """Импорт партий пользователя с Lichess / Chess.com (выполняет воркер)."""
+
+    __tablename__ = "import_jobs"
+    __table_args__ = (Index("ix_import_jobs_user_id_created_at", "user_id", "created_at"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    source: Mapped[GameSource] = mapped_column(str_enum(GameSource, "game_source"))
+    username: Mapped[str] = mapped_column(String(64))
+    # Параметры: max_games — для Lichess, months — для Chess.com.
+    max_games: Mapped[int | None]
+    months: Mapped[int | None]
+    status: Mapped[ImportStatus] = mapped_column(
+        str_enum(ImportStatus, "import_status"),
+        default=ImportStatus.QUEUED,
+        server_default=ImportStatus.QUEUED.value,
+    )
+    # Получено от источника / сохранено новых / пропущено (варианты, партии без ходов,
+    # ошибки PGN). Остальные полученные уже были в базе.
+    fetched: Mapped[int] = mapped_column(default=0, server_default="0")
+    imported: Mapped[int] = mapped_column(default=0, server_default="0")
+    skipped: Mapped[int] = mapped_column(default=0, server_default="0")
+    error: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    started_at: Mapped[datetime | None]
+    finished_at: Mapped[datetime | None]
 
 
 class Explanation(Base):
