@@ -218,17 +218,46 @@ class PositionEval(Base):
 
 
 class Puzzle(Base):
+    """Пазл из ошибки пользователя (`app/puzzles/`): позиция до ошибки и решение — лучшая
+    линия до выигрыша материала или мата. Повторение — по коробкам Лейтнера (`srs.py`)."""
+
     __tablename__ = "puzzles"
-    __table_args__ = (Index("ix_puzzles_user_id_next_review_at", "user_id", "next_review_at"),)
+    __table_args__ = (
+        Index("ix_puzzles_user_id_next_review_at", "user_id", "next_review_at"),
+        # Одна позиция — один пазл: повторный анализ партии не плодит дубли.
+        UniqueConstraint("user_id", "fen"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
-    # SET NULL: пазл переживает повторный анализ партии.
+    # SET NULL: пазл переживает удаление анализа; при повторном анализе ссылка обновляется.
     move_id: Mapped[int | None] = mapped_column(ForeignKey("moves.id", ondelete="SET NULL"))
     fen: Mapped[str] = mapped_column(String(100))
+    # Ходы игрока и ответы соперника по очереди, первый и последний — ходы игрока.
     solution_uci: Mapped[list[str]] = mapped_column(ARRAY(String(8)))
     themes: Mapped[list[str]] = mapped_column(ARRAY(String(32)), server_default="{}")
     attempts: Mapped[int] = mapped_column(default=0, server_default="0")
+    # Результат последней попытки.
     solved: Mapped[bool] = mapped_column(default=False, server_default=sa.false())
+    # Коробка Лейтнера: 0 — новый или после ошибки, 1…5 — интервалы повторения.
+    box: Mapped[int] = mapped_column(sa.SmallInteger, default=0, server_default="0")
+    # None — новый пазл (ещё не решался).
     next_review_at: Mapped[datetime | None]
+    last_attempt_at: Mapped[datetime | None]
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
+class PuzzleAttempt(Base):
+    """Завершённая попытка решить пазл (решён или нет) — для серии и истории."""
+
+    __tablename__ = "puzzle_attempts"
+    __table_args__ = (Index("ix_puzzle_attempts_user_id_created_at", "user_id", "created_at"),)
+
+    id: Mapped[int] = mapped_column(sa.BigInteger, sa.Identity(), primary_key=True)
+    puzzle_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("puzzles.id", ondelete="CASCADE"), index=True
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    correct: Mapped[bool]
+    hint_used: Mapped[bool] = mapped_column(default=False, server_default=sa.false())
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())

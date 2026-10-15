@@ -6,8 +6,9 @@ from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
+from app.db.accuracy import pick_accuracy
 from app.db.models import AnalysisStatus, Color, GameSource, ImportStatus
-from app.review.game_rating import game_rating, time_class
+from app.review.game_rating import TimeClass, game_rating, time_class
 from app.review.types import MoveClass, Phase
 
 # Вставленный PGN: ~1 МБ — это сотни партий, больше через этот эндпоинт не нужно.
@@ -141,21 +142,9 @@ class GameOut(ORMModel):
     analysis: AnalysisSummary | None = None
 
     def accuracy_of(self, color: Color) -> float | None:
-        """Точность для показа: официальная Chess.com, иначе наша «как у Chess.com»,
-        иначе (старый анализ) — по формуле Lichess."""
-        white = color == Color.WHITE
-        official = self.source_white_accuracy if white else self.source_black_accuracy
-        if official is not None:
-            return official
-        analysis = self.analysis
-        if analysis is None or analysis.status != AnalysisStatus.DONE:
-            return None
-        cc = analysis.cc_white_accuracy if white else analysis.cc_black_accuracy
-        return (
-            cc
-            if cc is not None
-            else (analysis.white_accuracy if white else analysis.black_accuracy)
-        )
+        """Точность для показа (порядок источников — `app/db/accuracy.py`)."""
+        picked = pick_accuracy(self, self.analysis, color)
+        return None if picked is None else picked[0]
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -224,3 +213,117 @@ class SummaryOut(BaseModel):
     text: str
     provider: str
     cached: bool
+
+
+# --- Статистика (GET /stats/me) ---
+
+AccuracyKindOut = Literal["official", "cc", "lichess"]
+GameOutcome = Literal["win", "draw", "loss"]
+
+
+class StatsFilters(BaseModel):
+    source: GameSource | None
+    time_class: TimeClass | None
+
+
+class StatsTotals(BaseModel):
+    """Партии за пользователя (с известным цветом) после фильтров."""
+
+    games: int
+    # Партии без цвета пользователя (вставленный PGN без его ника) — в статистику не входят.
+    games_without_color: int
+    # С готовым анализом: по ним считаются фазы, классы ходов и мотивы.
+    analyzed: int
+    wins: int
+    draws: int
+    losses: int
+    # Средняя показываемая точность (см. `app/db/accuracy.py`) и по скольким партиям.
+    accuracy: float | None
+    with_accuracy: int
+
+
+class AccuracyPoint(BaseModel):
+    game_id: uuid.UUID
+    played_at: datetime | None
+    accuracy: float
+    # Откуда точность: официальная Chess.com, наша «как у Chess.com» или формула Lichess.
+    kind: AccuracyKindOut
+    # Скользящее среднее по последним `window` партиям (включая эту).
+    moving_avg: float
+    opponent: str
+    outcome: GameOutcome | None
+    time_class: TimeClass
+    color: Color
+
+
+class AccuracySeries(BaseModel):
+    window: int
+    # Старые первыми; не больше последних STATS_MAX_POINTS партий.
+    points: list[AccuracyPoint]
+
+
+class OpeningStat(BaseModel):
+    eco: str | None
+    name: str
+    games: int
+    wins: int
+    draws: int
+    losses: int
+    accuracy: float | None
+
+
+class OpeningsStats(BaseModel):
+    white: list[OpeningStat]
+    black: list[OpeningStat]
+
+
+class PhaseStat(BaseModel):
+    phase: Phase
+    # Средняя точность фазы по формуле Lichess (как в обзоре партии).
+    accuracy: float | None
+    games: int
+
+
+class ClassStat(BaseModel):
+    # Класс хода или "miss" (флаг поверх класса).
+    move_class: MoveClass | Literal["miss"] = Field(serialization_alias="class")
+    count: int
+    per_game: float
+    # Доля среди всех ходов пользователя, %.
+    share: float
+
+
+class ClassesStats(BaseModel):
+    games: int
+    moves: int
+    items: list[ClassStat]
+
+
+class MotifExample(BaseModel):
+    game_id: uuid.UUID
+    move_id: int
+    ply: int
+    fullmove: int
+    color: Color
+    san: str
+    move_class: MoveClass = Field(serialization_alias="class")
+    is_miss: bool
+    played_at: datetime | None
+    opponent: str
+
+
+class MotifStat(BaseModel):
+    type: str
+    # Ходов-ошибок, где мотив был в опровержении или упущен.
+    count: int
+    examples: list[MotifExample]
+
+
+class StatsOut(BaseModel):
+    filters: StatsFilters
+    totals: StatsTotals
+    accuracy: AccuracySeries
+    openings: OpeningsStats
+    phases: list[PhaseStat]
+    classes: ClassesStats
+    motifs: list[MotifStat]
