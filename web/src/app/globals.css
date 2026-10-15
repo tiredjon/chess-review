@@ -1,26 +1,71 @@
 @import "tailwindcss";
 
+/* Палитра: холодная «турнирная» бумага, синие чернила бланка записи, сине-серая доска.
+   Цвета классов ходов — в src/lib/classes.ts. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --paper: #eef1f4;
+  --surface: #ffffff;
+  --sunken: #e4e8ed;
+  --ink: #18202c;
+  --muted: #5d6877;
+  --line: #d3dae2;
+  --accent: #2b4eb5;
+  --accent-ink: #ffffff;
+  --danger: #b8322c;
+  --board-light: #dde4ea;
+  --board-dark: #8aa0b2;
+  --graph-black: #2a3240;
+  --graph-white: #f4f6f8;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --paper: #141920;
+    --surface: #1c232d;
+    --sunken: #11161c;
+    --ink: #e5e9ef;
+    --muted: #97a3b2;
+    --line: #2c3644;
+    --accent: #87a2ff;
+    --accent-ink: #0d1424;
+    --danger: #f07a70;
+    --board-light: #c9d3dc;
+    --board-dark: #6f879b;
+    --graph-black: #0e1217;
+    --graph-white: #d9dfe6;
   }
 }
 
+@theme inline {
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-sunken: var(--sunken);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-golos);
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-golos), system-ui, sans-serif;
+  font-feature-settings: "tnum" 1;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
