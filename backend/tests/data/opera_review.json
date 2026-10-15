@@ -1,0 +1,9558 @@
+{
+ "headers": {
+  "Event": "Paris",
+  "Site": "Paris FRA",
+  "Date": "1858.??.??",
+  "Round": "?",
+  "White": "Paul Morphy",
+  "Black": "Duke Karl / Count Isouard",
+  "Result": "1-0",
+  "ECO": "C41"
+ },
+ "white_accuracy": 88.28321795579714,
+ "black_accuracy": 85.36314220419293,
+ "phase_accuracy": {
+  "white": {
+   "opening": 99.6789529590333,
+   "middlegame": 86.5492508731329,
+   "endgame": null
+  },
+  "black": {
+   "opening": 87.3363414251011,
+   "middlegame": 84.64667522647886,
+   "endgame": null
+  }
+ },
+ "moves": [
+  {
+   "ply": 1,
+   "san": "e4",
+   "uci": "e2e4",
+   "fen_before": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+   "eval_before_cp": 27,
+   "eval_after_cp": 31,
+   "mate_before": null,
+   "mate_after": null,
+   "win_before": 52.48335896523929,
+   "win_after": 52.85051773118131,
+   "accuracy": 100.0,
+   "move_class": "book",
+   "is_miss": false,
+   "best_uci": "e2e4",
+   "best_san": "e4",
+   "pv": [
+    {
+     "uci": "e2e4",
+     "san": "e4"
+    },
+    {
+     "uci": "c7c5",
+     "san": "c5"
+    },
+    {
+     "uci": "g1f3",
+     "san": "Nf3"
+    },
+    {
+     "uci": "b8c6",
+     "san": "Nc6"
+    },
+    {
+     "uci": "c2c3",
+     "san": "c3"
+    },
+    {
+     "uci": "g8f6",
+     "san": "Nf6"
+    },
+    {
+     "uci": "e4e5",
+     "san": "e5"
+    },
+    {
+     "uci": "f6d5",
+     "san": "Nd5"
+    },
+    {
+     "uci": "d2d4",
+     "san": "d4"
+    },
+    {
+     "uci": "c5d4",
+     "san": "cxd4"
+    },
+    {
+     "uci": "c3d4",
+     "san": "cxd4"
+    },
+    {
+     "uci": "e7e6",
+     "san": "e6"
+    },
+    {
+     "uci": "b1c3",
+     "san": "Nc3"
+    },
+    {
+     "uci": "d7d6",
+     "san": "d6"
+    }
+   ],
+   "multipv": [
+    {
+     "cp": 27,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "e2e4",
+       "san": "e4"
+      },
+      {
+       "uci": "c7c5",
+       "san": "c5"
+      },
+      {
+       "uci": "g1f3",
+       "san": "Nf3"
+      },
+      {
+       "uci": "b8c6",
+       "san": "Nc6"
+      },
+      {
+       "uci": "c2c3",
+       "san": "c3"
+      },
+      {
+       "uci": "g8f6",
+       "san": "Nf6"
+      },
+      {
+       "uci": "e4e5",
+       "san": "e5"
+      },
+      {
+       "uci": "f6d5",
+       "san": "Nd5"
+      },
+      {
+       "uci": "d2d4",
+       "san": "d4"
+      },
+      {
+       "uci": "c5d4",
+       "san": "cxd4"
+      },
+      {
+       "uci": "c3d4",
+       "san": "cxd4"
+      },
+      {
+       "uci": "e7e6",
+       "san": "e6"
+      },
+      {
+       "uci": "b1c3",
+       "san": "Nc3"
+      },
+      {
+       "uci": "d7d6",
+       "san": "d6"
+      }
+     ]
+    },
+    {
+     "cp": 16,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "d2d4",
+       "san": "d4"
+      },
+      {
+       "uci": "d7d5",
+       "san": "d5"
+      },
+      {
+       "uci": "g1f3",
+       "san": "Nf3"
+      },
+      {
+       "uci": "e7e6",
+       "san": "e6"
+      },
+      {
+       "uci": "c1f4",
+       "san": "Bf4"
+      },
+      {
+       "uci": "f8d6",
+       "san": "Bd6"
+      },
+      {
+       "uci": "e2e3",
+       "san": "e3"
+      },
+      {
+       "uci": "g8f6",
+       "san": "Nf6"
+      },
+      {
+       "uci": "c2c3",
+       "san": "c3"
+      },
+      {
+       "uci": "c7c5",
+       "san": "c5"
+      }
+     ]
+    },
+    {
+     "cp": 16,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "g1f3",
+       "san": "Nf3"
+      },
+      {
+       "uci": "d7d5",
+       "san": "d5"
+      },
+      {
+       "uci": "d2d4",
+       "san": "d4"
+      },
+      {
+       "uci": "e7e6",
+       "san": "e6"
+      },
+      {
+       "uci": "c2c4",
+       "san": "c4"
+      },
+      {
+       "uci": "g8f6",
+       "san": "Nf6"
+      },
+      {
+       "uci": "b1c3",
+       "san": "Nc3"
+      },
+      {
+       "uci": "c7c5",
+       "san": "c5"
+      },
+      {
+       "uci": "c4d5",
+       "san": "cxd5"
+      },
+      {
+       "uci": "c5d4",
+       "san": "cxd4"
+      },
+      {
+       "uci": "d1d4",
+       "san": "Qxd4"
+      },
+      {
+       "uci": "e6d5",
+       "san": "exd5"
+      },
+      {
+       "uci": "c1g5",
+       "san": "Bg5"
+      },
+      {
+       "uci": "f8e7",
+       "san": "Be7"
+      },
+      {
+       "uci": "e2e3",
+       "san": "e3"
+      },
+      {
+       "uci": "e8g8",
+       "san": "O-O"
+      },
+      {
+       "uci": "f1e2",
+       "san": "Be2"
+      },
+      {
+       "uci": "h7h6",
+       "san": "h6"
+      },
+      {
+       "uci": "g5h4",
+       "san": "Bh4"
+      },
+      {
+       "uci": "g7g5",
+       "san": "g5"
+      }
+     ]
+    }
+   ],
+   "reply_pv": [
+    {
+     "uci": "e7e5",
+     "san": "e5"
+    },
+    {
+     "uci": "g1f3",
+     "san": "Nf3"
+    },
+    {
+     "uci": "g8f6",
+     "san": "Nf6"
+    },
+    {
+     "uci": "b1c3",
+     "san": "Nc3"
+    },
+    {
+     "uci": "b8c6",
+     "san": "Nc6"
+    },
+    {
+     "uci": "f1b5",
+     "san": "Bb5"
+    },
+    {
+     "uci": "f8b4",
+     "san": "Bb4"
+    },
+    {
+     "uci": "b5c6",
+     "san": "Bxc6"
+    },
+    {
+     "uci": "d7c6",
+     "san": "dxc6"
+    },
+    {
+     "uci": "f3e5",
+     "san": "Nxe5"
+    },
+    {
+     "uci": "e8g8",
+     "san": "O-O"
+    }
+   ],
+   "motifs": {
+    "played": [],
+    "missed": [],
+    "refutation": [],
+    "sacrifice": null
+   },
+   "phase": "opening"
+  },
+  {
+   "ply": 2,
+   "san": "e5",
+   "uci": "e7e5",
+   "fen_before": "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1",
+   "eval_before_cp": -31,
+   "eval_after_cp": -26,
+   "mate_before": null,
+   "mate_after": null,
+   "win_before": 47.14948226881868,
+   "win_after": 47.60847425165294,
+   "accuracy": 100.0,
+   "move_class": "book",
+   "is_miss": false,
+   "best_uci": "e7e5",
+   "best_san": "e5",
+   "pv": [
+    {
+     "uci": "e7e5",
+     "san": "e5"
+    },
+    {
+     "uci": "g1f3",
+     "san": "Nf3"
+    },
+    {
+     "uci": "g8f6",
+     "san": "Nf6"
+    },
+    {
+     "uci": "b1c3",
+     "san": "Nc3"
+    },
+    {
+     "uci": "b8c6",
+     "san": "Nc6"
+    },
+    {
+     "uci": "f1b5",
+     "san": "Bb5"
+    },
+    {
+     "uci": "f8b4",
+     "san": "Bb4"
+    },
+    {
+     "uci": "b5c6",
+     "san": "Bxc6"
+    },
+    {
+     "uci": "d7c6",
+     "san": "dxc6"
+    },
+    {
+     "uci": "f3e5",
+     "san": "Nxe5"
+    },
+    {
+     "uci": "e8g8",
+     "san": "O-O"
+    }
+   ],
+   "multipv": [
+    {
+     "cp": -31,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "e7e5",
+       "san": "e5"
+      },
+      {
+       "uci": "g1f3",
+       "san": "Nf3"
+      },
+      {
+       "uci": "g8f6",
+       "san": "Nf6"
+      },
+      {
+       "uci": "b1c3",
+       "san": "Nc3"
+      },
+      {
+       "uci": "b8c6",
+       "san": "Nc6"
+      },
+      {
+       "uci": "f1b5",
+       "san": "Bb5"
+      },
+      {
+       "uci": "f8b4",
+       "san": "Bb4"
+      },
+      {
+       "uci": "b5c6",
+       "san": "Bxc6"
+      },
+      {
+       "uci": "d7c6",
+       "san": "dxc6"
+      },
+      {
+       "uci": "f3e5",
+       "san": "Nxe5"
+      },
+      {
+       "uci": "e8g8",
+       "san": "O-O"
+      }
+     ]
+    },
+    {
+     "cp": -29,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "c7c5",
+       "san": "c5"
+      },
+      {
+       "uci": "g1f3",
+       "san": "Nf3"
+      },
+      {
+       "uci": "d7d6",
+       "san": "d6"
+      },
+      {
+       "uci": "d2d4",
+       "san": "d4"
+      },
+      {
+       "uci": "c5d4",
+       "san": "cxd4"
+      },
+      {
+       "uci": "f3d4",
+       "san": "Nxd4"
+      },
+      {
+       "uci": "g8f6",
+       "san": "Nf6"
+      },
+      {
+       "uci": "b1c3",
+       "san": "Nc3"
+      },
+      {
+       "uci": "a7a6",
+       "san": "a6"
+      },
+      {
+       "uci": "c1g5",
+       "san": "Bg5"
+      },
+      {
+       "uci": "e7e6",
+       "san": "e6"
+      },
+      {
+       "uci": "d1d2",
+       "san": "Qd2"
+      },
+      {
+       "uci": "f8e7",
+       "san": "Be7"
+      },
+      {
+       "uci": "f2f4",
+       "san": "f4"
+      },
+      {
+       "uci": "h7h6",
+       "san": "h6"
+      },
+      {
+       "uci": "g5h4",
+       "san": "Bh4"
+      },
+      {
+       "uci": "b7b5",
+       "san": "b5"
+      },
+      {
+       "uci": "e1c1",
+       "san": "O-O-O"
+      },
+      {
+       "uci": "c8b7",
+       "san": "Bb7"
+      },
+      {
+       "uci": "e4e5",
+       "san": "e5"
+      },
+      {
+       "uci": "d6e5",
+       "san": "dxe5"
+      },
+      {
+       "uci": "f4e5",
+       "san": "fxe5"
+      },
+      {
+       "uci": "f6d5",
+       "san": "Nd5"
+      },
+      {
+       "uci": "h4e7",
+       "san": "Bxe7"
+      },
+      {
+       "uci": "d8e7",
+       "san": "Qxe7"
+      }
+     ]
+    },
+    {
+     "cp": -56,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "d7d6",
+       "san": "d6"
+      },
+      {
+       "uci": "d2d4",
+       "san": "d4"
+      },
+      {
+       "uci": "g8f6",
+       "san": "Nf6"
+      },
+      {
+       "uci": "b1c3",
+       "san": "Nc3"
+      },
+      {
+       "uci": "e7e5",
+       "san": "e5"
+      },
+      {
+       "uci": "g1f3",
+       "san": "Nf3"
+      },
+      {
+       "uci": "b8d7",
+       "san": "Nbd7"
+      },
+      {
+       "uci": "f1c4",
+       "san": "Bc4"
+      },
+      {
+       "uci": "f8e7",
+       "san": "Be7"
+      },
+      {
+       "uci": "e1g1",
+       "san": "O-O"
+      },
+      {
+       "uci": "c7c6",
+       "san": "c6"
+      },
+      {
+       "uci": "a2a4",
+       "san": "a4"
+      },
+      {
+       "uci": "e8g8",
+       "san": "O-O"
+      },
+      {
+       "uci": "f1e1",
+       "san": "Re1"
+      },
+      {
+       "uci": "e5d4",
+       "san": "exd4"
+      }
+     ]
+    }
+   ],
+   "reply_pv": [
+    {
+     "uci": "g1f3",
+     "san": "Nf3"
+    },
+    {
+     "uci": "g8f6",
+     "san": "Nf6"
+    },
+    {
+     "uci": "d2d4",
+     "san": "d4"
+    },
+    {
+     "uci": "f6e4",
+     "san": "Nxe4"
+    },
+    {
+     "uci": "f1d3",
+     "san": "Bd3"
+    },
+    {
+     "uci": "d7d5",
+     "san": "d5"
+    },
+    {
+     "uci": "f3e5",
+     "san": "Nxe5"
+    },
+    {
+     "uci": "b8d7",
+     "san": "Nd7"
+    },
+    {
+     "uci": "e5d7",
+     "san": "Nxd7"
+    },
+    {
+     "uci": "c8d7",
+     "san": "Bxd7"
+    },
+    {
+     "uci": "e1g1",
+     "san": "O-O"
+    },
+    {
+     "uci": "f8d6",
+     "san": "Bd6"
+    },
+    {
+     "uci": "b1d2",
+     "san": "Nd2"
+    },
+    {
+     "uci": "e4d2",
+     "san": "Nxd2"
+    }
+   ],
+   "motifs": {
+    "played": [],
+    "missed": [],
+    "refutation": [],
+    "sacrifice": null
+   },
+   "phase": "opening"
+  },
+  {
+   "ply": 3,
+   "san": "Nf3",
+   "uci": "g1f3",
+   "fen_before": "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2",
+   "eval_before_cp": 26,
+   "eval_after_cp": 34,
+   "mate_before": null,
+   "mate_after": null,
+   "win_before": 52.39152574834706,
+   "win_after": 53.1256867324871,
+   "accuracy": 100.0,
+   "move_class": "book",
+   "is_miss": false,
+   "best_uci": "g1f3",
+   "best_san": "Nf3",
+   "pv": [
+    {
+     "uci": "g1f3",
+     "san": "Nf3"
+    },
+    {
+     "uci": "g8f6",
+     "san": "Nf6"
+    },
+    {
+     "uci": "d2d4",
+     "san": "d4"
+    },
+    {
+     "uci": "f6e4",
+     "san": "Nxe4"
+    },
+    {
+     "uci": "f1d3",
+     "san": "Bd3"
+    },
+    {
+     "uci": "d7d5",
+     "san": "d5"
+    },
+    {
+     "uci": "f3e5",
+     "san": "Nxe5"
+    },
+    {
+     "uci": "b8d7",
+     "san": "Nd7"
+    },
+    {
+     "uci": "e5d7",
+     "san": "Nxd7"
+    },
+    {
+     "uci": "c8d7",
+     "san": "Bxd7"
+    },
+    {
+     "uci": "e1g1",
+     "san": "O-O"
+    },
+    {
+     "uci": "f8d6",
+     "san": "Bd6"
+    },
+    {
+     "uci": "b1d2",
+     "san": "Nd2"
+    },
+    {
+     "uci": "e4d2",
+     "san": "Nxd2"
+    }
+   ],
+   "multipv": [
+    {
+     "cp": 26,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "g1f3",
+       "san": "Nf3"
+      },
+      {
+       "uci": "g8f6",
+       "san": "Nf6"
+      },
+      {
+       "uci": "d2d4",
+       "san": "d4"
+      },
+      {
+       "uci": "f6e4",
+       "san": "Nxe4"
+      },
+      {
+       "uci": "f1d3",
+       "san": "Bd3"
+      },
+      {
+       "uci": "d7d5",
+       "san": "d5"
+      },
+      {
+       "uci": "f3e5",
+       "san": "Nxe5"
+      },
+      {
+       "uci": "b8d7",
+       "san": "Nd7"
+      },
+      {
+       "uci": "e5d7",
+       "san": "Nxd7"
+      },
+      {
+       "uci": "c8d7",
+       "san": "Bxd7"
+      },
+      {
+       "uci": "e1g1",
+       "san": "O-O"
+      },
+      {
+       "uci": "f8d6",
+       "san": "Bd6"
+      },
+      {
+       "uci": "b1d2",
+       "san": "Nd2"
+      },
+      {
+       "uci": "e4d2",
+       "san": "Nxd2"
+      }
+     ]
+    },
+    {
+     "cp": 7,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "b1c3",
+       "san": "Nc3"
+      },
+      {
+       "uci": "g8f6",
+       "san": "Nf6"
+      },
+      {
+       "uci": "g1f3",
+       "san": "Nf3"
+      },
+      {
+       "uci": "b8c6",
+       "san": "Nc6"
+      },
+      {
+       "uci": "d2d4",
+       "san": "d4"
+      },
+      {
+       "uci": "e5d4",
+       "san": "exd4"
+      },
+      {
+       "uci": "f3d4",
+       "san": "Nxd4"
+      },
+      {
+       "uci": "f8b4",
+       "san": "Bb4"
+      },
+      {
+       "uci": "d4c6",
+       "san": "Nxc6"
+      },
+      {
+       "uci": "b7c6",
+       "san": "bxc6"
+      },
+      {
+       "uci": "c1d2",
+       "san": "Bd2"
+      },
+      {
+       "uci": "e8g8",
+       "san": "O-O"
+      },
+      {
+       "uci": "f1d3",
+       "san": "Bd3"
+      },
+      {
+       "uci": "d7d5",
+       "san": "d5"
+      },
+      {
+       "uci": "e1g1",
+       "san": "O-O"
+      },
+      {
+       "uci": "f8e8",
+       "san": "Re8"
+      },
+      {
+       "uci": "e4d5",
+       "san": "exd5"
+      },
+      {
+       "uci": "c6d5",
+       "san": "cxd5"
+      },
+      {
+       "uci": "f1e1",
+       "san": "Re1"
+      }
+     ]
+    },
+    {
+     "cp": 1,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "f1c4",
+       "san": "Bc4"
+      },
+      {
+       "uci": "g8f6",
+       "san": "Nf6"
+      },
+      {
+       "uci": "b1c3",
+       "san": "Nc3"
+      },
+      {
+       "uci": "b8c6",
+       "san": "Nc6"
+      },
+      {
+       "uci": "d2d3",
+       "san": "d3"
+      },
+      {
+       "uci": "c6a5",
+       "san": "Na5"
+      },
+      {
+       "uci": "g1e2",
+       "san": "Nge2"
+      },
+      {
+       "uci": "f8c5",
+       "san": "Bc5"
+      },
+      {
+       "uci": "e1g1",
+       "san": "O-O"
+      },
+      {
+       "uci": "a5c4",
+       "san": "Nxc4"
+      },
+      {
+       "uci": "d3c4",
+       "san": "dxc4"
+      },
+      {
+       "uci": "d7d6",
+       "san": "d6"
+      },
+      {
+       "uci": "d1d3",
+       "san": "Qd3"
+      }
+     ]
+    }
+   ],
+   "reply_pv": [
+    {
+     "uci": "b8c6",
+     "san": "Nc6"
+    },
+    {
+     "uci": "f1b5",
+     "san": "Bb5"
+    },
+    {
+     "uci": "g8f6",
+     "san": "Nf6"
+    },
+    {
+     "uci": "e1g1",
+     "san": "O-O"
+    },
+    {
+     "uci": "f6e4",
+     "san": "Nxe4"
+    },
+    {
+     "uci": "d2d4",
+     "san": "d4"
+    },
+    {
+     "uci": "e4d6",
+     "san": "Nd6"
+    },
+    {
+     "uci": "b5a4",
+     "san": "Ba4"
+    },
+    {
+     "uci": "e5d4",
+     "san": "exd4"
+    },
+    {
+     "uci": "f1e1",
+     "san": "Re1+"
+    },
+    {
+     "uci": "f8e7",
+     "san": "Be7"
+    },
+    {
+     "uci": "c2c3",
+     "san": "c3"
+    },
+    {
+     "uci": "e8g8",
+     "san": "O-O"
+    },
+    {
+     "uci": "c3d4",
+     "san": "cxd4"
+    },
+    {
+     "uci": "f8e8",
+     "san": "Re8"
+    }
+   ],
+   "motifs": {
+    "played": [],
+    "missed": [],
+    "refutation": [],
+    "sacrifice": null
+   },
+   "phase": "opening"
+  },
+  {
+   "ply": 4,
+   "san": "d6",
+   "uci": "d7d6",
+   "fen_before": "rnbqkbnr/pppp1ppp/8/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2",
+   "eval_before_cp": -34,
+   "eval_after_cp": -46,
+   "mate_before": null,
+   "mate_after": null,
+   "win_before": 46.8743132675129,
+   "win_after": 45.775702105393144,
+   "accuracy": 96.18076948721874,
+   "move_class": "book",
+   "is_miss": false,
+   "best_uci": "b8c6",
+   "best_san": "Nc6",
+   "pv": [
+    {
+     "uci": "b8c6",
+     "san": "Nc6"
+    },
+    {
+     "uci": "f1b5",
+     "san": "Bb5"
+    },
+    {
+     "uci": "g8f6",
+     "san": "Nf6"
+    },
+    {
+     "uci": "e1g1",
+     "san": "O-O"
+    },
+    {
+     "uci": "f6e4",
+     "san": "Nxe4"
+    },
+    {
+     "uci": "d2d4",
+     "san": "d4"
+    },
+    {
+     "uci": "e4d6",
+     "san": "Nd6"
+    },
+    {
+     "uci": "b5a4",
+     "san": "Ba4"
+    },
+    {
+     "uci": "e5d4",
+     "san": "exd4"
+    },
+    {
+     "uci": "f1e1",
+     "san": "Re1+"
+    },
+    {
+     "uci": "f8e7",
+     "san": "Be7"
+    },
+    {
+     "uci": "c2c3",
+     "san": "c3"
+    },
+    {
+     "uci": "e8g8",
+     "san": "O-O"
+    },
+    {
+     "uci": "c3d4",
+     "san": "cxd4"
+    },
+    {
+     "uci": "f8e8",
+     "san": "Re8"
+    }
+   ],
+   "multipv": [
+    {
+     "cp": -34,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "b8c6",
+       "san": "Nc6"
+      },
+      {
+       "uci": "f1b5",
+       "san": "Bb5"
+      },
+      {
+       "uci": "g8f6",
+       "san": "Nf6"
+      },
+      {
+       "uci": "e1g1",
+       "san": "O-O"
+      },
+      {
+       "uci": "f6e4",
+       "san": "Nxe4"
+      },
+      {
+       "uci": "d2d4",
+       "san": "d4"
+      },
+      {
+       "uci": "e4d6",
+       "san": "Nd6"
+      },
+      {
+       "uci": "b5a4",
+       "san": "Ba4"
+      },
+      {
+       "uci": "e5d4",
+       "san": "exd4"
+      },
+      {
+       "uci": "f1e1",
+       "san": "Re1+"
+      },
+      {
+       "uci": "f8e7",
+       "san": "Be7"
+      },
+      {
+       "uci": "c2c3",
+       "san": "c3"
+      },
+      {
+       "uci": "e8g8",
+       "san": "O-O"
+      },
+      {
+       "uci": "c3d4",
+       "san": "cxd4"
+      },
+      {
+       "uci": "f8e8",
+       "san": "Re8"
+      }
+     ]
+    }
+   ],
+   "reply_pv": [
+    {
+     "uci": "d2d4",
+     "san": "d4"
+    },
+    {
+     "uci": "e5d4",
+     "san": "exd4"
+    },
+    {
+     "uci": "f3d4",
+     "san": "Nxd4"
+    },
+    {
+     "uci": "f8e7",
+     "san": "Be7"
+    },
+    {
+     "uci": "b1c3",
+     "san": "Nc3"
+    },
+    {
+     "uci": "g8f6",
+     "san": "Nf6"
+    },
+    {
+     "uci": "g2g3",
+     "san": "g3"
+    },
+    {
+     "uci": "c7c6",
+     "san": "c6"
+    },
+    {
+     "uci": "f1g2",
+     "san": "Bg2"
+    },
+    {
+     "uci": "a7a5",
+     "san": "a5"
+    },
+    {
+     "uci": "a2a4",
+     "san": "a4"
+    },
+    {
+     "uci": "e8g8",
+     "san": "O-O"
+    },
+    {
+     "uci": "e1g1",
+     "san": "O-O"
+    },
+    {
+     "uci": "f8e8",
+     "san": "Re8"
+    }
+   ],
+   "motifs": {
+    "played": [],
+    "missed": [],
+    "refutation": [],
+    "sacrifice": null
+   },
+   "phase": "opening"
+  },
+  {
+   "ply": 5,
+   "san": "d4",
+   "uci": "d2d4",
+   "fen_before": "rnbqkbnr/ppp2ppp/3p4/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 0 3",
+   "eval_before_cp": 46,
+   "eval_after_cp": 65,
+   "mate_before": null,
+   "mate_after": null,
+   "win_before": 54.22429789460686,
+   "win_after": 55.95498132599205,
+   "accuracy": 100.0,
+   "move_class": "book",
+   "is_miss": false,
+   "best_uci": "d2d4",
+   "best_san": "d4",
+   "pv": [
+    {
+     "uci": "d2d4",
+     "san": "d4"
+    },
+    {
+     "uci": "e5d4",
+     "san": "exd4"
+    },
+    {
+     "uci": "f3d4",
+     "san": "Nxd4"
+    },
+    {
+     "uci": "f8e7",
+     "san": "Be7"
+    },
+    {
+     "uci": "b1c3",
+     "san": "Nc3"
+    },
+    {
+     "uci": "g8f6",
+     "san": "Nf6"
+    },
+    {
+     "uci": "g2g3",
+     "san": "g3"
+    },
+    {
+     "uci": "c7c6",
+     "san": "c6"
+    },
+    {
+     "uci": "f1g2",
+     "san": "Bg2"
+    },
+    {
+     "uci": "a7a5",
+     "san": "a5"
+    },
+    {
+     "uci": "a2a4",
+     "san": "a4"
+    },
+    {
+     "uci": "e8g8",
+     "san": "O-O"
+    },
+    {
+     "uci": "e1g1",
+     "san": "O-O"
+    },
+    {
+     "uci": "f8e8",
+     "san": "Re8"
+    }
+   ],
+   "multipv": [
+    {
+     "cp": 46,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "d2d4",
+       "san": "d4"
+      },
+      {
+       "uci": "e5d4",
+       "san": "exd4"
+      },
+      {
+       "uci": "f3d4",
+       "san": "Nxd4"
+      },
+      {
+       "uci": "f8e7",
+       "san": "Be7"
+      },
+      {
+       "uci": "b1c3",
+       "san": "Nc3"
+      },
+      {
+       "uci": "g8f6",
+       "san": "Nf6"
+      },
+      {
+       "uci": "g2g3",
+       "san": "g3"
+      },
+      {
+       "uci": "c7c6",
+       "san": "c6"
+      },
+      {
+       "uci": "f1g2",
+       "san": "Bg2"
+      },
+      {
+       "uci": "a7a5",
+       "san": "a5"
+      },
+      {
+       "uci": "a2a4",
+       "san": "a4"
+      },
+      {
+       "uci": "e8g8",
+       "san": "O-O"
+      },
+      {
+       "uci": "e1g1",
+       "san": "O-O"
+      },
+      {
+       "uci": "f8e8",
+       "san": "Re8"
+      }
+     ]
+    },
+    {
+     "cp": 29,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "b1c3",
+       "san": "Nc3"
+      },
+      {
+       "uci": "c7c5",
+       "san": "c5"
+      },
+      {
+       "uci": "f1c4",
+       "san": "Bc4"
+      },
+      {
+       "uci": "h7h6",
+       "san": "h6"
+      },
+      {
+       "uci": "d2d3",
+       "san": "d3"
+      },
+      {
+       "uci": "g8f6",
+       "san": "Nf6"
+      },
+      {
+       "uci": "h2h3",
+       "san": "h3"
+      },
+      {
+       "uci": "f8e7",
+       "san": "Be7"
+      },
+      {
+       "uci": "f3h2",
+       "san": "Nh2"
+      },
+      {
+       "uci": "c8e6",
+       "san": "Be6"
+      },
+      {
+       "uci": "h2f1",
+       "san": "Nf1"
+      }
+     ]
+    },
+    {
+     "cp": 26,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "f1c4",
+       "san": "Bc4"
+      },
+      {
+       "uci": "g8f6",
+       "san": "Nf6"
+      },
+      {
+       "uci": "b1c3",
+       "san": "Nc3"
+      },
+      {
+       "uci": "f8e7",
+       "san": "Be7"
+      },
+      {
+       "uci": "d2d4",
+       "san": "d4"
+      },
+      {
+       "uci": "e5d4",
+       "san": "exd4"
+      },
+      {
+       "uci": "f3d4",
+       "san": "Nxd4"
+      },
+      {
+       "uci": "e8g8",
+       "san": "O-O"
+      },
+      {
+       "uci": "e1g1",
+       "san": "O-O"
+      },
+      {
+       "uci": "f6e4",
+       "san": "Nxe4"
+      },
+      {
+       "uci": "c3e4",
+       "san": "Nxe4"
+      },
+      {
+       "uci": "d6d5",
+       "san": "d5"
+      },
+      {
+       "uci": "c4d3",
+       "san": "Bd3"
+      },
+      {
+       "uci": "d5e4",
+       "san": "dxe4"
+      },
+      {
+       "uci": "d3e4",
+       "san": "Bxe4"
+      },
+      {
+       "uci": "b8d7",
+       "san": "Nd7"
+      },
+      {
+       "uci": "c2c3",
+       "san": "c3"
+      },
+      {
+       "uci": "d7f6",
+       "san": "Nf6"
+      },
+      {
+       "uci": "e4c2",
+       "san": "Bc2"
+      },
+      {
+       "uci": "f8e8",
+       "san": "Re8"
+      },
+      {
+       "uci": "c1f4",
+       "san": "Bf4"
+      }
+     ]
+    }
+   ],
+   "reply_pv": [
+    {
+     "uci": "e5d4",
+     "san": "exd4"
+    },
+    {
+     "uci": "f3d4",
+     "san": "Nxd4"
+    },
+    {
+     "uci": "g8f6",
+     "san": "Nf6"
+    },
+    {
+     "uci": "b1c3",
+     "san": "Nc3"
+    },
+    {
+     "uci": "f8e7",
+     "san": "Be7"
+    },
+    {
+     "uci": "c1f4",
+     "san": "Bf4"
+    },
+    {
+     "uci": "b8c6",
+     "san": "Nc6"
+    },
+    {
+     "uci": "d4c6",
+     "san": "Nxc6"
+    },
+    {
+     "uci": "b7c6",
+     "san": "bxc6"
+    },
+    {
+     "uci": "d1d2",
+     "san": "Qd2"
+    },
+    {
+     "uci": "e8g8",
+     "san": "O-O"
+    },
+    {
+     "uci": "e1c1",
+     "san": "O-O-O"
+    }
+   ],
+   "motifs": {
+    "played": [],
+    "missed": [],
+    "refutation": [],
+    "sacrifice": null
+   },
+   "phase": "opening"
+  },
+  {
+   "ply": 6,
+   "san": "Bg4",
+   "uci": "c8g4",
+   "fen_before": "rnbqkbnr/ppp2ppp/3p4/4p3/3PP3/5N2/PPP2PPP/RNBQKB1R b KQkq - 0 3",
+   "eval_before_cp": -65,
+   "eval_after_cp": -80,
+   "mate_before": null,
+   "mate_after": null,
+   "win_before": 44.04501867400794,
+   "win_after": 42.68863060981179,
+   "accuracy": 95.08302083998949,
+   "move_class": "book",
+   "is_miss": false,
+   "best_uci": "e5d4",
+   "best_san": "exd4",
+   "pv": [
+    {
+     "uci": "e5d4",
+     "san": "exd4"
+    },
+    {
+     "uci": "f3d4",
+     "san": "Nxd4"
+    },
+    {
+     "uci": "g8f6",
+     "san": "Nf6"
+    },
+    {
+     "uci": "b1c3",
+     "san": "Nc3"
+    },
+    {
+     "uci": "f8e7",
+     "san": "Be7"
+    },
+    {
+     "uci": "c1f4",
+     "san": "Bf4"
+    },
+    {
+     "uci": "b8c6",
+     "san": "Nc6"
+    },
+    {
+     "uci": "d4c6",
+     "san": "Nxc6"
+    },
+    {
+     "uci": "b7c6",
+     "san": "bxc6"
+    },
+    {
+     "uci": "d1d2",
+     "san": "Qd2"
+    },
+    {
+     "uci": "e8g8",
+     "san": "O-O"
+    },
+    {
+     "uci": "e1c1",
+     "san": "O-O-O"
+    }
+   ],
+   "multipv": [
+    {
+     "cp": -65,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "e5d4",
+       "san": "exd4"
+      },
+      {
+       "uci": "f3d4",
+       "san": "Nxd4"
+      },
+      {
+       "uci": "g8f6",
+       "san": "Nf6"
+      },
+      {
+       "uci": "b1c3",
+       "san": "Nc3"
+      },
+      {
+       "uci": "f8e7",
+       "san": "Be7"
+      },
+      {
+       "uci": "c1f4",
+       "san": "Bf4"
+      },
+      {
+       "uci": "b8c6",
+       "san": "Nc6"
+      },
+      {
+       "uci": "d4c6",
+       "san": "Nxc6"
+      },
+      {
+       "uci": "b7c6",
+       "san": "bxc6"
+      },
+      {
+       "uci": "d1d2",
+       "san": "Qd2"
+      },
+      {
+       "uci": "e8g8",
+       "san": "O-O"
+      },
+      {
+       "uci": "e1c1",
+       "san": "O-O-O"
+      }
+     ]
+    }
+   ],
+   "reply_pv": [
+    {
+     "uci": "d4e5",
+     "san": "dxe5"
+    },
+    {
+     "uci": "b8c6",
+     "san": "Nc6"
+    },
+    {
+     "uci": "h2h3",
+     "san": "h3"
+    },
+    {
+     "uci": "g4h5",
+     "san": "Bh5"
+    },
+    {
+     "uci": "e5d6",
+     "san": "exd6"
+    },
+    {
+     "uci": "f8d6",
+     "san": "Bxd6"
+    },
+    {
+     "uci": "f1b5",
+     "san": "Bb5"
+    },
+    {
+     "uci": "d8d7",
+     "san": "Qd7"
+    },
+    {
+     "uci": "b1c3",
+     "san": "Nc3"
+    },
+    {
+     "uci": "a7a6",
+     "san": "a6"
+    },
+    {
+     "uci": "b5c6",
+     "san": "Bxc6"
+    },
+    {
+     "uci": "d7c6",
+     "san": "Qxc6"
+    },
+    {
+     "uci": "d1d5",
+     "san": "Qd5"
+    },
+    {
+     "uci": "c6d5",
+     "san": "Qxd5"
+    }
+   ],
+   "motifs": {
+    "played": [
+     {
+      "type": "pin",
+      "squares": [
+       "g4",
+       "f3",
+       "d1"
+      ],
+      "pieces": [
+       "b",
+       "N",
+       "Q"
+      ],
+      "gain_cp": -100,
+      "line": [
+       {
+        "uci": "c8g4",
+        "san": "Bg4"
+       },
+       {
+        "uci": "d4e5",
+        "san": "dxe5"
+       },
+       {
+        "uci": "b8c6",
+        "san": "Nc6"
+       }
+      ]
+     }
+    ],
+    "missed": [],
+    "refutation": [],
+    "sacrifice": null
+   },
+   "phase": "opening"
+  },
+  {
+   "ply": 7,
+   "san": "dxe5",
+   "uci": "d4e5",
+   "fen_before": "rn1qkbnr/ppp2ppp/3p4/4p3/3PP1b1/5N2/PPP2PPP/RNBQKB1R w KQkq - 1 4",
+   "eval_before_cp": 80,
+   "eval_after_cp": 74,
+   "mate_before": null,
+   "mate_after": null,
+   "win_before": 57.31136939018822,
+   "win_after": 56.77001476173855,
+   "accuracy": 98.59639160413082,
+   "move_class": "book",
+   "is_miss": false,
+   "best_uci": "d4e5",
+   "best_san": "dxe5",
+   "pv": [
+    {
+     "uci": "d4e5",
+     "san": "dxe5"
+    },
+    {
+     "uci": "b8c6",
+     "san": "Nc6"
+    },
+    {
+     "uci": "h2h3",
+     "san": "h3"
+    },
+    {
+     "uci": "g4h5",
+     "san": "Bh5"
+    },
+    {
+     "uci": "e5d6",
+     "san": "exd6"
+    },
+    {
+     "uci": "f8d6",
+     "san": "Bxd6"
+    },
+    {
+     "uci": "f1b5",
+     "san": "Bb5"
+    },
+    {
+     "uci": "d8d7",
+     "san": "Qd7"
+    },
+    {
+     "uci": "b1c3",
+     "san": "Nc3"
+    },
+    {
+     "uci": "a7a6",
+     "san": "a6"
+    },
+    {
+     "uci": "b5c6",
+     "san": "Bxc6"
+    },
+    {
+     "uci": "d7c6",
+     "san": "Qxc6"
+    },
+    {
+     "uci": "d1d5",
+     "san": "Qd5"
+    },
+    {
+     "uci": "c6d5",
+     "san": "Qxd5"
+    }
+   ],
+   "multipv": [
+    {
+     "cp": 80,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "d4e5",
+       "san": "dxe5"
+      },
+      {
+       "uci": "b8c6",
+       "san": "Nc6"
+      },
+      {
+       "uci": "h2h3",
+       "san": "h3"
+      },
+      {
+       "uci": "g4h5",
+       "san": "Bh5"
+      },
+      {
+       "uci": "e5d6",
+       "san": "exd6"
+      },
+      {
+       "uci": "f8d6",
+       "san": "Bxd6"
+      },
+      {
+       "uci": "f1b5",
+       "san": "Bb5"
+      },
+      {
+       "uci": "d8d7",
+       "san": "Qd7"
+      },
+      {
+       "uci": "b1c3",
+       "san": "Nc3"
+      },
+      {
+       "uci": "a7a6",
+       "san": "a6"
+      },
+      {
+       "uci": "b5c6",
+       "san": "Bxc6"
+      },
+      {
+       "uci": "d7c6",
+       "san": "Qxc6"
+      },
+      {
+       "uci": "d1d5",
+       "san": "Qd5"
+      },
+      {
+       "uci": "c6d5",
+       "san": "Qxd5"
+      }
+     ]
+    },
+    {
+     "cp": 104,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "b1c3",
+       "san": "Nc3"
+      },
+      {
+       "uci": "b8c6",
+       "san": "Nc6"
+      },
+      {
+       "uci": "f1b5",
+       "san": "Bb5"
+      },
+      {
+       "uci": "e5d4",
+       "san": "exd4"
+      },
+      {
+       "uci": "d1d4",
+       "san": "Qxd4"
+      },
+      {
+       "uci": "g8e7",
+       "san": "Ne7"
+      },
+      {
+       "uci": "b5a4",
+       "san": "Ba4"
+      },
+      {
+       "uci": "e7g6",
+       "san": "Ng6"
+      },
+      {
+       "uci": "c1e3",
+       "san": "Be3"
+      },
+      {
+       "uci": "g4d7",
+       "san": "Bd7"
+      },
+      {
+       "uci": "d4d2",
+       "san": "Qd2"
+      }
+     ]
+    },
+    {
+     "cp": 102,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "c1e3",
+       "san": "Be3"
+      },
+      {
+       "uci": "b8c6",
+       "san": "Nc6"
+      },
+      {
+       "uci": "d4d5",
+       "san": "d5"
+      },
+      {
+       "uci": "c6e7",
+       "san": "Nce7"
+      },
+      {
+       "uci": "c2c4",
+       "san": "c4"
+      },
+      {
+       "uci": "g4d7",
+       "san": "Bd7"
+      },
+      {
+       "uci": "a2a4",
+       "san": "a4"
+      },
+      {
+       "uci": "f7f5",
+       "san": "f5"
+      },
+      {
+       "uci": "b1c3",
+       "san": "Nc3"
+      },
+      {
+       "uci": "f5f4",
+       "san": "f4"
+      }
+     ]
+    }
+   ],
+   "reply_pv": [
+    {
+     "uci": "b8d7",
+     "san": "Nd7"
+    },
+    {
+     "uci": "e5d6",
+     "san": "exd6"
+    },
+    {
+     "uci": "f8d6",
+     "san": "Bxd6"
+    },
+    {
+     "uci": "h2h3",
+     "san": "h3"
+    },
+    {
+     "uci": "g4h5",
+     "san": "Bh5"
+    },
+    {
+     "uci": "g2g4",
+     "san": "g4"
+    },
+    {
+     "uci": "h5g6",
+     "san": "Bg6"
+    },
+    {
+     "uci": "f1g2",
+     "san": "Bg2"
+    },
+    {
+     "uci": "g8f6",
+     "san": "Ngf6"
+    },
+    {
+     "uci": "e1g1",
+     "san": "O-O"
+    },
+    {
+     "uci": "f6e4",
+     "san": "Nxe4"
+    },
+    {
+     "uci": "f3d2",
+     "san": "Nfd2"
+    },
+    {
+     "uci": "e4d2",
+     "san": "Nxd2"
+    },
+    {
+     "uci": "f1e1",
+     "san": "Re1+"
+    },
+    {
+     "uci": "d6e7",
+     "san": "Be7"
+    }
+   ],
+   "motifs": {
+    "played": [],
+    "missed": [],
+    "refutation": [],
+    "sacrifice": null
+   },
+   "phase": "opening"
+  },
+  {
+   "ply": 8,
+   "san": "Bxf3",
+   "uci": "g4f3",
+   "fen_before": "rn1qkbnr/ppp2ppp/3p4/4P3/4P1b1/5N2/PPP2PPP/RNBQKB1R b KQkq - 0 4",
+   "eval_before_cp": -74,
+   "eval_after_cp": -151,
+   "mate_before": null,
+   "mate_after": null,
+   "win_before": 43.22998523826144,
+   "win_after": 36.44748580015698,
+   "accuracy": 74.61805113135811,
+   "move_class": "inaccuracy",
+   "is_miss": false,
+   "best_uci": "b8d7",
+   "best_san": "Nd7",
+   "pv": [
+    {
+     "uci": "b8d7",
+     "san": "Nd7"
+    },
+    {
+     "uci": "e5d6",
+     "san": "exd6"
+    },
+    {
+     "uci": "f8d6",
+     "san": "Bxd6"
+    },
+    {
+     "uci": "h2h3",
+     "san": "h3"
+    },
+    {
+     "uci": "g4h5",
+     "san": "Bh5"
+    },
+    {
+     "uci": "g2g4",
+     "san": "g4"
+    },
+    {
+     "uci": "h5g6",
+     "san": "Bg6"
+    },
+    {
+     "uci": "f1g2",
+     "san": "Bg2"
+    },
+    {
+     "uci": "g8f6",
+     "san": "Ngf6"
+    },
+    {
+     "uci": "e1g1",
+     "san": "O-O"
+    },
+    {
+     "uci": "f6e4",
+     "san": "Nxe4"
+    },
+    {
+     "uci": "f3d2",
+     "san": "Nfd2"
+    },
+    {
+     "uci": "e4d2",
+     "san": "Nxd2"
+    },
+    {
+     "uci": "f1e1",
+     "san": "Re1+"
+    },
+    {
+     "uci": "d6e7",
+     "san": "Be7"
+    }
+   ],
+   "multipv": [
+    {
+     "cp": -74,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "b8d7",
+       "san": "Nd7"
+      },
+      {
+       "uci": "e5d6",
+       "san": "exd6"
+      },
+      {
+       "uci": "f8d6",
+       "san": "Bxd6"
+      },
+      {
+       "uci": "h2h3",
+       "san": "h3"
+      },
+      {
+       "uci": "g4h5",
+       "san": "Bh5"
+      },
+      {
+       "uci": "g2g4",
+       "san": "g4"
+      },
+      {
+       "uci": "h5g6",
+       "san": "Bg6"
+      },
+      {
+       "uci": "f1g2",
+       "san": "Bg2"
+      },
+      {
+       "uci": "g8f6",
+       "san": "Ngf6"
+      },
+      {
+       "uci": "e1g1",
+       "san": "O-O"
+      },
+      {
+       "uci": "f6e4",
+       "san": "Nxe4"
+      },
+      {
+       "uci": "f3d2",
+       "san": "Nfd2"
+      },
+      {
+       "uci": "e4d2",
+       "san": "Nxd2"
+      },
+      {
+       "uci": "f1e1",
+       "san": "Re1+"
+      },
+      {
+       "uci": "d6e7",
+       "san": "Be7"
+      }
+     ]
+    }
+   ],
+   "reply_pv": [
+    {
+     "uci": "d1f3",
+     "san": "Qxf3"
+    },
+    {
+     "uci": "d6e5",
+     "san": "dxe5"
+    },
+    {
+     "uci": "f1c4",
+     "san": "Bc4"
+    },
+    {
+     "uci": "d8f6",
+     "san": "Qf6"
+    },
+    {
+     "uci": "f3b3",
+     "san": "Qb3"
+    },
+    {
+     "uci": "b8d7",
+     "san": "Nd7"
+    },
+    {
+     "uci": "b3b7",
+     "san": "Qxb7"
+    },
+    {
+     "uci": "a8b8",
+     "san": "Rb8"
+    },
+    {
+     "uci": "b7a6",
+     "san": "Qa6"
+    },
+    {
+     "uci": "f6a6",
+     "san": "Qxa6"
+    },
+    {
+     "uci": "c4a6",
+     "san": "Bxa6"
+    },
+    {
+     "uci": "d7c5",
+     "san": "Nc5"
+    },
+    {
+     "uci": "a6d3",
+     "san": "Bd3"
+    },
+    {
+     "uci": "c5d3",
+     "san": "Nxd3+"
+    },
+    {
+     "uci": "c2d3",
+     "san": "cxd3"
+    },
+    {
+     "uci": "g8e7",
+     "san": "Ne7"
+    },
+    {
+     "uci": "b1d2",
+     "san": "Nd2"
+    },
+    {
+     "uci": "e7c6",
+     "san": "Nc6"
+    },
+    {
+     "uci": "d2c4",
+     "san": "Nc4"
+    },
+    {
+     "uci": "b8d8",
+     "san": "Rd8"
+    },
+    {
+     "uci": "e1e2",
+     "san": "Ke2"
+    }
+   ],
+   "motifs": {
+    "played": [],
+    "missed": [],
+    "refutation": [],
+    "sacrifice": null
+   },
+   "phase": "opening"
+  },
+  {
+   "ply": 9,
+   "san": "Qxf3",
+   "uci": "d1f3",
+   "fen_before": "rn1qkbnr/ppp2ppp/3p4/4P3/4P3/5b2/PPP2PPP/RNBQKB1R w KQkq - 0 5",
+   "eval_before_cp": 151,
+   "eval_after_cp": 155,
+   "mate_before": null,
+   "mate_after": null,
+   "win_before": 63.55251419984302,
+   "win_after": 63.892984846379605,
+   "accuracy": 100.0,
+   "move_class": "best",
+   "is_miss": false,
+   "best_uci": "d1f3",
+   "best_san": "Qxf3",
+   "pv": [
+    {
+     "uci": "d1f3",
+     "san": "Qxf3"
+    },
+    {
+     "uci": "d6e5",
+     "san": "dxe5"
+    },
+    {
+     "uci": "f1c4",
+     "san": "Bc4"
+    },
+    {
+     "uci": "d8f6",
+     "san": "Qf6"
+    },
+    {
+     "uci": "f3b3",
+     "san": "Qb3"
+    },
+    {
+     "uci": "b8d7",
+     "san": "Nd7"
+    },
+    {
+     "uci": "b3b7",
+     "san": "Qxb7"
+    },
+    {
+     "uci": "a8b8",
+     "san": "Rb8"
+    },
+    {
+     "uci": "b7a6",
+     "san": "Qa6"
+    },
+    {
+     "uci": "f6a6",
+     "san": "Qxa6"
+    },
+    {
+     "uci": "c4a6",
+     "san": "Bxa6"
+    },
+    {
+     "uci": "d7c5",
+     "san": "Nc5"
+    },
+    {
+     "uci": "a6d3",
+     "san": "Bd3"
+    },
+    {
+     "uci": "c5d3",
+     "san": "Nxd3+"
+    },
+    {
+     "uci": "c2d3",
+     "san": "cxd3"
+    },
+    {
+     "uci": "g8e7",
+     "san": "Ne7"
+    },
+    {
+     "uci": "b1d2",
+     "san": "Nd2"
+    },
+    {
+     "uci": "e7c6",
+     "san": "Nc6"
+    },
+    {
+     "uci": "d2c4",
+     "san": "Nc4"
+    },
+    {
+     "uci": "b8d8",
+     "san": "Rd8"
+    },
+    {
+     "uci": "e1e2",
+     "san": "Ke2"
+    }
+   ],
+   "multipv": [
+    {
+     "cp": 151,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "d1f3",
+       "san": "Qxf3"
+      },
+      {
+       "uci": "d6e5",
+       "san": "dxe5"
+      },
+      {
+       "uci": "f1c4",
+       "san": "Bc4"
+      },
+      {
+       "uci": "d8f6",
+       "san": "Qf6"
+      },
+      {
+       "uci": "f3b3",
+       "san": "Qb3"
+      },
+      {
+       "uci": "b8d7",
+       "san": "Nd7"
+      },
+      {
+       "uci": "b3b7",
+       "san": "Qxb7"
+      },
+      {
+       "uci": "a8b8",
+       "san": "Rb8"
+      },
+      {
+       "uci": "b7a6",
+       "san": "Qa6"
+      },
+      {
+       "uci": "f6a6",
+       "san": "Qxa6"
+      },
+      {
+       "uci": "c4a6",
+       "san": "Bxa6"
+      },
+      {
+       "uci": "d7c5",
+       "san": "Nc5"
+      },
+      {
+       "uci": "a6d3",
+       "san": "Bd3"
+      },
+      {
+       "uci": "c5d3",
+       "san": "Nxd3+"
+      },
+      {
+       "uci": "c2d3",
+       "san": "cxd3"
+      },
+      {
+       "uci": "g8e7",
+       "san": "Ne7"
+      },
+      {
+       "uci": "b1d2",
+       "san": "Nd2"
+      },
+      {
+       "uci": "e7c6",
+       "san": "Nc6"
+      },
+      {
+       "uci": "d2c4",
+       "san": "Nc4"
+      },
+      {
+       "uci": "b8d8",
+       "san": "Rd8"
+      },
+      {
+       "uci": "e1e2",
+       "san": "Ke2"
+      }
+     ]
+    },
+    {
+     "cp": 101,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "g2f3",
+       "san": "gxf3"
+      },
+      {
+       "uci": "d6e5",
+       "san": "dxe5"
+      },
+      {
+       "uci": "d1d8",
+       "san": "Qxd8+"
+      },
+      {
+       "uci": "e8d8",
+       "san": "Kxd8"
+      },
+      {
+       "uci": "b1c3",
+       "san": "Nc3"
+      },
+      {
+       "uci": "c7c6",
+       "san": "c6"
+      },
+      {
+       "uci": "f3f4",
+       "san": "f4"
+      },
+      {
+       "uci": "b8d7",
+       "san": "Nd7"
+      },
+      {
+       "uci": "c1e3",
+       "san": "Be3"
+      },
+      {
+       "uci": "g8f6",
+       "san": "Ngf6"
+      },
+      {
+       "uci": "f4e5",
+       "san": "fxe5"
+      },
+      {
+       "uci": "f6g4",
+       "san": "Ng4"
+      },
+      {
+       "uci": "e3d4",
+       "san": "Bd4"
+      },
+      {
+       "uci": "d8c7",
+       "san": "Kc7"
+      }
+     ]
+    },
+    {
+     "cp": -378,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "d1d5",
+       "san": "Qd5"
+      },
+      {
+       "uci": "c7c6",
+       "san": "c6"
+      },
+      {
+       "uci": "d5b3",
+       "san": "Qb3"
+      },
+      {
+       "uci": "f3e4",
+       "san": "Bxe4"
+      },
+      {
+       "uci": "b1c3",
+       "san": "Nc3"
+      },
+      {
+       "uci": "e4f5",
+       "san": "Bf5"
+      },
+      {
+       "uci": "b3b7",
+       "san": "Qxb7"
+      },
+      {
+       "uci": "b8d7",
+       "san": "Nd7"
+      },
+      {
+       "uci": "b7c6",
+       "san": "Qxc6"
+      },
+      {
+       "uci": "d6e5",
+       "san": "dxe5"
+      },
+      {
+       "uci": "c1e3",
+       "san": "Be3"
+      },
+      {
+       "uci": "f8b4",
+       "san": "Bb4"
+      },
+      {
+       "uci": "e1c1",
+       "san": "O-O-O"
+      },
+      {
+       "uci": "a8c8",
+       "san": "Rc8"
+      },
+      {
+       "uci": "c6f3",
+       "san": "Qf3"
+      },
+      {
+       "uci": "f5e6",
+       "san": "Be6"
+      },
+      {
+       "uci": "f1b5",
+       "san": "Bb5"
+      },
+      {
+       "uci": "b4c3",
+       "san": "Bxc3"
+      }
+     ]
+    }
+   ],
+   "reply_pv": [
+    {
+     "uci": "d6e5",
+     "san": "dxe5"
+    },
+    {
+     "uci": "f3b3",
+     "san": "Qb3"
+    },
+    {
+     "uci": "b8d7",
+     "san": "Nd7"
+    },
+    {
+     "uci": "c1e3",
+     "san": "Be3"
+    },
+    {
+     "uci": "f8c5",
+     "san": "Bc5"
+    },
+    {
+     "uci": "e3c5",
+     "san": "Bxc5"
+    },
+    {
+     "uci": "d7c5",
+     "san": "Nxc5"
+    },
+    {
+     "uci": "b3b5",
+     "san": "Qb5+"
+    },
+    {
+     "uci": "c5d7",
+     "san": "Nd7"
+    },
+    {
+     "uci": "b5b7",
+     "san": "Qxb7"
+    },
+    {
+     "uci": "a8b8",
+     "san": "Rb8"
+    },
+    {
+     "uci": "b7a7",
+     "san": "Qxa7"
+    },
+    {
+     "uci": "g8f6",
+     "san": "Ngf6"
+    },
+    {
+     "uci": "b1c3",
+     "san": "Nc3"
+    }
+   ],
+   "motifs": {
+    "played": [],
+    "missed": [],
+    "refutation": [],
+    "sacrifice": null
+   },
+   "phase": "middlegame"
+  },
+  {
+   "ply": 10,
+   "san": "dxe5",
+   "uci": "d6e5",
+   "fen_before": "rn1qkbnr/ppp2ppp/3p4/4P3/4P3/5Q2/PPP2PPP/RNB1KB1R b KQkq - 0 5",
+   "eval_before_cp": -155,
+   "eval_after_cp": -156,
+   "mate_before": null,
+   "mate_after": null,
+   "win_before": 36.1070151536204,
+   "win_after": 36.02211364871788,
+   "accuracy": 100.0,
+   "move_class": "best",
+   "is_miss": false,
+   "best_uci": "d6e5",
+   "best_san": "dxe5",
+   "pv": [
+    {
+     "uci": "d6e5",
+     "san": "dxe5"
+    },
+    {
+     "uci": "f3b3",
+     "san": "Qb3"
+    },
+    {
+     "uci": "b8d7",
+     "san": "Nd7"
+    },
+    {
+     "uci": "c1e3",
+     "san": "Be3"
+    },
+    {
+     "uci": "f8c5",
+     "san": "Bc5"
+    },
+    {
+     "uci": "e3c5",
+     "san": "Bxc5"
+    },
+    {
+     "uci": "d7c5",
+     "san": "Nxc5"
+    },
+    {
+     "uci": "b3b5",
+     "san": "Qb5+"
+    },
+    {
+     "uci": "c5d7",
+     "san": "Nd7"
+    },
+    {
+     "uci": "b5b7",
+     "san": "Qxb7"
+    },
+    {
+     "uci": "a8b8",
+     "san": "Rb8"
+    },
+    {
+     "uci": "b7a7",
+     "san": "Qxa7"
+    },
+    {
+     "uci": "g8f6",
+     "san": "Ngf6"
+    },
+    {
+     "uci": "b1c3",
+     "san": "Nc3"
+    }
+   ],
+   "multipv": [
+    {
+     "cp": -155,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "d6e5",
+       "san": "dxe5"
+      },
+      {
+       "uci": "f3b3",
+       "san": "Qb3"
+      },
+      {
+       "uci": "b8d7",
+       "san": "Nd7"
+      },
+      {
+       "uci": "c1e3",
+       "san": "Be3"
+      },
+      {
+       "uci": "f8c5",
+       "san": "Bc5"
+      },
+      {
+       "uci": "e3c5",
+       "san": "Bxc5"
+      },
+      {
+       "uci": "d7c5",
+       "san": "Nxc5"
+      },
+      {
+       "uci": "b3b5",
+       "san": "Qb5+"
+      },
+      {
+       "uci": "c5d7",
+       "san": "Nd7"
+      },
+      {
+       "uci": "b5b7",
+       "san": "Qxb7"
+      },
+      {
+       "uci": "a8b8",
+       "san": "Rb8"
+      },
+      {
+       "uci": "b7a7",
+       "san": "Qxa7"
+      },
+      {
+       "uci": "g8f6",
+       "san": "Ngf6"
+      },
+      {
+       "uci": "b1c3",
+       "san": "Nc3"
+      }
+     ]
+    },
+    {
+     "cp": -192,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "b8d7",
+       "san": "Nd7"
+      },
+      {
+       "uci": "e5d6",
+       "san": "exd6"
+      },
+      {
+       "uci": "f8d6",
+       "san": "Bxd6"
+      },
+      {
+       "uci": "b1c3",
+       "san": "Nc3"
+      },
+      {
+       "uci": "c7c6",
+       "san": "c6"
+      },
+      {
+       "uci": "c1f4",
+       "san": "Bf4"
+      },
+      {
+       "uci": "d8f6",
+       "san": "Qf6"
+      },
+      {
+       "uci": "f4d6",
+       "san": "Bxd6"
+      },
+      {
+       "uci": "f6d6",
+       "san": "Qxd6"
+      },
+      {
+       "uci": "f3g3",
+       "san": "Qg3"
+      },
+      {
+       "uci": "d6g3",
+       "san": "Qxg3"
+      },
+      {
+       "uci": "h2g3",
+       "san": "hxg3"
+      },
+      {
+       "uci": "e8c8",
+       "san": "O-O-O"
+      },
+      {
+       "uci": "f2f3",
+       "san": "f3"
+      },
+      {
+       "uci": "c8c7",
+       "san": "Kc7"
+      }
+     ]
+    },
+    {
+     "cp": -266,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "b8c6",
+       "san": "Nc6"
+      },
+      {
+       "uci": "f3b3",
+       "san": "Qb3"
+      },
+      {
+       "uci": "d8c8",
+       "san": "Qc8"
+      },
+      {
+       "uci": "e5d6",
+       "san": "exd6"
+      },
+      {
+       "uci": "g8f6",
+       "san": "Nf6"
+      },
+      {
+       "uci": "f2f3",
+       "san": "f3"
+      },
+      {
+       "uci": "f8d6",
+       "san": "Bxd6"
+      },
+      {
+       "uci": "c1e3",
+       "san": "Be3"
+      },
+      {
+       "uci": "a7a6",
+       "san": "a6"
+      },
+      {
+       "uci": "b1c3",
+       "san": "Nc3"
+      }
+     ]
+    }
+   ],
+   "reply_pv": [
+    {
+     "uci": "f3b3",
+     "san": "Qb3"
+    },
+    {
+     "uci": "b8d7",
+     "san": "Nd7"
+    },
+    {
+     "uci": "c1e3",
+     "san": "Be3"
+    },
+    {
+     "uci": "f8c5",
+     "san": "Bc5"
+    },
+    {
+     "uci": "e3c5",
+     "san": "Bxc5"
+    },
+    {
+     "uci": "d7c5",
+     "san": "Nxc5"
+    },
+    {
+     "uci": "b3b5",
+     "san": "Qb5+"
+    },
+    {
+     "uci": "c5d7",
+     "san": "Nd7"
+    },
+    {
+     "uci": "b5b7",
+     "san": "Qxb7"
+    },
+    {
+     "uci": "g8f6",
+     "san": "Ngf6"
+    },
+    {
+     "uci": "b1c3",
+     "san": "Nc3"
+    },
+    {
+     "uci": "a8b8",
+     "san": "Rb8"
+    },
+    {
+     "uci": "b7a7",
+     "san": "Qxa7"
+    },
+    {
+     "uci": "b8b2",
+     "san": "Rxb2"
+    },
+    {
+     "uci": "f1b5",
+     "san": "Bb5"
+    },
+    {
+     "uci": "b2c2",
+     "san": "Rxc2"
+    },
+    {
+     "uci": "a7a3",
+     "san": "Qa3"
+    },
+    {
+     "uci": "d8e7",
+     "san": "Qe7"
+    },
+    {
+     "uci": "b5d7",
+     "san": "Bxd7+"
+    },
+    {
+     "uci": "e7d7",
+     "san": "Qxd7"
+    }
+   ],
+   "motifs": {
+    "played": [],
+    "missed": [],
+    "refutation": [],
+    "sacrifice": null
+   },
+   "phase": "middlegame"
+  },
+  {
+   "ply": 11,
+   "san": "Bc4",
+   "uci": "f1c4",
+   "fen_before": "rn1qkbnr/ppp2ppp/8/4p3/4P3/5Q2/PPP2PPP/RNB1KB1R w KQkq - 0 6",
+   "eval_before_cp": 156,
+   "eval_after_cp": 131,
+   "mate_before": null,
+   "mate_after": null,
+   "win_before": 63.97788635128212,
+   "win_after": 61.83032245766587,
+   "accuracy": 91.78970977326155,
+   "move_class": "good",
+   "is_miss": false,
+   "best_uci": "f3b3",
+   "best_san": "Qb3",
+   "pv": [
+    {
+     "uci": "f3b3",
+     "san": "Qb3"
+    },
+    {
+     "uci": "b8d7",
+     "san": "Nd7"
+    },
+    {
+     "uci": "c1e3",
+     "san": "Be3"
+    },
+    {
+     "uci": "f8c5",
+     "san": "Bc5"
+    },
+    {
+     "uci": "e3c5",
+     "san": "Bxc5"
+    },
+    {
+     "uci": "d7c5",
+     "san": "Nxc5"
+    },
+    {
+     "uci": "b3b5",
+     "san": "Qb5+"
+    },
+    {
+     "uci": "c5d7",
+     "san": "Nd7"
+    },
+    {
+     "uci": "b5b7",
+     "san": "Qxb7"
+    },
+    {
+     "uci": "g8f6",
+     "san": "Ngf6"
+    },
+    {
+     "uci": "b1c3",
+     "san": "Nc3"
+    },
+    {
+     "uci": "a8b8",
+     "san": "Rb8"
+    },
+    {
+     "uci": "b7a7",
+     "san": "Qxa7"
+    },
+    {
+     "uci": "b8b2",
+     "san": "Rxb2"
+    },
+    {
+     "uci": "f1b5",
+     "san": "Bb5"
+    },
+    {
+     "uci": "b2c2",
+     "san": "Rxc2"
+    },
+    {
+     "uci": "a7a3",
+     "san": "Qa3"
+    },
+    {
+     "uci": "d8e7",
+     "san": "Qe7"
+    },
+    {
+     "uci": "b5d7",
+     "san": "Bxd7+"
+    },
+    {
+     "uci": "e7d7",
+     "san": "Qxd7"
+    }
+   ],
+   "multipv": [
+    {
+     "cp": 156,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "f3b3",
+       "san": "Qb3"
+      },
+      {
+       "uci": "b8d7",
+       "san": "Nd7"
+      },
+      {
+       "uci": "c1e3",
+       "san": "Be3"
+      },
+      {
+       "uci": "f8c5",
+       "san": "Bc5"
+      },
+      {
+       "uci": "e3c5",
+       "san": "Bxc5"
+      },
+      {
+       "uci": "d7c5",
+       "san": "Nxc5"
+      },
+      {
+       "uci": "b3b5",
+       "san": "Qb5+"
+      },
+      {
+       "uci": "c5d7",
+       "san": "Nd7"
+      },
+      {
+       "uci": "b5b7",
+       "san": "Qxb7"
+      },
+      {
+       "uci": "g8f6",
+       "san": "Ngf6"
+      },
+      {
+       "uci": "b1c3",
+       "san": "Nc3"
+      },
+      {
+       "uci": "a8b8",
+       "san": "Rb8"
+      },
+      {
+       "uci": "b7a7",
+       "san": "Qxa7"
+      },
+      {
+       "uci": "b8b2",
+       "san": "Rxb2"
+      },
+      {
+       "uci": "f1b5",
+       "san": "Bb5"
+      },
+      {
+       "uci": "b2c2",
+       "san": "Rxc2"
+      },
+      {
+       "uci": "a7a3",
+       "san": "Qa3"
+      },
+      {
+       "uci": "d8e7",
+       "san": "Qe7"
+      },
+      {
+       "uci": "b5d7",
+       "san": "Bxd7+"
+      },
+      {
+       "uci": "e7d7",
+       "san": "Qxd7"
+      }
+     ]
+    }
+   ],
+   "reply_pv": [
+    {
+     "uci": "d8f6",
+     "san": "Qf6"
+    },
+    {
+     "uci": "f3b3",
+     "san": "Qb3"
+    },
+    {
+     "uci": "b8d7",
+     "san": "Nd7"
+    },
+    {
+     "uci": "b3b7",
+     "san": "Qxb7"
+    },
+    {
+     "uci": "a8b8",
+     "san": "Rb8"
+    },
+    {
+     "uci": "b7a6",
+     "san": "Qa6"
+    },
+    {
+     "uci": "f6a6",
+     "san": "Qxa6"
+    },
+    {
+     "uci": "c4a6",
+     "san": "Bxa6"
+    },
+    {
+     "uci": "d7c5",
+     "san": "Nc5"
+    },
+    {
+     "uci": "a6d3",
+     "san": "Bd3"
+    },
+    {
+     "uci": "g8e7",
+     "san": "Ne7"
+    },
+    {
+     "uci": "b1a3",
+     "san": "Na3"
+    },
+    {
+     "uci": "c5d3",
+     "san": "Nxd3+"
+    },
+    {
+     "uci": "c2d3",
+     "san": "cxd3"
+    },
+    {
+     "uci": "e7c6",
+     "san": "Nc6"
+    },
+    {
+     "uci": "a3c4",
+     "san": "Nc4"
+    },
+    {
+     "uci": "b8d8",
+     "san": "Rd8"
+    },
+    {
+     "uci": "c1e3",
+     "san": "Be3"
+    },
+    {
+     "uci": "d8d3",
+     "san": "Rxd3"
+    },
+    {
+     "uci": "a1c1",
+     "san": "Rc1"
+    }
+   ],
+   "motifs": {
+    "played": [
+     {
+      "type": "mate_threat",
+      "squares": [
+       "f7",
+       "e8"
+      ],
+      "pieces": [
+       "Q",
+       "k"
+      ],
+      "gain_cp": null,
+      "line": [
+       {
+        "uci": "f1c4",
+        "san": "Bc4"
+       },
+       {
+        "uci": "0000",
+        "san": "--"
+       },
+       {
+        "uci": "f3f7",
+        "san": "Qxf7#"
+       }
+      ]
+     }
+    ],
+    "missed": [],
+    "refutation": [],
+    "sacrifice": null
+   },
+   "phase": "middlegame"
+  },
+  {
+   "ply": 12,
+   "san": "Nf6",
+   "uci": "g8f6",
+   "fen_before": "rn1qkbnr/ppp2ppp/8/4p3/2B1P3/5Q2/PPP2PPP/RNB1K2R b KQkq - 1 6",
+   "eval_before_cp": -131,
+   "eval_after_cp": -263,
+   "mate_before": null,
+   "mate_after": null,
+   "win_before": 38.16967754233412,
+   "win_after": 27.520211606290008,
+   "accuracy": 62.71864222531352,
+   "move_class": "mistake",
+   "is_miss": false,
+   "best_uci": "d8f6",
+   "best_san": "Qf6",
+   "pv": [
+    {
+     "uci": "d8f6",
+     "san": "Qf6"
+    },
+    {
+     "uci": "f3b3",
+     "san": "Qb3"
+    },
+    {
+     "uci": "b8d7",
+     "san": "Nd7"
+    },
+    {
+     "uci": "b3b7",
+     "san": "Qxb7"
+    },
+    {
+     "uci": "a8b8",
+     "san": "Rb8"
+    },
+    {
+     "uci": "b7a6",
+     "san": "Qa6"
+    },
+    {
+     "uci": "f6a6",
+     "san": "Qxa6"
+    },
+    {
+     "uci": "c4a6",
+     "san": "Bxa6"
+    },
+    {
+     "uci": "d7c5",
+     "san": "Nc5"
+    },
+    {
+     "uci": "a6d3",
+     "san": "Bd3"
+    },
+    {
+     "uci": "g8e7",
+     "san": "Ne7"
+    },
+    {
+     "uci": "b1a3",
+     "san": "Na3"
+    },
+    {
+     "uci": "c5d3",
+     "san": "Nxd3+"
+    },
+    {
+     "uci": "c2d3",
+     "san": "cxd3"
+    },
+    {
+     "uci": "e7c6",
+     "san": "Nc6"
+    },
+    {
+     "uci": "a3c4",
+     "san": "Nc4"
+    },
+    {
+     "uci": "b8d8",
+     "san": "Rd8"
+    },
+    {
+     "uci": "c1e3",
+     "san": "Be3"
+    },
+    {
+     "uci": "d8d3",
+     "san": "Rxd3"
+    },
+    {
+     "uci": "a1c1",
+     "san": "Rc1"
+    }
+   ],
+   "multipv": [
+    {
+     "cp": -131,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "d8f6",
+       "san": "Qf6"
+      },
+      {
+       "uci": "f3b3",
+       "san": "Qb3"
+      },
+      {
+       "uci": "b8d7",
+       "san": "Nd7"
+      },
+      {
+       "uci": "b3b7",
+       "san": "Qxb7"
+      },
+      {
+       "uci": "a8b8",
+       "san": "Rb8"
+      },
+      {
+       "uci": "b7a6",
+       "san": "Qa6"
+      },
+      {
+       "uci": "f6a6",
+       "san": "Qxa6"
+      },
+      {
+       "uci": "c4a6",
+       "san": "Bxa6"
+      },
+      {
+       "uci": "d7c5",
+       "san": "Nc5"
+      },
+      {
+       "uci": "a6d3",
+       "san": "Bd3"
+      },
+      {
+       "uci": "g8e7",
+       "san": "Ne7"
+      },
+      {
+       "uci": "b1a3",
+       "san": "Na3"
+      },
+      {
+       "uci": "c5d3",
+       "san": "Nxd3+"
+      },
+      {
+       "uci": "c2d3",
+       "san": "cxd3"
+      },
+      {
+       "uci": "e7c6",
+       "san": "Nc6"
+      },
+      {
+       "uci": "a3c4",
+       "san": "Nc4"
+      },
+      {
+       "uci": "b8d8",
+       "san": "Rd8"
+      },
+      {
+       "uci": "c1e3",
+       "san": "Be3"
+      },
+      {
+       "uci": "d8d3",
+       "san": "Rxd3"
+      },
+      {
+       "uci": "a1c1",
+       "san": "Rc1"
+      }
+     ]
+    }
+   ],
+   "reply_pv": [
+    {
+     "uci": "f3b3",
+     "san": "Qb3"
+    },
+    {
+     "uci": "f8c5",
+     "san": "Bc5"
+    },
+    {
+     "uci": "c4f7",
+     "san": "Bxf7+"
+    },
+    {
+     "uci": "e8e7",
+     "san": "Ke7"
+    },
+    {
+     "uci": "c1g5",
+     "san": "Bg5"
+    },
+    {
+     "uci": "b8c6",
+     "san": "Nc6"
+    },
+    {
+     "uci": "f7h5",
+     "san": "Bh5"
+    },
+    {
+     "uci": "h8f8",
+     "san": "Rf8"
+    },
+    {
+     "uci": "e1g1",
+     "san": "O-O"
+    },
+    {
+     "uci": "c6d4",
+     "san": "Nd4"
+    },
+    {
+     "uci": "b3c4",
+     "san": "Qc4"
+    },
+    {
+     "uci": "c5d6",
+     "san": "Bd6"
+    },
+    {
+     "uci": "c2c3",
+     "san": "c3"
+    }
+   ],
+   "motifs": {
+    "played": [],
+    "missed": [],
+    "refutation": [],
+    "sacrifice": null
+   },
+   "phase": "middlegame"
+  },
+  {
+   "ply": 13,
+   "san": "Qb3",
+   "uci": "f3b3",
+   "fen_before": "rn1qkb1r/ppp2ppp/5n2/4p3/2B1P3/5Q2/PPP2PPP/RNB1K2R w KQkq - 2 7",
+   "eval_before_cp": 263,
+   "eval_after_cp": 265,
+   "mate_before": null,
+   "mate_after": null,
+   "win_before": 72.47978839371,
+   "win_after": 72.62643485404467,
+   "accuracy": 100.0,
+   "move_class": "great",
+   "is_miss": false,
+   "best_uci": "f3b3",
+   "best_san": "Qb3",
+   "pv": [
+    {
+     "uci": "f3b3",
+     "san": "Qb3"
+    },
+    {
+     "uci": "f8c5",
+     "san": "Bc5"
+    },
+    {
+     "uci": "c4f7",
+     "san": "Bxf7+"
+    },
+    {
+     "uci": "e8e7",
+     "san": "Ke7"
+    },
+    {
+     "uci": "c1g5",
+     "san": "Bg5"
+    },
+    {
+     "uci": "b8c6",
+     "san": "Nc6"
+    },
+    {
+     "uci": "f7h5",
+     "san": "Bh5"
+    },
+    {
+     "uci": "h8f8",
+     "san": "Rf8"
+    },
+    {
+     "uci": "e1g1",
+     "san": "O-O"
+    },
+    {
+     "uci": "c6d4",
+     "san": "Nd4"
+    },
+    {
+     "uci": "b3c4",
+     "san": "Qc4"
+    },
+    {
+     "uci": "c5d6",
+     "san": "Bd6"
+    },
+    {
+     "uci": "c2c3",
+     "san": "c3"
+    }
+   ],
+   "multipv": [
+    {
+     "cp": 263,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "f3b3",
+       "san": "Qb3"
+      },
+      {
+       "uci": "f8c5",
+       "san": "Bc5"
+      },
+      {
+       "uci": "c4f7",
+       "san": "Bxf7+"
+      },
+      {
+       "uci": "e8e7",
+       "san": "Ke7"
+      },
+      {
+       "uci": "c1g5",
+       "san": "Bg5"
+      },
+      {
+       "uci": "b8c6",
+       "san": "Nc6"
+      },
+      {
+       "uci": "f7h5",
+       "san": "Bh5"
+      },
+      {
+       "uci": "h8f8",
+       "san": "Rf8"
+      },
+      {
+       "uci": "e1g1",
+       "san": "O-O"
+      },
+      {
+       "uci": "c6d4",
+       "san": "Nd4"
+      },
+      {
+       "uci": "b3c4",
+       "san": "Qc4"
+      },
+      {
+       "uci": "c5d6",
+       "san": "Bd6"
+      },
+      {
+       "uci": "c2c3",
+       "san": "c3"
+      }
+     ]
+    },
+    {
+     "cp": 105,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "c1g5",
+       "san": "Bg5"
+      },
+      {
+       "uci": "f8c5",
+       "san": "Bc5"
+      },
+      {
+       "uci": "b1c3",
+       "san": "Nc3"
+      },
+      {
+       "uci": "c7c6",
+       "san": "c6"
+      },
+      {
+       "uci": "c3e2",
+       "san": "Ne2"
+      },
+      {
+       "uci": "h7h6",
+       "san": "h6"
+      },
+      {
+       "uci": "g5f6",
+       "san": "Bxf6"
+      },
+      {
+       "uci": "d8f6",
+       "san": "Qxf6"
+      },
+      {
+       "uci": "f3f6",
+       "san": "Qxf6"
+      },
+      {
+       "uci": "g7f6",
+       "san": "gxf6"
+      },
+      {
+       "uci": "e2g3",
+       "san": "Ng3"
+      },
+      {
+       "uci": "b8d7",
+       "san": "Nd7"
+      },
+      {
+       "uci": "g3f5",
+       "san": "Nf5"
+      },
+      {
+       "uci": "d7b6",
+       "san": "Nb6"
+      },
+      {
+       "uci": "c4e2",
+       "san": "Be2"
+      }
+     ]
+    },
+    {
+     "cp": 105,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "b1d2",
+       "san": "Nd2"
+      },
+      {
+       "uci": "b8c6",
+       "san": "Nc6"
+      },
+      {
+       "uci": "c2c3",
+       "san": "c3"
+      },
+      {
+       "uci": "f8e7",
+       "san": "Be7"
+      },
+      {
+       "uci": "a2a4",
+       "san": "a4"
+      },
+      {
+       "uci": "e8g8",
+       "san": "O-O"
+      },
+      {
+       "uci": "a4a5",
+       "san": "a5"
+      },
+      {
+       "uci": "a8b8",
+       "san": "Rb8"
+      },
+      {
+       "uci": "e1g1",
+       "san": "O-O"
+      },
+      {
+       "uci": "b7b5",
+       "san": "b5"
+      },
+      {
+       "uci": "c4e2",
+       "san": "Be2"
+      },
+      {
+       "uci": "d8c8",
+       "san": "Qc8"
+      }
+     ]
+    }
+   ],
+   "reply_pv": [
+    {
+     "uci": "f8c5",
+     "san": "Bc5"
+    },
+    {
+     "uci": "c4f7",
+     "san": "Bxf7+"
+    },
+    {
+     "uci": "e8f8",
+     "san": "Kf8"
+    },
+    {
+     "uci": "f7d5",
+     "san": "Bd5"
+    },
+    {
+     "uci": "c7c6",
+     "san": "c6"
+    },
+    {
+     "uci": "d5e6",
+     "san": "Be6"
+    },
+    {
+     "uci": "d8e7",
+     "san": "Qe7"
+    },
+    {
+     "uci": "e1g1",
+     "san": "O-O"
+    },
+    {
+     "uci": "f8e8",
+     "san": "Ke8"
+    },
+    {
+     "uci": "b1d2",
+     "san": "Nd2"
+    },
+    {
+     "uci": "b8a6",
+     "san": "Na6"
+    },
+    {
+     "uci": "d2f3",
+     "san": "Nf3"
+    },
+    {
+     "uci": "f6e4",
+     "san": "Nxe4"
+    },
+    {
+     "uci": "f3e5",
+     "san": "Nxe5"
+    },
+    {
+     "uci": "e4f2",
+     "san": "Nxf2"
+    },
+    {
+     "uci": "e6f7",
+     "san": "Bf7+"
+    },
+    {
+     "uci": "e8d8",
+     "san": "Kd8"
+    }
+   ],
+   "motifs": {
+    "played": [],
+    "missed": [],
+    "refutation": [],
+    "sacrifice": null
+   },
+   "phase": "middlegame"
+  },
+  {
+   "ply": 14,
+   "san": "Qe7",
+   "uci": "d8e7",
+   "fen_before": "rn1qkb1r/ppp2ppp/5n2/4p3/2B1P3/1Q6/PPP2PPP/RNB1K2R b KQkq - 3 7",
+   "eval_before_cp": -265,
+   "eval_after_cp": -348,
+   "mate_before": null,
+   "mate_after": null,
+   "win_before": 27.373565145955325,
+   "win_after": 21.731815726726346,
+   "accuracy": 78.52850885152722,
+   "move_class": "inaccuracy",
+   "is_miss": false,
+   "best_uci": "f8c5",
+   "best_san": "Bc5",
+   "pv": [
+    {
+     "uci": "f8c5",
+     "san": "Bc5"
+    },
+    {
+     "uci": "c4f7",
+     "san": "Bxf7+"
+    },
+    {
+     "uci": "e8f8",
+     "san": "Kf8"
+    },
+    {
+     "uci": "f7d5",
+     "san": "Bd5"
+    },
+    {
+     "uci": "c7c6",
+     "san": "c6"
+    },
+    {
+     "uci": "d5e6",
+     "san": "Be6"
+    },
+    {
+     "uci": "d8e7",
+     "san": "Qe7"
+    },
+    {
+     "uci": "e1g1",
+     "san": "O-O"
+    },
+    {
+     "uci": "f8e8",
+     "san": "Ke8"
+    },
+    {
+     "uci": "b1d2",
+     "san": "Nd2"
+    },
+    {
+     "uci": "b8a6",
+     "san": "Na6"
+    },
+    {
+     "uci": "d2f3",
+     "san": "Nf3"
+    },
+    {
+     "uci": "f6e4",
+     "san": "Nxe4"
+    },
+    {
+     "uci": "f3e5",
+     "san": "Nxe5"
+    },
+    {
+     "uci": "e4f2",
+     "san": "Nxf2"
+    },
+    {
+     "uci": "e6f7",
+     "san": "Bf7+"
+    },
+    {
+     "uci": "e8d8",
+     "san": "Kd8"
+    }
+   ],
+   "multipv": [
+    {
+     "cp": -265,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "f8c5",
+       "san": "Bc5"
+      },
+      {
+       "uci": "c4f7",
+       "san": "Bxf7+"
+      },
+      {
+       "uci": "e8f8",
+       "san": "Kf8"
+      },
+      {
+       "uci": "f7d5",
+       "san": "Bd5"
+      },
+      {
+       "uci": "c7c6",
+       "san": "c6"
+      },
+      {
+       "uci": "d5e6",
+       "san": "Be6"
+      },
+      {
+       "uci": "d8e7",
+       "san": "Qe7"
+      },
+      {
+       "uci": "e1g1",
+       "san": "O-O"
+      },
+      {
+       "uci": "f8e8",
+       "san": "Ke8"
+      },
+      {
+       "uci": "b1d2",
+       "san": "Nd2"
+      },
+      {
+       "uci": "b8a6",
+       "san": "Na6"
+      },
+      {
+       "uci": "d2f3",
+       "san": "Nf3"
+      },
+      {
+       "uci": "f6e4",
+       "san": "Nxe4"
+      },
+      {
+       "uci": "f3e5",
+       "san": "Nxe5"
+      },
+      {
+       "uci": "e4f2",
+       "san": "Nxf2"
+      },
+      {
+       "uci": "e6f7",
+       "san": "Bf7+"
+      },
+      {
+       "uci": "e8d8",
+       "san": "Kd8"
+      }
+     ]
+    }
+   ],
+   "reply_pv": [
+    {
+     "uci": "b3b7",
+     "san": "Qxb7"
+    },
+    {
+     "uci": "e7b4",
+     "san": "Qb4+"
+    },
+    {
+     "uci": "b7b4",
+     "san": "Qxb4"
+    },
+    {
+     "uci": "f8b4",
+     "san": "Bxb4+"
+    },
+    {
+     "uci": "c2c3",
+     "san": "c3"
+    },
+    {
+     "uci": "b4e7",
+     "san": "Be7"
+    },
+    {
+     "uci": "f2f3",
+     "san": "f3"
+    },
+    {
+     "uci": "b8d7",
+     "san": "Nbd7"
+    },
+    {
+     "uci": "a2a4",
+     "san": "a4"
+    },
+    {
+     "uci": "h7h5",
+     "san": "h5"
+    },
+    {
+     "uci": "a4a5",
+     "san": "a5"
+    },
+    {
+     "uci": "h5h4",
+     "san": "h4"
+    },
+    {
+     "uci": "b2b4",
+     "san": "b4"
+    },
+    {
+     "uci": "a8b8",
+     "san": "Rb8"
+    },
+    {
+     "uci": "e1d1",
+     "san": "Kd1"
+    },
+    {
+     "uci": "h4h3",
+     "san": "h3"
+    }
+   ],
+   "motifs": {
+    "played": [],
+    "missed": [],
+    "refutation": [
+     {
+      "type": "trapped_piece",
+      "squares": [
+       "b7",
+       "a8"
+      ],
+      "pieces": [
+       "Q",
+       "r"
+      ],
+      "gain_cp": 100,
+      "line": [
+       {
+        "uci": "b3b7",
+        "san": "Qxb7"
+       },
+       {
+        "uci": "e7b4",
+        "san": "Qb4+"
+       },
+       {
+        "uci": "b7b4",
+        "san": "Qxb4"
+       }
+      ]
+     }
+    ],
+    "sacrifice": null
+   },
+   "phase": "middlegame"
+  },
+  {
+   "ply": 15,
+   "san": "Nc3",
+   "uci": "b1c3",
+   "fen_before": "rn2kb1r/ppp1qppp/5n2/4p3/2B1P3/1Q6/PPP2PPP/RNB1K2R w KQkq - 4 8",
+   "eval_before_cp": 348,
+   "eval_after_cp": 292,
+   "mate_before": null,
+   "mate_after": null,
+   "win_before": 78.26818427327368,
+   "win_after": 74.55783621617914,
+   "accuracy": 85.60864621418987,
+   "move_class": "good",
+   "is_miss": false,
+   "best_uci": "b3b7",
+   "best_san": "Qxb7",
+   "pv": [
+    {
+     "uci": "b3b7",
+     "san": "Qxb7"
+    },
+    {
+     "uci": "e7b4",
+     "san": "Qb4+"
+    },
+    {
+     "uci": "b7b4",
+     "san": "Qxb4"
+    },
+    {
+     "uci": "f8b4",
+     "san": "Bxb4+"
+    },
+    {
+     "uci": "c2c3",
+     "san": "c3"
+    },
+    {
+     "uci": "b4e7",
+     "san": "Be7"
+    },
+    {
+     "uci": "f2f3",
+     "san": "f3"
+    },
+    {
+     "uci": "b8d7",
+     "san": "Nbd7"
+    },
+    {
+     "uci": "a2a4",
+     "san": "a4"
+    },
+    {
+     "uci": "h7h5",
+     "san": "h5"
+    },
+    {
+     "uci": "a4a5",
+     "san": "a5"
+    },
+    {
+     "uci": "h5h4",
+     "san": "h4"
+    },
+    {
+     "uci": "b2b4",
+     "san": "b4"
+    },
+    {
+     "uci": "a8b8",
+     "san": "Rb8"
+    },
+    {
+     "uci": "e1d1",
+     "san": "Kd1"
+    },
+    {
+     "uci": "h4h3",
+     "san": "h3"
+    }
+   ],
+   "multipv": [
+    {
+     "cp": 348,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "b3b7",
+       "san": "Qxb7"
+      },
+      {
+       "uci": "e7b4",
+       "san": "Qb4+"
+      },
+      {
+       "uci": "b7b4",
+       "san": "Qxb4"
+      },
+      {
+       "uci": "f8b4",
+       "san": "Bxb4+"
+      },
+      {
+       "uci": "c2c3",
+       "san": "c3"
+      },
+      {
+       "uci": "b4e7",
+       "san": "Be7"
+      },
+      {
+       "uci": "f2f3",
+       "san": "f3"
+      },
+      {
+       "uci": "b8d7",
+       "san": "Nbd7"
+      },
+      {
+       "uci": "a2a4",
+       "san": "a4"
+      },
+      {
+       "uci": "h7h5",
+       "san": "h5"
+      },
+      {
+       "uci": "a4a5",
+       "san": "a5"
+      },
+      {
+       "uci": "h5h4",
+       "san": "h4"
+      },
+      {
+       "uci": "b2b4",
+       "san": "b4"
+      },
+      {
+       "uci": "a8b8",
+       "san": "Rb8"
+      },
+      {
+       "uci": "e1d1",
+       "san": "Kd1"
+      },
+      {
+       "uci": "h4h3",
+       "san": "h3"
+      }
+     ]
+    }
+   ],
+   "reply_pv": [
+    {
+     "uci": "c7c6",
+     "san": "c6"
+    },
+    {
+     "uci": "c1g5",
+     "san": "Bg5"
+    },
+    {
+     "uci": "b8a6",
+     "san": "Na6"
+    },
+    {
+     "uci": "g5f6",
+     "san": "Bxf6"
+    },
+    {
+     "uci": "g7f6",
+     "san": "gxf6"
+    },
+    {
+     "uci": "c4a6",
+     "san": "Bxa6"
+    },
+    {
+     "uci": "b7a6",
+     "san": "bxa6"
+    },
+    {
+     "uci": "e1g1",
+     "san": "O-O"
+    },
+    {
+     "uci": "e7b4",
+     "san": "Qb4"
+    },
+    {
+     "uci": "f1d1",
+     "san": "Rfd1"
+    },
+    {
+     "uci": "f8e7",
+     "san": "Be7"
+    }
+   ],
+   "motifs": {
+    "played": [],
+    "missed": [
+     {
+      "type": "trapped_piece",
+      "squares": [
+       "b7",
+       "a8"
+      ],
+      "pieces": [
+       "Q",
+       "r"
+      ],
+      "gain_cp": 100,
+      "line": [
+       {
+        "uci": "b3b7",
+        "san": "Qxb7"
+       },
+       {
+        "uci": "e7b4",
+        "san": "Qb4+"
+       },
+       {
+        "uci": "b7b4",
+        "san": "Qxb4"
+       }
+      ]
+     }
+    ],
+    "refutation": [],
+    "sacrifice": null
+   },
+   "phase": "middlegame"
+  },
+  {
+   "ply": 16,
+   "san": "c6",
+   "uci": "c7c6",
+   "fen_before": "rn2kb1r/ppp1qppp/5n2/4p3/2B1P3/1QN5/PPP2PPP/R1B1K2R b KQkq - 5 8",
+   "eval_before_cp": -292,
+   "eval_after_cp": -249,
+   "mate_before": null,
+   "mate_after": null,
+   "win_before": 25.442163783820853,
+   "win_after": 28.560262776338906,
+   "accuracy": 100.0,
+   "move_class": "great",
+   "is_miss": false,
+   "best_uci": "c7c6",
+   "best_san": "c6",
+   "pv": [
+    {
+     "uci": "c7c6",
+     "san": "c6"
+    },
+    {
+     "uci": "c1g5",
+     "san": "Bg5"
+    },
+    {
+     "uci": "b8a6",
+     "san": "Na6"
+    },
+    {
+     "uci": "g5f6",
+     "san": "Bxf6"
+    },
+    {
+     "uci": "g7f6",
+     "san": "gxf6"
+    },
+    {
+     "uci": "c4a6",
+     "san": "Bxa6"
+    },
+    {
+     "uci": "b7a6",
+     "san": "bxa6"
+    },
+    {
+     "uci": "e1g1",
+     "san": "O-O"
+    },
+    {
+     "uci": "e7b4",
+     "san": "Qb4"
+    },
+    {
+     "uci": "f1d1",
+     "san": "Rfd1"
+    },
+    {
+     "uci": "f8e7",
+     "san": "Be7"
+    }
+   ],
+   "multipv": [
+    {
+     "cp": -292,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "c7c6",
+       "san": "c6"
+      },
+      {
+       "uci": "c1g5",
+       "san": "Bg5"
+      },
+      {
+       "uci": "b8a6",
+       "san": "Na6"
+      },
+      {
+       "uci": "g5f6",
+       "san": "Bxf6"
+      },
+      {
+       "uci": "g7f6",
+       "san": "gxf6"
+      },
+      {
+       "uci": "c4a6",
+       "san": "Bxa6"
+      },
+      {
+       "uci": "b7a6",
+       "san": "bxa6"
+      },
+      {
+       "uci": "e1g1",
+       "san": "O-O"
+      },
+      {
+       "uci": "e7b4",
+       "san": "Qb4"
+      },
+      {
+       "uci": "f1d1",
+       "san": "Rfd1"
+      },
+      {
+       "uci": "f8e7",
+       "san": "Be7"
+      }
+     ]
+    },
+    {
+     "cp": -386,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "e7b4",
+       "san": "Qb4"
+      },
+      {
+       "uci": "c4f7",
+       "san": "Bxf7+"
+      },
+      {
+       "uci": "e8d8",
+       "san": "Kd8"
+      },
+      {
+       "uci": "c1g5",
+       "san": "Bg5"
+      },
+      {
+       "uci": "b4b3",
+       "san": "Qxb3"
+      },
+      {
+       "uci": "e1c1",
+       "san": "O-O-O+"
+      },
+      {
+       "uci": "f8d6",
+       "san": "Bd6"
+      },
+      {
+       "uci": "f7b3",
+       "san": "Bxb3"
+      },
+      {
+       "uci": "b8d7",
+       "san": "Nd7"
+      },
+      {
+       "uci": "c3b5",
+       "san": "Nb5"
+      },
+      {
+       "uci": "d8e7",
+       "san": "Ke7"
+      },
+      {
+       "uci": "f2f3",
+       "san": "f3"
+      },
+      {
+       "uci": "d7c5",
+       "san": "Nc5"
+      },
+      {
+       "uci": "b3d5",
+       "san": "Bd5"
+      },
+      {
+       "uci": "c5e6",
+       "san": "Ne6"
+      },
+      {
+       "uci": "b5d6",
+       "san": "Nxd6"
+      },
+      {
+       "uci": "c7d6",
+       "san": "cxd6"
+      },
+      {
+       "uci": "g5f6",
+       "san": "Bxf6+"
+      },
+      {
+       "uci": "g7f6",
+       "san": "gxf6"
+      },
+      {
+       "uci": "d5b7",
+       "san": "Bxb7"
+      }
+     ]
+    },
+    {
+     "cp": -420,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "b8d7",
+       "san": "Nbd7"
+      },
+      {
+       "uci": "b3b7",
+       "san": "Qxb7"
+      },
+      {
+       "uci": "e7d8",
+       "san": "Qd8"
+      },
+      {
+       "uci": "c1e3",
+       "san": "Be3"
+      },
+      {
+       "uci": "f8d6",
+       "san": "Bd6"
+      },
+      {
+       "uci": "c3b5",
+       "san": "Nb5"
+      },
+      {
+       "uci": "e8g8",
+       "san": "O-O"
+      },
+      {
+       "uci": "e1c1",
+       "san": "O-O-O"
+      },
+      {
+       "uci": "d8e7",
+       "san": "Qe7"
+      },
+      {
+       "uci": "b5d6",
+       "san": "Nxd6"
+      },
+      {
+       "uci": "c7d6",
+       "san": "cxd6"
+      },
+      {
+       "uci": "b7a6",
+       "san": "Qa6"
+      },
+      {
+       "uci": "a8c8",
+       "san": "Rac8"
+      }
+     ]
+    }
+   ],
+   "reply_pv": [
+    {
+     "uci": "c1g5",
+     "san": "Bg5"
+    },
+    {
+     "uci": "e8d8",
+     "san": "Kd8"
+    },
+    {
+     "uci": "c4f7",
+     "san": "Bxf7"
+    },
+    {
+     "uci": "d8c7",
+     "san": "Kc7"
+    },
+    {
+     "uci": "e1c1",
+     "san": "O-O-O"
+    },
+    {
+     "uci": "b8d7",
+     "san": "Nbd7"
+    },
+    {
+     "uci": "a2a4",
+     "san": "a4"
+    },
+    {
+     "uci": "e7b4",
+     "san": "Qb4"
+    },
+    {
+     "uci": "b3e6",
+     "san": "Qe6"
+    },
+    {
+     "uci": "f8c5",
+     "san": "Bc5"
+    },
+    {
+     "uci": "g5f6",
+     "san": "Bxf6"
+    },
+    {
+     "uci": "d7f6",
+     "san": "Nxf6"
+    },
+    {
+     "uci": "e6e5",
+     "san": "Qxe5+"
+    },
+    {
+     "uci": "c5d6",
+     "san": "Bd6"
+    }
+   ],
+   "motifs": {
+    "played": [],
+    "missed": [],
+    "refutation": [
+     {
+      "type": "pin",
+      "squares": [
+       "g5",
+       "f6",
+       "e7"
+      ],
+      "pieces": [
+       "B",
+       "n",
+       "q"
+      ],
+      "gain_cp": 100,
+      "line": [
+       {
+        "uci": "c1g5",
+        "san": "Bg5"
+       },
+       {
+        "uci": "e8d8",
+        "san": "Kd8"
+       },
+       {
+        "uci": "c4f7",
+        "san": "Bxf7"
+       }
+      ]
+     }
+    ],
+    "sacrifice": null
+   },
+   "phase": "middlegame"
+  },
+  {
+   "ply": 17,
+   "san": "Bg5",
+   "uci": "c1g5",
+   "fen_before": "rn2kb1r/pp2qppp/2p2n2/4p3/2B1P3/1QN5/PPP2PPP/R1B1K2R w KQkq - 0 9",
+   "eval_before_cp": 249,
+   "eval_after_cp": 280,
+   "mate_before": null,
+   "mate_after": null,
+   "win_before": 71.4397372236611,
+   "win_after": 73.71063102310782,
+   "accuracy": 100.0,
+   "move_class": "best",
+   "is_miss": false,
+   "best_uci": "c1g5",
+   "best_san": "Bg5",
+   "pv": [
+    {
+     "uci": "c1g5",
+     "san": "Bg5"
+    },
+    {
+     "uci": "e8d8",
+     "san": "Kd8"
+    },
+    {
+     "uci": "c4f7",
+     "san": "Bxf7"
+    },
+    {
+     "uci": "d8c7",
+     "san": "Kc7"
+    },
+    {
+     "uci": "e1c1",
+     "san": "O-O-O"
+    },
+    {
+     "uci": "b8d7",
+     "san": "Nbd7"
+    },
+    {
+     "uci": "a2a4",
+     "san": "a4"
+    },
+    {
+     "uci": "e7b4",
+     "san": "Qb4"
+    },
+    {
+     "uci": "b3e6",
+     "san": "Qe6"
+    },
+    {
+     "uci": "f8c5",
+     "san": "Bc5"
+    },
+    {
+     "uci": "g5f6",
+     "san": "Bxf6"
+    },
+    {
+     "uci": "d7f6",
+     "san": "Nxf6"
+    },
+    {
+     "uci": "e6e5",
+     "san": "Qxe5+"
+    },
+    {
+     "uci": "c5d6",
+     "san": "Bd6"
+    }
+   ],
+   "multipv": [
+    {
+     "cp": 249,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "c1g5",
+       "san": "Bg5"
+      },
+      {
+       "uci": "e8d8",
+       "san": "Kd8"
+      },
+      {
+       "uci": "c4f7",
+       "san": "Bxf7"
+      },
+      {
+       "uci": "d8c7",
+       "san": "Kc7"
+      },
+      {
+       "uci": "e1c1",
+       "san": "O-O-O"
+      },
+      {
+       "uci": "b8d7",
+       "san": "Nbd7"
+      },
+      {
+       "uci": "a2a4",
+       "san": "a4"
+      },
+      {
+       "uci": "e7b4",
+       "san": "Qb4"
+      },
+      {
+       "uci": "b3e6",
+       "san": "Qe6"
+      },
+      {
+       "uci": "f8c5",
+       "san": "Bc5"
+      },
+      {
+       "uci": "g5f6",
+       "san": "Bxf6"
+      },
+      {
+       "uci": "d7f6",
+       "san": "Nxf6"
+      },
+      {
+       "uci": "e6e5",
+       "san": "Qxe5+"
+      },
+      {
+       "uci": "c5d6",
+       "san": "Bd6"
+      }
+     ]
+    },
+    {
+     "cp": 159,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "c1e3",
+       "san": "Be3"
+      },
+      {
+       "uci": "b7b5",
+       "san": "b5"
+      },
+      {
+       "uci": "c3b5",
+       "san": "Nxb5"
+      },
+      {
+       "uci": "c6b5",
+       "san": "cxb5"
+      },
+      {
+       "uci": "c4b5",
+       "san": "Bxb5+"
+      },
+      {
+       "uci": "b8d7",
+       "san": "Nbd7"
+      },
+      {
+       "uci": "e1c1",
+       "san": "O-O-O"
+      },
+      {
+       "uci": "e7b4",
+       "san": "Qb4"
+      },
+      {
+       "uci": "b3d3",
+       "san": "Qd3"
+      },
+      {
+       "uci": "e8c8",
+       "san": "O-O-O"
+      },
+      {
+       "uci": "a2a3",
+       "san": "a3"
+      },
+      {
+       "uci": "b4a5",
+       "san": "Qa5"
+      },
+      {
+       "uci": "d3c4",
+       "san": "Qc4+"
+      },
+      {
+       "uci": "a5c7",
+       "san": "Qc7"
+      },
+      {
+       "uci": "c4b3",
+       "san": "Qb3"
+      },
+      {
+       "uci": "d7b8",
+       "san": "Nb8"
+      },
+      {
+       "uci": "d1d8",
+       "san": "Rxd8+"
+      },
+      {
+       "uci": "c8d8",
+       "san": "Kxd8"
+      },
+      {
+       "uci": "h1d1",
+       "san": "Rd1+"
+      },
+      {
+       "uci": "f8d6",
+       "san": "Bd6"
+      },
+      {
+       "uci": "a3a4",
+       "san": "a4"
+      }
+     ]
+    },
+    {
+     "cp": 157,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "f2f4",
+       "san": "f4"
+      },
+      {
+       "uci": "b7b5",
+       "san": "b5"
+      },
+      {
+       "uci": "f4e5",
+       "san": "fxe5"
+      },
+      {
+       "uci": "f6d7",
+       "san": "Nfd7"
+      },
+      {
+       "uci": "c3b5",
+       "san": "Nxb5"
+      },
+      {
+       "uci": "e7h4",
+       "san": "Qh4+"
+      },
+      {
+       "uci": "e1d1",
+       "san": "Kd1"
+      },
+      {
+       "uci": "h4h5",
+       "san": "Qh5+"
+      },
+      {
+       "uci": "c4e2",
+       "san": "Be2"
+      },
+      {
+       "uci": "h5e5",
+       "san": "Qxe5"
+      },
+      {
+       "uci": "b5a3",
+       "san": "Na3"
+      },
+      {
+       "uci": "f8c5",
+       "san": "Bc5"
+      },
+      {
+       "uci": "a3c4",
+       "san": "Nc4"
+      },
+      {
+       "uci": "e5e4",
+       "san": "Qxe4"
+      },
+      {
+       "uci": "e2f3",
+       "san": "Bf3"
+      },
+      {
+       "uci": "e4d4",
+       "san": "Qd4+"
+      },
+      {
+       "uci": "b3d3",
+       "san": "Qd3"
+      },
+      {
+       "uci": "d4d3",
+       "san": "Qxd3+"
+      },
+      {
+       "uci": "c2d3",
+       "san": "cxd3"
+      },
+      {
+       "uci": "e8g8",
+       "san": "O-O"
+      }
+     ]
+    }
+   ],
+   "reply_pv": [
+    {
+     "uci": "b8a6",
+     "san": "Na6"
+    },
+    {
+     "uci": "g5f6",
+     "san": "Bxf6"
+    },
+    {
+     "uci": "g7f6",
+     "san": "gxf6"
+    },
+    {
+     "uci": "c4a6",
+     "san": "Bxa6"
+    },
+    {
+     "uci": "b7a6",
+     "san": "bxa6"
+    },
+    {
+     "uci": "b3c4",
+     "san": "Qc4"
+    },
+    {
+     "uci": "e7b7",
+     "san": "Qb7"
+    },
+    {
+     "uci": "e1g1",
+     "san": "O-O"
+    },
+    {
+     "uci": "f8h6",
+     "san": "Bh6"
+    },
+    {
+     "uci": "f1d1",
+     "san": "Rfd1"
+    },
+    {
+     "uci": "e8g8",
+     "san": "O-O"
+    },
+    {
+     "uci": "b2b3",
+     "san": "b3"
+    },
+    {
+     "uci": "f8d8",
+     "san": "Rfd8"
+    },
+    {
+     "uci": "c4e2",
+     "san": "Qe2"
+    }
+   ],
+   "motifs": {
+    "played": [
+     {
+      "type": "pin",
+      "squares": [
+       "g5",
+       "f6",
+       "e7"
+      ],
+      "pieces": [
+       "B",
+       "n",
+       "q"
+      ],
+      "gain_cp": 100,
+      "line": [
+       {
+        "uci": "c1g5",
+        "san": "Bg5"
+       },
+       {
+        "uci": "e8d8",
+        "san": "Kd8"
+       },
+       {
+        "uci": "c4f7",
+        "san": "Bxf7"
+       }
+      ]
+     }
+    ],
+    "missed": [],
+    "refutation": [],
+    "sacrifice": null
+   },
+   "phase": "middlegame"
+  },
+  {
+   "ply": 18,
+   "san": "b5",
+   "uci": "b7b5",
+   "fen_before": "rn2kb1r/pp2qppp/2p2n2/4p1B1/2B1P3/1QN5/PPP2PPP/R3K2R b KQkq - 1 9",
+   "eval_before_cp": -280,
+   "eval_after_cp": -485,
+   "mate_before": null,
+   "mate_after": null,
+   "win_before": 26.289368976892156,
+   "win_after": 14.358734593333494,
+   "accuracy": 59.19796321346621,
+   "move_class": "mistake",
+   "is_miss": false,
+   "best_uci": "b8a6",
+   "best_san": "Na6",
+   "pv": [
+    {
+     "uci": "b8a6",
+     "san": "Na6"
+    },
+    {
+     "uci": "g5f6",
+     "san": "Bxf6"
+    },
+    {
+     "uci": "g7f6",
+     "san": "gxf6"
+    },
+    {
+     "uci": "c4a6",
+     "san": "Bxa6"
+    },
+    {
+     "uci": "b7a6",
+     "san": "bxa6"
+    },
+    {
+     "uci": "b3c4",
+     "san": "Qc4"
+    },
+    {
+     "uci": "e7b7",
+     "san": "Qb7"
+    },
+    {
+     "uci": "e1g1",
+     "san": "O-O"
+    },
+    {
+     "uci": "f8h6",
+     "san": "Bh6"
+    },
+    {
+     "uci": "f1d1",
+     "san": "Rfd1"
+    },
+    {
+     "uci": "e8g8",
+     "san": "O-O"
+    },
+    {
+     "uci": "b2b3",
+     "san": "b3"
+    },
+    {
+     "uci": "f8d8",
+     "san": "Rfd8"
+    },
+    {
+     "uci": "c4e2",
+     "san": "Qe2"
+    }
+   ],
+   "multipv": [
+    {
+     "cp": -280,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "b8a6",
+       "san": "Na6"
+      },
+      {
+       "uci": "g5f6",
+       "san": "Bxf6"
+      },
+      {
+       "uci": "g7f6",
+       "san": "gxf6"
+      },
+      {
+       "uci": "c4a6",
+       "san": "Bxa6"
+      },
+      {
+       "uci": "b7a6",
+       "san": "bxa6"
+      },
+      {
+       "uci": "b3c4",
+       "san": "Qc4"
+      },
+      {
+       "uci": "e7b7",
+       "san": "Qb7"
+      },
+      {
+       "uci": "e1g1",
+       "san": "O-O"
+      },
+      {
+       "uci": "f8h6",
+       "san": "Bh6"
+      },
+      {
+       "uci": "f1d1",
+       "san": "Rfd1"
+      },
+      {
+       "uci": "e8g8",
+       "san": "O-O"
+      },
+      {
+       "uci": "b2b3",
+       "san": "b3"
+      },
+      {
+       "uci": "f8d8",
+       "san": "Rfd8"
+      },
+      {
+       "uci": "c4e2",
+       "san": "Qe2"
+      }
+     ]
+    }
+   ],
+   "reply_pv": [
+    {
+     "uci": "c3b5",
+     "san": "Nxb5"
+    },
+    {
+     "uci": "e7b4",
+     "san": "Qb4+"
+    },
+    {
+     "uci": "b5c3",
+     "san": "Nc3"
+    },
+    {
+     "uci": "b4b3",
+     "san": "Qxb3"
+    },
+    {
+     "uci": "a2b3",
+     "san": "axb3"
+    },
+    {
+     "uci": "b8d7",
+     "san": "Nbd7"
+    },
+    {
+     "uci": "f2f3",
+     "san": "f3"
+    },
+    {
+     "uci": "a7a5",
+     "san": "a5"
+    },
+    {
+     "uci": "e1e2",
+     "san": "Ke2"
+    },
+    {
+     "uci": "f8c5",
+     "san": "Bc5"
+    },
+    {
+     "uci": "c3a4",
+     "san": "Na4"
+    },
+    {
+     "uci": "c5d4",
+     "san": "Bd4"
+    },
+    {
+     "uci": "c2c3",
+     "san": "c3"
+    }
+   ],
+   "motifs": {
+    "played": [],
+    "missed": [],
+    "refutation": [],
+    "sacrifice": null
+   },
+   "phase": "middlegame"
+  },
+  {
+   "ply": 19,
+   "san": "Nxb5",
+   "uci": "c3b5",
+   "fen_before": "rn2kb1r/p3qppp/2p2n2/1p2p1B1/2B1P3/1QN5/PPP2PPP/R3K2R w KQkq - 0 10",
+   "eval_before_cp": 485,
+   "eval_after_cp": 494,
+   "mate_before": null,
+   "mate_after": null,
+   "win_before": 85.64126540666649,
+   "win_after": 86.04397898547235,
+   "accuracy": 100.0,
+   "move_class": "great",
+   "is_miss": false,
+   "best_uci": "c3b5",
+   "best_san": "Nxb5",
+   "pv": [
+    {
+     "uci": "c3b5",
+     "san": "Nxb5"
+    },
+    {
+     "uci": "e7b4",
+     "san": "Qb4+"
+    },
+    {
+     "uci": "b5c3",
+     "san": "Nc3"
+    },
+    {
+     "uci": "b4b3",
+     "san": "Qxb3"
+    },
+    {
+     "uci": "a2b3",
+     "san": "axb3"
+    },
+    {
+     "uci": "b8d7",
+     "san": "Nbd7"
+    },
+    {
+     "uci": "f2f3",
+     "san": "f3"
+    },
+    {
+     "uci": "a7a5",
+     "san": "a5"
+    },
+    {
+     "uci": "e1e2",
+     "san": "Ke2"
+    },
+    {
+     "uci": "f8c5",
+     "san": "Bc5"
+    },
+    {
+     "uci": "c3a4",
+     "san": "Na4"
+    },
+    {
+     "uci": "c5d4",
+     "san": "Bd4"
+    },
+    {
+     "uci": "c2c3",
+     "san": "c3"
+    }
+   ],
+   "multipv": [
+    {
+     "cp": 485,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "c3b5",
+       "san": "Nxb5"
+      },
+      {
+       "uci": "e7b4",
+       "san": "Qb4+"
+      },
+      {
+       "uci": "b5c3",
+       "san": "Nc3"
+      },
+      {
+       "uci": "b4b3",
+       "san": "Qxb3"
+      },
+      {
+       "uci": "a2b3",
+       "san": "axb3"
+      },
+      {
+       "uci": "b8d7",
+       "san": "Nbd7"
+      },
+      {
+       "uci": "f2f3",
+       "san": "f3"
+      },
+      {
+       "uci": "a7a5",
+       "san": "a5"
+      },
+      {
+       "uci": "e1e2",
+       "san": "Ke2"
+      },
+      {
+       "uci": "f8c5",
+       "san": "Bc5"
+      },
+      {
+       "uci": "c3a4",
+       "san": "Na4"
+      },
+      {
+       "uci": "c5d4",
+       "san": "Bd4"
+      },
+      {
+       "uci": "c2c3",
+       "san": "c3"
+      }
+     ]
+    },
+    {
+     "cp": 137,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "g5f6",
+       "san": "Bxf6"
+      },
+      {
+       "uci": "e7f6",
+       "san": "Qxf6"
+      },
+      {
+       "uci": "c3b5",
+       "san": "Nxb5"
+      },
+      {
+       "uci": "c6b5",
+       "san": "cxb5"
+      },
+      {
+       "uci": "c4b5",
+       "san": "Bxb5+"
+      },
+      {
+       "uci": "b8c6",
+       "san": "Nc6"
+      },
+      {
+       "uci": "b3d5",
+       "san": "Qd5"
+      },
+      {
+       "uci": "a8c8",
+       "san": "Rc8"
+      },
+      {
+       "uci": "e1c1",
+       "san": "O-O-O"
+      },
+      {
+       "uci": "f6e6",
+       "san": "Qe6"
+      },
+      {
+       "uci": "d1d3",
+       "san": "Rd3"
+      },
+      {
+       "uci": "f8e7",
+       "san": "Be7"
+      },
+      {
+       "uci": "d3c3",
+       "san": "Rc3"
+      },
+      {
+       "uci": "e8g8",
+       "san": "O-O"
+      },
+      {
+       "uci": "c3c6",
+       "san": "Rxc6"
+      }
+     ]
+    },
+    {
+     "cp": 23,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "c4e2",
+       "san": "Be2"
+      },
+      {
+       "uci": "b8d7",
+       "san": "Nbd7"
+      },
+      {
+       "uci": "e1g1",
+       "san": "O-O"
+      },
+      {
+       "uci": "e7e6",
+       "san": "Qe6"
+      },
+      {
+       "uci": "b3e6",
+       "san": "Qxe6+"
+      },
+      {
+       "uci": "f7e6",
+       "san": "fxe6"
+      },
+      {
+       "uci": "a2a4",
+       "san": "a4"
+      },
+      {
+       "uci": "b5b4",
+       "san": "b4"
+      },
+      {
+       "uci": "c3a2",
+       "san": "Na2"
+      },
+      {
+       "uci": "f6e4",
+       "san": "Nxe4"
+      },
+      {
+       "uci": "g5e3",
+       "san": "Be3"
+      },
+      {
+       "uci": "a7a5",
+       "san": "a5"
+      },
+      {
+       "uci": "e2h5",
+       "san": "Bh5+"
+      },
+      {
+       "uci": "e8d8",
+       "san": "Kd8"
+      }
+     ]
+    }
+   ],
+   "reply_pv": [
+    {
+     "uci": "e7b4",
+     "san": "Qb4+"
+    },
+    {
+     "uci": "b3b4",
+     "san": "Qxb4"
+    },
+    {
+     "uci": "f8b4",
+     "san": "Bxb4+"
+    },
+    {
+     "uci": "c2c3",
+     "san": "c3"
+    },
+    {
+     "uci": "c6b5",
+     "san": "cxb5"
+    },
+    {
+     "uci": "c4b5",
+     "san": "Bxb5+"
+    },
+    {
+     "uci": "b8d7",
+     "san": "Nbd7"
+    },
+    {
+     "uci": "c3b4",
+     "san": "cxb4"
+    },
+    {
+     "uci": "a8b8",
+     "san": "Rb8"
+    },
+    {
+     "uci": "b5d7",
+     "san": "Bxd7+"
+    },
+    {
+     "uci": "e8d7",
+     "san": "Kxd7"
+    },
+    {
+     "uci": "e1c1",
+     "san": "O-O-O+"
+    },
+    {
+     "uci": "d7e7",
+     "san": "Ke7"
+    }
+   ],
+   "motifs": {
+    "played": [],
+    "missed": [],
+    "refutation": [],
+    "sacrifice": null
+   },
+   "phase": "middlegame"
+  },
+  {
+   "ply": 20,
+   "san": "cxb5",
+   "uci": "c6b5",
+   "fen_before": "rn2kb1r/p3qppp/2p2n2/1N2p1B1/2B1P3/1Q6/PPP2PPP/R3K2R b KQkq - 0 10",
+   "eval_before_cp": -494,
+   "eval_after_cp": -635,
+   "mate_before": null,
+   "mate_after": null,
+   "win_before": 13.95602101452765,
+   "win_after": 8.801463783567065,
+   "accuracy": 80.25869932997288,
+   "move_class": "inaccuracy",
+   "is_miss": false,
+   "best_uci": "e7b4",
+   "best_san": "Qb4+",
+   "pv": [
+    {
+     "uci": "e7b4",
+     "san": "Qb4+"
+    },
+    {
+     "uci": "b3b4",
+     "san": "Qxb4"
+    },
+    {
+     "uci": "f8b4",
+     "san": "Bxb4+"
+    },
+    {
+     "uci": "c2c3",
+     "san": "c3"
+    },
+    {
+     "uci": "c6b5",
+     "san": "cxb5"
+    },
+    {
+     "uci": "c4b5",
+     "san": "Bxb5+"
+    },
+    {
+     "uci": "b8d7",
+     "san": "Nbd7"
+    },
+    {
+     "uci": "c3b4",
+     "san": "cxb4"
+    },
+    {
+     "uci": "a8b8",
+     "san": "Rb8"
+    },
+    {
+     "uci": "b5d7",
+     "san": "Bxd7+"
+    },
+    {
+     "uci": "e8d7",
+     "san": "Kxd7"
+    },
+    {
+     "uci": "e1c1",
+     "san": "O-O-O+"
+    },
+    {
+     "uci": "d7e7",
+     "san": "Ke7"
+    }
+   ],
+   "multipv": [
+    {
+     "cp": -494,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "e7b4",
+       "san": "Qb4+"
+      },
+      {
+       "uci": "b3b4",
+       "san": "Qxb4"
+      },
+      {
+       "uci": "f8b4",
+       "san": "Bxb4+"
+      },
+      {
+       "uci": "c2c3",
+       "san": "c3"
+      },
+      {
+       "uci": "c6b5",
+       "san": "cxb5"
+      },
+      {
+       "uci": "c4b5",
+       "san": "Bxb5+"
+      },
+      {
+       "uci": "b8d7",
+       "san": "Nbd7"
+      },
+      {
+       "uci": "c3b4",
+       "san": "cxb4"
+      },
+      {
+       "uci": "a8b8",
+       "san": "Rb8"
+      },
+      {
+       "uci": "b5d7",
+       "san": "Bxd7+"
+      },
+      {
+       "uci": "e8d7",
+       "san": "Kxd7"
+      },
+      {
+       "uci": "e1c1",
+       "san": "O-O-O+"
+      },
+      {
+       "uci": "d7e7",
+       "san": "Ke7"
+      }
+     ]
+    }
+   ],
+   "reply_pv": [
+    {
+     "uci": "c4b5",
+     "san": "Bxb5+"
+    },
+    {
+     "uci": "e8d8",
+     "san": "Kd8"
+    },
+    {
+     "uci": "e1c1",
+     "san": "O-O-O+"
+    },
+    {
+     "uci": "d8c8",
+     "san": "Kc8"
+    },
+    {
+     "uci": "d1d3",
+     "san": "Rd3"
+    },
+    {
+     "uci": "e7b4",
+     "san": "Qb4"
+    },
+    {
+     "uci": "d3c3",
+     "san": "Rc3+"
+    },
+    {
+     "uci": "c8b7",
+     "san": "Kb7"
+    },
+    {
+     "uci": "b3f7",
+     "san": "Qxf7+"
+    },
+    {
+     "uci": "f8e7",
+     "san": "Be7"
+    },
+    {
+     "uci": "g5f6",
+     "san": "Bxf6"
+    },
+    {
+     "uci": "g7f6",
+     "san": "gxf6"
+    },
+    {
+     "uci": "f7d5",
+     "san": "Qd5+"
+    },
+    {
+     "uci": "b7b6",
+     "san": "Kb6"
+    },
+    {
+     "uci": "d5a8",
+     "san": "Qxa8"
+    },
+    {
+     "uci": "b4b5",
+     "san": "Qxb5"
+    },
+    {
+     "uci": "c3b3",
+     "san": "Rb3"
+    },
+    {
+     "uci": "e7b4",
+     "san": "Bb4"
+    },
+    {
+     "uci": "c2c3",
+     "san": "c3"
+    },
+    {
+     "uci": "b5c4",
+     "san": "Qc4"
+    }
+   ],
+   "motifs": {
+    "played": [],
+    "missed": [],
+    "refutation": [],
+    "sacrifice": null
+   },
+   "phase": "middlegame"
+  },
+  {
+   "ply": 21,
+   "san": "Bxb5+",
+   "uci": "c4b5",
+   "fen_before": "rn2kb1r/p3qppp/5n2/1p2p1B1/2B1P3/1Q6/PPP2PPP/R3K2R w KQkq - 0 11",
+   "eval_before_cp": 635,
+   "eval_after_cp": 482,
+   "mate_before": null,
+   "mate_after": null,
+   "win_before": 91.19853621643293,
+   "win_after": 85.50489426204342,
+   "accuracy": 78.34637397042633,
+   "move_class": "great",
+   "is_miss": false,
+   "best_uci": "c4b5",
+   "best_san": "Bxb5+",
+   "pv": [
+    {
+     "uci": "c4b5",
+     "san": "Bxb5+"
+    },
+    {
+     "uci": "e8d8",
+     "san": "Kd8"
+    },
+    {
+     "uci": "e1c1",
+     "san": "O-O-O+"
+    },
+    {
+     "uci": "d8c8",
+     "san": "Kc8"
+    },
+    {
+     "uci": "d1d3",
+     "san": "Rd3"
+    },
+    {
+     "uci": "e7b4",
+     "san": "Qb4"
+    },
+    {
+     "uci": "d3c3",
+     "san": "Rc3+"
+    },
+    {
+     "uci": "c8b7",
+     "san": "Kb7"
+    },
+    {
+     "uci": "b3f7",
+     "san": "Qxf7+"
+    },
+    {
+     "uci": "f8e7",
+     "san": "Be7"
+    },
+    {
+     "uci": "g5f6",
+     "san": "Bxf6"
+    },
+    {
+     "uci": "g7f6",
+     "san": "gxf6"
+    },
+    {
+     "uci": "f7d5",
+     "san": "Qd5+"
+    },
+    {
+     "uci": "b7b6",
+     "san": "Kb6"
+    },
+    {
+     "uci": "d5a8",
+     "san": "Qxa8"
+    },
+    {
+     "uci": "b4b5",
+     "san": "Qxb5"
+    },
+    {
+     "uci": "c3b3",
+     "san": "Rb3"
+    },
+    {
+     "uci": "e7b4",
+     "san": "Bb4"
+    },
+    {
+     "uci": "c2c3",
+     "san": "c3"
+    },
+    {
+     "uci": "b5c4",
+     "san": "Qc4"
+    }
+   ],
+   "multipv": [
+    {
+     "cp": 635,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "c4b5",
+       "san": "Bxb5+"
+      },
+      {
+       "uci": "e8d8",
+       "san": "Kd8"
+      },
+      {
+       "uci": "e1c1",
+       "san": "O-O-O+"
+      },
+      {
+       "uci": "d8c8",
+       "san": "Kc8"
+      },
+      {
+       "uci": "d1d3",
+       "san": "Rd3"
+      },
+      {
+       "uci": "e7b4",
+       "san": "Qb4"
+      },
+      {
+       "uci": "d3c3",
+       "san": "Rc3+"
+      },
+      {
+       "uci": "c8b7",
+       "san": "Kb7"
+      },
+      {
+       "uci": "b3f7",
+       "san": "Qxf7+"
+      },
+      {
+       "uci": "f8e7",
+       "san": "Be7"
+      },
+      {
+       "uci": "g5f6",
+       "san": "Bxf6"
+      },
+      {
+       "uci": "g7f6",
+       "san": "gxf6"
+      },
+      {
+       "uci": "f7d5",
+       "san": "Qd5+"
+      },
+      {
+       "uci": "b7b6",
+       "san": "Kb6"
+      },
+      {
+       "uci": "d5a8",
+       "san": "Qxa8"
+      },
+      {
+       "uci": "b4b5",
+       "san": "Qxb5"
+      },
+      {
+       "uci": "c3b3",
+       "san": "Rb3"
+      },
+      {
+       "uci": "e7b4",
+       "san": "Bb4"
+      },
+      {
+       "uci": "c2c3",
+       "san": "c3"
+      },
+      {
+       "uci": "b5c4",
+       "san": "Qc4"
+      }
+     ]
+    },
+    {
+     "cp": 59,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "b3b5",
+       "san": "Qxb5+"
+      },
+      {
+       "uci": "e7d7",
+       "san": "Qd7"
+      },
+      {
+       "uci": "a1d1",
+       "san": "Rd1"
+      },
+      {
+       "uci": "d7b5",
+       "san": "Qxb5"
+      },
+      {
+       "uci": "c4b5",
+       "san": "Bxb5+"
+      },
+      {
+       "uci": "e8e7",
+       "san": "Ke7"
+      },
+      {
+       "uci": "e1g1",
+       "san": "O-O"
+      },
+      {
+       "uci": "h7h6",
+       "san": "h6"
+      },
+      {
+       "uci": "g5e3",
+       "san": "Be3"
+      },
+      {
+       "uci": "b8d7",
+       "san": "Nbd7"
+      },
+      {
+       "uci": "d1d3",
+       "san": "Rd3"
+      },
+      {
+       "uci": "a8b8",
+       "san": "Rb8"
+      },
+      {
+       "uci": "b5a4",
+       "san": "Ba4"
+      },
+      {
+       "uci": "b8c8",
+       "san": "Rc8"
+      },
+      {
+       "uci": "f1d1",
+       "san": "Rfd1"
+      }
+     ]
+    },
+    {
+     "cp": -137,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "g5f6",
+       "san": "Bxf6"
+      },
+      {
+       "uci": "e7b4",
+       "san": "Qb4+"
+      },
+      {
+       "uci": "b3b4",
+       "san": "Qxb4"
+      },
+      {
+       "uci": "f8b4",
+       "san": "Bxb4+"
+      },
+      {
+       "uci": "c2c3",
+       "san": "c3"
+      },
+      {
+       "uci": "b5c4",
+       "san": "bxc4"
+      },
+      {
+       "uci": "f6g7",
+       "san": "Bxg7"
+      },
+      {
+       "uci": "h8g8",
+       "san": "Rg8"
+      },
+      {
+       "uci": "g7e5",
+       "san": "Bxe5"
+      },
+      {
+       "uci": "b4e7",
+       "san": "Be7"
+      },
+      {
+       "uci": "e5g3",
+       "san": "Bg3"
+      },
+      {
+       "uci": "b8d7",
+       "san": "Nd7"
+      },
+      {
+       "uci": "e1c1",
+       "san": "O-O-O"
+      },
+      {
+       "uci": "a8c8",
+       "san": "Rc8"
+      },
+      {
+       "uci": "c1c2",
+       "san": "Kc2"
+      }
+     ]
+    }
+   ],
+   "reply_pv": [
+    {
+     "uci": "b8d7",
+     "san": "Nbd7"
+    },
+    {
+     "uci": "e1c1",
+     "san": "O-O-O"
+    },
+    {
+     "uci": "a8d8",
+     "san": "Rd8"
+    },
+    {
+     "uci": "d1d3",
+     "san": "Rd3"
+    },
+    {
+     "uci": "e7e6",
+     "san": "Qe6"
+    },
+    {
+     "uci": "g5f6",
+     "san": "Bxf6"
+    },
+    {
+     "uci": "e6b3",
+     "san": "Qxb3"
+    },
+    {
+     "uci": "a2b3",
+     "san": "axb3"
+    },
+    {
+     "uci": "g7f6",
+     "san": "gxf6"
+    },
+    {
+     "uci": "h1d1",
+     "san": "Rhd1"
+    },
+    {
+     "uci": "f8c5",
+     "san": "Bc5"
+    },
+    {
+     "uci": "b5d7",
+     "san": "Bxd7+"
+    },
+    {
+     "uci": "e8e7",
+     "san": "Ke7"
+    }
+   ],
+   "motifs": {
+    "played": [],
+    "missed": [],
+    "refutation": [],
+    "sacrifice": null
+   },
+   "phase": "middlegame"
+  },
+  {
+   "ply": 22,
+   "san": "Nbd7",
+   "uci": "b8d7",
+   "fen_before": "rn2kb1r/p3qppp/5n2/1B2p1B1/4P3/1Q6/PPP2PPP/R3K2R b KQkq - 0 11",
+   "eval_before_cp": -482,
+   "eval_after_cp": -745,
+   "mate_before": null,
+   "mate_after": null,
+   "win_before": 14.495105737956578,
+   "win_after": 6.04747029518056,
+   "accuracy": 69.24765567158626,
+   "move_class": "best",
+   "is_miss": false,
+   "best_uci": "b8d7",
+   "best_san": "Nbd7",
+   "pv": [
+    {
+     "uci": "b8d7",
+     "san": "Nbd7"
+    },
+    {
+     "uci": "e1c1",
+     "san": "O-O-O"
+    },
+    {
+     "uci": "a8d8",
+     "san": "Rd8"
+    },
+    {
+     "uci": "d1d3",
+     "san": "Rd3"
+    },
+    {
+     "uci": "e7e6",
+     "san": "Qe6"
+    },
+    {
+     "uci": "g5f6",
+     "san": "Bxf6"
+    },
+    {
+     "uci": "e6b3",
+     "san": "Qxb3"
+    },
+    {
+     "uci": "a2b3",
+     "san": "axb3"
+    },
+    {
+     "uci": "g7f6",
+     "san": "gxf6"
+    },
+    {
+     "uci": "h1d1",
+     "san": "Rhd1"
+    },
+    {
+     "uci": "f8c5",
+     "san": "Bc5"
+    },
+    {
+     "uci": "b5d7",
+     "san": "Bxd7+"
+    },
+    {
+     "uci": "e8e7",
+     "san": "Ke7"
+    }
+   ],
+   "multipv": [
+    {
+     "cp": -482,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "b8d7",
+       "san": "Nbd7"
+      },
+      {
+       "uci": "e1c1",
+       "san": "O-O-O"
+      },
+      {
+       "uci": "a8d8",
+       "san": "Rd8"
+      },
+      {
+       "uci": "d1d3",
+       "san": "Rd3"
+      },
+      {
+       "uci": "e7e6",
+       "san": "Qe6"
+      },
+      {
+       "uci": "g5f6",
+       "san": "Bxf6"
+      },
+      {
+       "uci": "e6b3",
+       "san": "Qxb3"
+      },
+      {
+       "uci": "a2b3",
+       "san": "axb3"
+      },
+      {
+       "uci": "g7f6",
+       "san": "gxf6"
+      },
+      {
+       "uci": "h1d1",
+       "san": "Rhd1"
+      },
+      {
+       "uci": "f8c5",
+       "san": "Bc5"
+      },
+      {
+       "uci": "b5d7",
+       "san": "Bxd7+"
+      },
+      {
+       "uci": "e8e7",
+       "san": "Ke7"
+      }
+     ]
+    },
+    {
+     "cp": -698,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "e8d8",
+       "san": "Kd8"
+      },
+      {
+       "uci": "e1c1",
+       "san": "O-O-O+"
+      },
+      {
+       "uci": "d8c7",
+       "san": "Kc7"
+      },
+      {
+       "uci": "d1d3",
+       "san": "Rd3"
+      },
+      {
+       "uci": "e7b4",
+       "san": "Qb4"
+      },
+      {
+       "uci": "b3f7",
+       "san": "Qxf7+"
+      },
+      {
+       "uci": "b4e7",
+       "san": "Qe7"
+      },
+      {
+       "uci": "d3c3",
+       "san": "Rc3+"
+      },
+      {
+       "uci": "c7b6",
+       "san": "Kb6"
+      },
+      {
+       "uci": "f7c4",
+       "san": "Qc4"
+      },
+      {
+       "uci": "e7b4",
+       "san": "Qb4"
+      },
+      {
+       "uci": "g5e3",
+       "san": "Be3+"
+      },
+      {
+       "uci": "b6a5",
+       "san": "Ka5"
+      },
+      {
+       "uci": "c4c7",
+       "san": "Qc7+"
+      },
+      {
+       "uci": "a5b5",
+       "san": "Kxb5"
+      },
+      {
+       "uci": "c7b7",
+       "san": "Qb7+"
+      },
+      {
+       "uci": "b5a5",
+       "san": "Ka5"
+      },
+      {
+       "uci": "b7a8",
+       "san": "Qxa8"
+      }
+     ]
+    },
+    {
+     "cp": -878,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "e7d7",
+       "san": "Qd7"
+      },
+      {
+       "uci": "b5d7",
+       "san": "Bxd7+"
+      },
+      {
+       "uci": "b8d7",
+       "san": "Nbxd7"
+      },
+      {
+       "uci": "e1c1",
+       "san": "O-O-O"
+      },
+      {
+       "uci": "f8e7",
+       "san": "Be7"
+      },
+      {
+       "uci": "g5f6",
+       "san": "Bxf6"
+      },
+      {
+       "uci": "e7f6",
+       "san": "Bxf6"
+      },
+      {
+       "uci": "d1d7",
+       "san": "Rxd7"
+      },
+      {
+       "uci": "f6g5",
+       "san": "Bg5+"
+      },
+      {
+       "uci": "c1b1",
+       "san": "Kb1"
+      },
+      {
+       "uci": "e8g8",
+       "san": "O-O"
+      },
+      {
+       "uci": "d7d5",
+       "san": "Rd5"
+      },
+      {
+       "uci": "a8b8",
+       "san": "Rab8"
+      },
+      {
+       "uci": "b3a3",
+       "san": "Qa3"
+      },
+      {
+       "uci": "b8d8",
+       "san": "Rbd8"
+      }
+     ]
+    }
+   ],
+   "reply_pv": [
+    {
+     "uci": "e1c1",
+     "san": "O-O-O"
+    },
+    {
+     "uci": "e7c5",
+     "san": "Qc5"
+    },
+    {
+     "uci": "g5f6",
+     "san": "Bxf6"
+    },
+    {
+     "uci": "g7f6",
+     "san": "gxf6"
+    },
+    {
+     "uci": "b5d7",
+     "san": "Bxd7+"
+    },
+    {
+     "uci": "e8e7",
+     "san": "Ke7"
+    },
+    {
+     "uci": "d7a4",
+     "san": "Ba4"
+    },
+    {
+     "uci": "f8h6",
+     "san": "Bh6+"
+    },
+    {
+     "uci": "c1b1",
+     "san": "Kb1"
+    },
+    {
+     "uci": "h8b8",
+     "san": "Rhb8"
+    }
+   ],
+   "motifs": {
+    "played": [],
+    "missed": [],
+    "refutation": [],
+    "sacrifice": null
+   },
+   "phase": "middlegame"
+  },
+  {
+   "ply": 23,
+   "san": "O-O-O",
+   "uci": "e1c1",
+   "fen_before": "r3kb1r/p2nqppp/5n2/1B2p1B1/4P3/1Q6/PPP2PPP/R3K2R w KQkq - 1 12",
+   "eval_before_cp": 745,
+   "eval_after_cp": 776,
+   "mate_before": null,
+   "mate_after": null,
+   "win_before": 93.95252970481944,
+   "win_after": 94.5694500654188,
+   "accuracy": 100.0,
+   "move_class": "great",
+   "is_miss": false,
+   "best_uci": "e1c1",
+   "best_san": "O-O-O",
+   "pv": [
+    {
+     "uci": "e1c1",
+     "san": "O-O-O"
+    },
+    {
+     "uci": "e7c5",
+     "san": "Qc5"
+    },
+    {
+     "uci": "g5f6",
+     "san": "Bxf6"
+    },
+    {
+     "uci": "g7f6",
+     "san": "gxf6"
+    },
+    {
+     "uci": "b5d7",
+     "san": "Bxd7+"
+    },
+    {
+     "uci": "e8e7",
+     "san": "Ke7"
+    },
+    {
+     "uci": "d7a4",
+     "san": "Ba4"
+    },
+    {
+     "uci": "f8h6",
+     "san": "Bh6+"
+    },
+    {
+     "uci": "c1b1",
+     "san": "Kb1"
+    },
+    {
+     "uci": "h8b8",
+     "san": "Rhb8"
+    }
+   ],
+   "multipv": [
+    {
+     "cp": 745,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "e1c1",
+       "san": "O-O-O"
+      },
+      {
+       "uci": "e7c5",
+       "san": "Qc5"
+      },
+      {
+       "uci": "g5f6",
+       "san": "Bxf6"
+      },
+      {
+       "uci": "g7f6",
+       "san": "gxf6"
+      },
+      {
+       "uci": "b5d7",
+       "san": "Bxd7+"
+      },
+      {
+       "uci": "e8e7",
+       "san": "Ke7"
+      },
+      {
+       "uci": "d7a4",
+       "san": "Ba4"
+      },
+      {
+       "uci": "f8h6",
+       "san": "Bh6+"
+      },
+      {
+       "uci": "c1b1",
+       "san": "Kb1"
+      },
+      {
+       "uci": "h8b8",
+       "san": "Rhb8"
+      }
+     ]
+    },
+    {
+     "cp": 387,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "g5f6",
+       "san": "Bxf6"
+      },
+      {
+       "uci": "e7b4",
+       "san": "Qb4+"
+      },
+      {
+       "uci": "b3b4",
+       "san": "Qxb4"
+      },
+      {
+       "uci": "f8b4",
+       "san": "Bxb4+"
+      },
+      {
+       "uci": "c2c3",
+       "san": "c3"
+      },
+      {
+       "uci": "b4c3",
+       "san": "Bxc3+"
+      },
+      {
+       "uci": "b2c3",
+       "san": "bxc3"
+      },
+      {
+       "uci": "g7f6",
+       "san": "gxf6"
+      },
+      {
+       "uci": "e1c1",
+       "san": "O-O-O"
+      },
+      {
+       "uci": "e8c8",
+       "san": "O-O-O"
+      },
+      {
+       "uci": "d1d6",
+       "san": "Rd6"
+      },
+      {
+       "uci": "d7c5",
+       "san": "Nc5"
+      },
+      {
+       "uci": "d6c6",
+       "san": "Rc6+"
+      },
+      {
+       "uci": "c8b7",
+       "san": "Kb7"
+      },
+      {
+       "uci": "c6f6",
+       "san": "Rxf6"
+      },
+      {
+       "uci": "h8g8",
+       "san": "Rhg8"
+      },
+      {
+       "uci": "b5c6",
+       "san": "Bc6+"
+      },
+      {
+       "uci": "b7b8",
+       "san": "Kb8"
+      },
+      {
+       "uci": "c1c2",
+       "san": "Kc2"
+      },
+      {
+       "uci": "g8g2",
+       "san": "Rxg2"
+      },
+      {
+       "uci": "h1b1",
+       "san": "Rb1+"
+      },
+      {
+       "uci": "b8c8",
+       "san": "Kc8"
+      },
+      {
+       "uci": "f6f7",
+       "san": "Rxf7"
+      },
+      {
+       "uci": "d8d6",
+       "san": "Rd6"
+      },
+      {
+       "uci": "c6d5",
+       "san": "Bd5"
+      },
+      {
+       "uci": "g2h2",
+       "san": "Rxh2"
+      }
+     ]
+    },
+    {
+     "cp": 276,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "a1d1",
+       "san": "Rd1"
+      },
+      {
+       "uci": "e7b4",
+       "san": "Qb4+"
+      },
+      {
+       "uci": "b3b4",
+       "san": "Qxb4"
+      },
+      {
+       "uci": "f8b4",
+       "san": "Bxb4+"
+      },
+      {
+       "uci": "c2c3",
+       "san": "c3"
+      },
+      {
+       "uci": "b4c3",
+       "san": "Bxc3+"
+      },
+      {
+       "uci": "b2c3",
+       "san": "bxc3"
+      },
+      {
+       "uci": "a7a6",
+       "san": "a6"
+      },
+      {
+       "uci": "b5a4",
+       "san": "Ba4"
+      },
+      {
+       "uci": "a8a7",
+       "san": "Ra7"
+      },
+      {
+       "uci": "g5f6",
+       "san": "Bxf6"
+      },
+      {
+       "uci": "g7f6",
+       "san": "gxf6"
+      },
+      {
+       "uci": "e1e2",
+       "san": "Ke2"
+      },
+      {
+       "uci": "e8e7",
+       "san": "Ke7"
+      },
+      {
+       "uci": "a4d7",
+       "san": "Bxd7"
+      },
+      {
+       "uci": "a7d7",
+       "san": "Rxd7"
+      },
+      {
+       "uci": "d1d7",
+       "san": "Rxd7+"
+      },
+      {
+       "uci": "e7d7",
+       "san": "Kxd7"
+      }
+     ]
+    }
+   ],
+   "reply_pv": [
+    {
+     "uci": "e7c5",
+     "san": "Qc5"
+    },
+    {
+     "uci": "g5f6",
+     "san": "Bxf6"
+    },
+    {
+     "uci": "g7f6",
+     "san": "gxf6"
+    },
+    {
+     "uci": "b5d7",
+     "san": "Bxd7+"
+    },
+    {
+     "uci": "e8e7",
+     "san": "Ke7"
+    },
+    {
+     "uci": "d1d5",
+     "san": "Rd5"
+    },
+    {
+     "uci": "a8b8",
+     "san": "Rb8"
+    },
+    {
+     "uci": "d5c5",
+     "san": "Rxc5"
+    },
+    {
+     "uci": "b8b3",
+     "san": "Rxb3"
+    },
+    {
+     "uci": "a2b3",
+     "san": "axb3"
+    },
+    {
+     "uci": "f8h6",
+     "san": "Bh6+"
+    },
+    {
+     "uci": "c1b1",
+     "san": "Kb1"
+    },
+    {
+     "uci": "e7d7",
+     "san": "Kxd7"
+    },
+    {
+     "uci": "h1d1",
+     "san": "Rd1+"
+    },
+    {
+     "uci": "d7e7",
+     "san": "Ke7"
+    }
+   ],
+   "motifs": {
+    "played": [],
+    "missed": [],
+    "refutation": [],
+    "sacrifice": null
+   },
+   "phase": "middlegame"
+  },
+  {
+   "ply": 24,
+   "san": "Rd8",
+   "uci": "a8d8",
+   "fen_before": "r3kb1r/p2nqppp/5n2/1B2p1B1/4P3/1Q6/PPP2PPP/2KR3R b kq - 2 12",
+   "eval_before_cp": -776,
+   "eval_after_cp": -698,
+   "mate_before": null,
+   "mate_after": null,
+   "win_before": 5.430549934581194,
+   "win_after": 7.1088239218406315,
+   "accuracy": 100.0,
+   "move_class": "excellent",
+   "is_miss": false,
+   "best_uci": "e7c5",
+   "best_san": "Qc5",
+   "pv": [
+    {
+     "uci": "e7c5",
+     "san": "Qc5"
+    },
+    {
+     "uci": "g5f6",
+     "san": "Bxf6"
+    },
+    {
+     "uci": "g7f6",
+     "san": "gxf6"
+    },
+    {
+     "uci": "b5d7",
+     "san": "Bxd7+"
+    },
+    {
+     "uci": "e8e7",
+     "san": "Ke7"
+    },
+    {
+     "uci": "d1d5",
+     "san": "Rd5"
+    },
+    {
+     "uci": "a8b8",
+     "san": "Rb8"
+    },
+    {
+     "uci": "d5c5",
+     "san": "Rxc5"
+    },
+    {
+     "uci": "b8b3",
+     "san": "Rxb3"
+    },
+    {
+     "uci": "a2b3",
+     "san": "axb3"
+    },
+    {
+     "uci": "f8h6",
+     "san": "Bh6+"
+    },
+    {
+     "uci": "c1b1",
+     "san": "Kb1"
+    },
+    {
+     "uci": "e7d7",
+     "san": "Kxd7"
+    },
+    {
+     "uci": "h1d1",
+     "san": "Rd1+"
+    },
+    {
+     "uci": "d7e7",
+     "san": "Ke7"
+    }
+   ],
+   "multipv": [
+    {
+     "cp": -776,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "e7c5",
+       "san": "Qc5"
+      },
+      {
+       "uci": "g5f6",
+       "san": "Bxf6"
+      },
+      {
+       "uci": "g7f6",
+       "san": "gxf6"
+      },
+      {
+       "uci": "b5d7",
+       "san": "Bxd7+"
+      },
+      {
+       "uci": "e8e7",
+       "san": "Ke7"
+      },
+      {
+       "uci": "d1d5",
+       "san": "Rd5"
+      },
+      {
+       "uci": "a8b8",
+       "san": "Rb8"
+      },
+      {
+       "uci": "d5c5",
+       "san": "Rxc5"
+      },
+      {
+       "uci": "b8b3",
+       "san": "Rxb3"
+      },
+      {
+       "uci": "a2b3",
+       "san": "axb3"
+      },
+      {
+       "uci": "f8h6",
+       "san": "Bh6+"
+      },
+      {
+       "uci": "c1b1",
+       "san": "Kb1"
+      },
+      {
+       "uci": "e7d7",
+       "san": "Kxd7"
+      },
+      {
+       "uci": "h1d1",
+       "san": "Rd1+"
+      },
+      {
+       "uci": "d7e7",
+       "san": "Ke7"
+      }
+     ]
+    }
+   ],
+   "reply_pv": [
+    {
+     "uci": "d1d7",
+     "san": "Rxd7"
+    },
+    {
+     "uci": "d8d7",
+     "san": "Rxd7"
+    },
+    {
+     "uci": "h1d1",
+     "san": "Rd1"
+    },
+    {
+     "uci": "e7c5",
+     "san": "Qc5"
+    },
+    {
+     "uci": "g5f6",
+     "san": "Bxf6"
+    },
+    {
+     "uci": "g7f6",
+     "san": "gxf6"
+    },
+    {
+     "uci": "b5d7",
+     "san": "Bxd7+"
+    },
+    {
+     "uci": "e8e7",
+     "san": "Ke7"
+    },
+    {
+     "uci": "c1b1",
+     "san": "Kb1"
+    },
+    {
+     "uci": "f8h6",
+     "san": "Bh6"
+    },
+    {
+     "uci": "b3b7",
+     "san": "Qb7"
+    },
+    {
+     "uci": "h8d8",
+     "san": "Rd8"
+    },
+    {
+     "uci": "d7b5",
+     "san": "Bb5+"
+    },
+    {
+     "uci": "e7e6",
+     "san": "Ke6"
+    },
+    {
+     "uci": "b7a6",
+     "san": "Qa6+"
+    },
+    {
+     "uci": "c5b6",
+     "san": "Qb6"
+    },
+    {
+     "uci": "a6b6",
+     "san": "Qxb6+"
+    },
+    {
+     "uci": "a7b6",
+     "san": "axb6"
+    },
+    {
+     "uci": "d1d8",
+     "san": "Rxd8"
+    }
+   ],
+   "motifs": {
+    "played": [],
+    "missed": [],
+    "refutation": [],
+    "sacrifice": null
+   },
+   "phase": "middlegame"
+  },
+  {
+   "ply": 25,
+   "san": "Rxd7",
+   "uci": "d1d7",
+   "fen_before": "3rkb1r/p2nqppp/5n2/1B2p1B1/4P3/1Q6/PPP2PPP/2KR3R w k - 3 13",
+   "eval_before_cp": 698,
+   "eval_after_cp": 793,
+   "mate_before": null,
+   "mate_after": null,
+   "win_before": 92.89117607815936,
+   "win_after": 94.88209305808851,
+   "accuracy": 100.0,
+   "move_class": "brilliant",
+   "is_miss": false,
+   "best_uci": "d1d7",
+   "best_san": "Rxd7",
+   "pv": [
+    {
+     "uci": "d1d7",
+     "san": "Rxd7"
+    },
+    {
+     "uci": "d8d7",
+     "san": "Rxd7"
+    },
+    {
+     "uci": "h1d1",
+     "san": "Rd1"
+    },
+    {
+     "uci": "e7c5",
+     "san": "Qc5"
+    },
+    {
+     "uci": "g5f6",
+     "san": "Bxf6"
+    },
+    {
+     "uci": "g7f6",
+     "san": "gxf6"
+    },
+    {
+     "uci": "b5d7",
+     "san": "Bxd7+"
+    },
+    {
+     "uci": "e8e7",
+     "san": "Ke7"
+    },
+    {
+     "uci": "c1b1",
+     "san": "Kb1"
+    },
+    {
+     "uci": "f8h6",
+     "san": "Bh6"
+    },
+    {
+     "uci": "b3b7",
+     "san": "Qb7"
+    },
+    {
+     "uci": "h8d8",
+     "san": "Rd8"
+    },
+    {
+     "uci": "d7b5",
+     "san": "Bb5+"
+    },
+    {
+     "uci": "e7e6",
+     "san": "Ke6"
+    },
+    {
+     "uci": "b7a6",
+     "san": "Qa6+"
+    },
+    {
+     "uci": "c5b6",
+     "san": "Qb6"
+    },
+    {
+     "uci": "a6b6",
+     "san": "Qxb6+"
+    },
+    {
+     "uci": "a7b6",
+     "san": "axb6"
+    },
+    {
+     "uci": "d1d8",
+     "san": "Rxd8"
+    }
+   ],
+   "multipv": [
+    {
+     "cp": 698,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "d1d7",
+       "san": "Rxd7"
+      },
+      {
+       "uci": "d8d7",
+       "san": "Rxd7"
+      },
+      {
+       "uci": "h1d1",
+       "san": "Rd1"
+      },
+      {
+       "uci": "e7c5",
+       "san": "Qc5"
+      },
+      {
+       "uci": "g5f6",
+       "san": "Bxf6"
+      },
+      {
+       "uci": "g7f6",
+       "san": "gxf6"
+      },
+      {
+       "uci": "b5d7",
+       "san": "Bxd7+"
+      },
+      {
+       "uci": "e8e7",
+       "san": "Ke7"
+      },
+      {
+       "uci": "c1b1",
+       "san": "Kb1"
+      },
+      {
+       "uci": "f8h6",
+       "san": "Bh6"
+      },
+      {
+       "uci": "b3b7",
+       "san": "Qb7"
+      },
+      {
+       "uci": "h8d8",
+       "san": "Rd8"
+      },
+      {
+       "uci": "d7b5",
+       "san": "Bb5+"
+      },
+      {
+       "uci": "e7e6",
+       "san": "Ke6"
+      },
+      {
+       "uci": "b7a6",
+       "san": "Qa6+"
+      },
+      {
+       "uci": "c5b6",
+       "san": "Qb6"
+      },
+      {
+       "uci": "a6b6",
+       "san": "Qxb6+"
+      },
+      {
+       "uci": "a7b6",
+       "san": "axb6"
+      },
+      {
+       "uci": "d1d8",
+       "san": "Rxd8"
+      }
+     ]
+    },
+    {
+     "cp": 600,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "d1d5",
+       "san": "Rd5"
+      },
+      {
+       "uci": "h7h6",
+       "san": "h6"
+      },
+      {
+       "uci": "g5f6",
+       "san": "Bxf6"
+      },
+      {
+       "uci": "e7f6",
+       "san": "Qxf6"
+      },
+      {
+       "uci": "h1d1",
+       "san": "Rhd1"
+      },
+      {
+       "uci": "f8e7",
+       "san": "Be7"
+      },
+      {
+       "uci": "b5d7",
+       "san": "Bxd7+"
+      },
+      {
+       "uci": "e8f8",
+       "san": "Kf8"
+      },
+      {
+       "uci": "c1b1",
+       "san": "Kb1"
+      },
+      {
+       "uci": "f6f2",
+       "san": "Qxf2"
+      },
+      {
+       "uci": "d7a4",
+       "san": "Ba4"
+      },
+      {
+       "uci": "d8c8",
+       "san": "Rc8"
+      },
+      {
+       "uci": "d5d7",
+       "san": "Rd7"
+      },
+      {
+       "uci": "g7g6",
+       "san": "g6"
+      },
+      {
+       "uci": "a2a3",
+       "san": "a3"
+      },
+      {
+       "uci": "f2c5",
+       "san": "Qc5"
+      },
+      {
+       "uci": "b1a2",
+       "san": "Ka2"
+      },
+      {
+       "uci": "c5c4",
+       "san": "Qc4"
+      },
+      {
+       "uci": "b3c4",
+       "san": "Qxc4"
+      }
+     ]
+    },
+    {
+     "cp": 540,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "d1d3",
+       "san": "Rd3"
+      },
+      {
+       "uci": "e7b4",
+       "san": "Qb4"
+      },
+      {
+       "uci": "b3b4",
+       "san": "Qxb4"
+      },
+      {
+       "uci": "f8b4",
+       "san": "Bxb4"
+      },
+      {
+       "uci": "h1d1",
+       "san": "Rhd1"
+      },
+      {
+       "uci": "h8g8",
+       "san": "Rg8"
+      },
+      {
+       "uci": "g2g3",
+       "san": "g3"
+      },
+      {
+       "uci": "b4c5",
+       "san": "Bc5"
+      },
+      {
+       "uci": "g5f6",
+       "san": "Bxf6"
+      },
+      {
+       "uci": "g7f6",
+       "san": "gxf6"
+      },
+      {
+       "uci": "d3d7",
+       "san": "Rxd7"
+      },
+      {
+       "uci": "d8d7",
+       "san": "Rxd7"
+      },
+      {
+       "uci": "d1d7",
+       "san": "Rxd7"
+      },
+      {
+       "uci": "a7a6",
+       "san": "a6"
+      },
+      {
+       "uci": "b5a4",
+       "san": "Ba4"
+      },
+      {
+       "uci": "a6a5",
+       "san": "a5"
+      },
+      {
+       "uci": "d7d2",
+       "san": "Rd2+"
+      },
+      {
+       "uci": "e8e7",
+       "san": "Ke7"
+      }
+     ]
+    }
+   ],
+   "reply_pv": [
+    {
+     "uci": "f6d7",
+     "san": "Nxd7"
+    },
+    {
+     "uci": "g5e7",
+     "san": "Bxe7"
+    },
+    {
+     "uci": "f8e7",
+     "san": "Bxe7"
+    },
+    {
+     "uci": "b5d7",
+     "san": "Bxd7+"
+    },
+    {
+     "uci": "d8d7",
+     "san": "Rxd7"
+    },
+    {
+     "uci": "b3b8",
+     "san": "Qb8+"
+    },
+    {
+     "uci": "d7d8",
+     "san": "Rd8"
+    },
+    {
+     "uci": "b8e5",
+     "san": "Qxe5"
+    },
+    {
+     "uci": "e8f8",
+     "san": "Kf8"
+    },
+    {
+     "uci": "e5h5",
+     "san": "Qh5"
+    },
+    {
+     "uci": "d8e8",
+     "san": "Re8"
+    },
+    {
+     "uci": "c1b1",
+     "san": "Kb1"
+    }
+   ],
+   "motifs": {
+    "played": [],
+    "missed": [],
+    "refutation": [
+     {
+      "type": "hanging_piece",
+      "squares": [
+       "d7",
+       "d7"
+      ],
+      "pieces": [
+       "n",
+       "R"
+      ],
+      "gain_cp": 500,
+      "line": [
+       {
+        "uci": "f6d7",
+        "san": "Nxd7"
+       }
+      ]
+     },
+     {
+      "type": "discovered_attack",
+      "squares": [
+       "e7",
+       "g5",
+       "d7"
+      ],
+      "pieces": [
+       "q",
+       "B",
+       "n"
+      ],
+      "gain_cp": -100,
+      "line": [
+       {
+        "uci": "f6d7",
+        "san": "Nxd7"
+       },
+       {
+        "uci": "g5e7",
+        "san": "Bxe7"
+       },
+       {
+        "uci": "f8e7",
+        "san": "Bxe7"
+       }
+      ]
+     }
+    ],
+    "sacrifice": {
+     "squares": [
+      "d7"
+     ],
+     "material_drop": 2
+    }
+   },
+   "phase": "middlegame"
+  },
+  {
+   "ply": 26,
+   "san": "Rxd7",
+   "uci": "d8d7",
+   "fen_before": "3rkb1r/p2Rqppp/5n2/1B2p1B1/4P3/1Q6/PPP2PPP/2K4R b k - 0 13",
+   "eval_before_cp": -793,
+   "eval_after_cp": -828,
+   "mate_before": null,
+   "mate_after": null,
+   "win_before": 5.117906941911478,
+   "win_after": 4.527094120530435,
+   "accuracy": 98.37961970358542,
+   "move_class": "excellent",
+   "is_miss": false,
+   "best_uci": "f6d7",
+   "best_san": "Nxd7",
+   "pv": [
+    {
+     "uci": "f6d7",
+     "san": "Nxd7"
+    },
+    {
+     "uci": "g5e7",
+     "san": "Bxe7"
+    },
+    {
+     "uci": "f8e7",
+     "san": "Bxe7"
+    },
+    {
+     "uci": "b5d7",
+     "san": "Bxd7+"
+    },
+    {
+     "uci": "d8d7",
+     "san": "Rxd7"
+    },
+    {
+     "uci": "b3b8",
+     "san": "Qb8+"
+    },
+    {
+     "uci": "d7d8",
+     "san": "Rd8"
+    },
+    {
+     "uci": "b8e5",
+     "san": "Qxe5"
+    },
+    {
+     "uci": "e8f8",
+     "san": "Kf8"
+    },
+    {
+     "uci": "e5h5",
+     "san": "Qh5"
+    },
+    {
+     "uci": "d8e8",
+     "san": "Re8"
+    },
+    {
+     "uci": "c1b1",
+     "san": "Kb1"
+    }
+   ],
+   "multipv": [
+    {
+     "cp": -793,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "f6d7",
+       "san": "Nxd7"
+      },
+      {
+       "uci": "g5e7",
+       "san": "Bxe7"
+      },
+      {
+       "uci": "f8e7",
+       "san": "Bxe7"
+      },
+      {
+       "uci": "b5d7",
+       "san": "Bxd7+"
+      },
+      {
+       "uci": "d8d7",
+       "san": "Rxd7"
+      },
+      {
+       "uci": "b3b8",
+       "san": "Qb8+"
+      },
+      {
+       "uci": "d7d8",
+       "san": "Rd8"
+      },
+      {
+       "uci": "b8e5",
+       "san": "Qxe5"
+      },
+      {
+       "uci": "e8f8",
+       "san": "Kf8"
+      },
+      {
+       "uci": "e5h5",
+       "san": "Qh5"
+      },
+      {
+       "uci": "d8e8",
+       "san": "Re8"
+      },
+      {
+       "uci": "c1b1",
+       "san": "Kb1"
+      }
+     ]
+    }
+   ],
+   "reply_pv": [
+    {
+     "uci": "h1d1",
+     "san": "Rd1"
+    },
+    {
+     "uci": "e8d8",
+     "san": "Kd8"
+    },
+    {
+     "uci": "d1d7",
+     "san": "Rxd7+"
+    },
+    {
+     "uci": "f6d7",
+     "san": "Nxd7"
+    },
+    {
+     "uci": "g5e7",
+     "san": "Bxe7+"
+    },
+    {
+     "uci": "f8e7",
+     "san": "Bxe7"
+    },
+    {
+     "uci": "b3a4",
+     "san": "Qa4"
+    },
+    {
+     "uci": "e7g5",
+     "san": "Bg5+"
+    },
+    {
+     "uci": "c1b1",
+     "san": "Kb1"
+    },
+    {
+     "uci": "d8e7",
+     "san": "Ke7"
+    }
+   ],
+   "motifs": {
+    "played": [],
+    "missed": [
+     {
+      "type": "hanging_piece",
+      "squares": [
+       "d7",
+       "d7"
+      ],
+      "pieces": [
+       "n",
+       "R"
+      ],
+      "gain_cp": 500,
+      "line": [
+       {
+        "uci": "f6d7",
+        "san": "Nxd7"
+       }
+      ]
+     },
+     {
+      "type": "discovered_attack",
+      "squares": [
+       "e7",
+       "g5",
+       "d7"
+      ],
+      "pieces": [
+       "q",
+       "B",
+       "n"
+      ],
+      "gain_cp": -100,
+      "line": [
+       {
+        "uci": "f6d7",
+        "san": "Nxd7"
+       },
+       {
+        "uci": "g5e7",
+        "san": "Bxe7"
+       },
+       {
+        "uci": "f8e7",
+        "san": "Bxe7"
+       }
+      ]
+     }
+    ],
+    "refutation": [],
+    "sacrifice": null
+   },
+   "phase": "middlegame"
+  },
+  {
+   "ply": 27,
+   "san": "Rd1",
+   "uci": "h1d1",
+   "fen_before": "4kb1r/p2rqppp/5n2/1B2p1B1/4P3/1Q6/PPP2PPP/2K4R w k - 0 14",
+   "eval_before_cp": 828,
+   "eval_after_cp": 819,
+   "mate_before": null,
+   "mate_after": null,
+   "win_before": 95.47290587946958,
+   "win_after": 95.32749754520927,
+   "accuracy": 100.0,
+   "move_class": "great",
+   "is_miss": false,
+   "best_uci": "h1d1",
+   "best_san": "Rd1",
+   "pv": [
+    {
+     "uci": "h1d1",
+     "san": "Rd1"
+    },
+    {
+     "uci": "e8d8",
+     "san": "Kd8"
+    },
+    {
+     "uci": "d1d7",
+     "san": "Rxd7+"
+    },
+    {
+     "uci": "f6d7",
+     "san": "Nxd7"
+    },
+    {
+     "uci": "g5e7",
+     "san": "Bxe7+"
+    },
+    {
+     "uci": "f8e7",
+     "san": "Bxe7"
+    },
+    {
+     "uci": "b3a4",
+     "san": "Qa4"
+    },
+    {
+     "uci": "e7g5",
+     "san": "Bg5+"
+    },
+    {
+     "uci": "c1b1",
+     "san": "Kb1"
+    },
+    {
+     "uci": "d8e7",
+     "san": "Ke7"
+    }
+   ],
+   "multipv": [
+    {
+     "cp": 828,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "h1d1",
+       "san": "Rd1"
+      },
+      {
+       "uci": "e8d8",
+       "san": "Kd8"
+      },
+      {
+       "uci": "d1d7",
+       "san": "Rxd7+"
+      },
+      {
+       "uci": "f6d7",
+       "san": "Nxd7"
+      },
+      {
+       "uci": "g5e7",
+       "san": "Bxe7+"
+      },
+      {
+       "uci": "f8e7",
+       "san": "Bxe7"
+      },
+      {
+       "uci": "b3a4",
+       "san": "Qa4"
+      },
+      {
+       "uci": "e7g5",
+       "san": "Bg5+"
+      },
+      {
+       "uci": "c1b1",
+       "san": "Kb1"
+      },
+      {
+       "uci": "d8e7",
+       "san": "Ke7"
+      }
+     ]
+    },
+    {
+     "cp": 316,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "b3c3",
+       "san": "Qc3"
+      },
+      {
+       "uci": "e7d6",
+       "san": "Qd6"
+      },
+      {
+       "uci": "f2f4",
+       "san": "f4"
+      },
+      {
+       "uci": "d6b8",
+       "san": "Qb8"
+      },
+      {
+       "uci": "c3c6",
+       "san": "Qc6"
+      },
+      {
+       "uci": "a7a6",
+       "san": "a6"
+      },
+      {
+       "uci": "c6a6",
+       "san": "Qxa6"
+      },
+      {
+       "uci": "f8d6",
+       "san": "Bd6"
+      },
+      {
+       "uci": "h1d1",
+       "san": "Rd1"
+      },
+      {
+       "uci": "e8g8",
+       "san": "O-O"
+      },
+      {
+       "uci": "b5d7",
+       "san": "Bxd7"
+      },
+      {
+       "uci": "f6e4",
+       "san": "Nxe4"
+      },
+      {
+       "uci": "a6c4",
+       "san": "Qc4"
+      },
+      {
+       "uci": "e4f2",
+       "san": "Nf2"
+      }
+     ]
+    },
+    {
+     "cp": 281,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "g5f6",
+       "san": "Bxf6"
+      },
+      {
+       "uci": "e7f6",
+       "san": "Qxf6"
+      },
+      {
+       "uci": "h1d1",
+       "san": "Rd1"
+      },
+      {
+       "uci": "f8d6",
+       "san": "Bd6"
+      },
+      {
+       "uci": "b3h3",
+       "san": "Qh3"
+      },
+      {
+       "uci": "f6e7",
+       "san": "Qe7"
+      },
+      {
+       "uci": "c2c4",
+       "san": "c4"
+      },
+      {
+       "uci": "g7g6",
+       "san": "g6"
+      },
+      {
+       "uci": "b5d7",
+       "san": "Bxd7+"
+      },
+      {
+       "uci": "e7d7",
+       "san": "Qxd7"
+      },
+      {
+       "uci": "h3d7",
+       "san": "Qxd7+"
+      },
+      {
+       "uci": "e8d7",
+       "san": "Kxd7"
+      },
+      {
+       "uci": "c4c5",
+       "san": "c5"
+      }
+     ]
+    }
+   ],
+   "reply_pv": [
+    {
+     "uci": "e7b4",
+     "san": "Qb4"
+    },
+    {
+     "uci": "g5f6",
+     "san": "Bxf6"
+    },
+    {
+     "uci": "g7f6",
+     "san": "gxf6"
+    },
+    {
+     "uci": "b5d7",
+     "san": "Bxd7+"
+    },
+    {
+     "uci": "e8d8",
+     "san": "Kd8"
+    },
+    {
+     "uci": "b3f7",
+     "san": "Qxf7"
+    },
+    {
+     "uci": "d8c7",
+     "san": "Kc7"
+    },
+    {
+     "uci": "d7g4",
+     "san": "Bg4+"
+    },
+    {
+     "uci": "f8e7",
+     "san": "Be7"
+    },
+    {
+     "uci": "a2a3",
+     "san": "a3"
+    },
+    {
+     "uci": "h8d8",
+     "san": "Rd8"
+    }
+   ],
+   "motifs": {
+    "played": [],
+    "missed": [],
+    "refutation": [],
+    "sacrifice": null
+   },
+   "phase": "middlegame"
+  },
+  {
+   "ply": 28,
+   "san": "Qe6",
+   "uci": "e7e6",
+   "fen_before": "4kb1r/p2rqppp/5n2/1B2p1B1/4P3/1Q6/PPP2PPP/2KR4 b k - 1 14",
+   "eval_before_cp": -819,
+   "eval_after_cp": -1035,
+   "mate_before": null,
+   "mate_after": null,
+   "win_before": 4.672502454790717,
+   "win_after": 2.4552563658567763,
+   "accuracy": 91.50505372254422,
+   "move_class": "good",
+   "is_miss": false,
+   "best_uci": "e7b4",
+   "best_san": "Qb4",
+   "pv": [
+    {
+     "uci": "e7b4",
+     "san": "Qb4"
+    },
+    {
+     "uci": "g5f6",
+     "san": "Bxf6"
+    },
+    {
+     "uci": "g7f6",
+     "san": "gxf6"
+    },
+    {
+     "uci": "b5d7",
+     "san": "Bxd7+"
+    },
+    {
+     "uci": "e8d8",
+     "san": "Kd8"
+    },
+    {
+     "uci": "b3f7",
+     "san": "Qxf7"
+    },
+    {
+     "uci": "d8c7",
+     "san": "Kc7"
+    },
+    {
+     "uci": "d7g4",
+     "san": "Bg4+"
+    },
+    {
+     "uci": "f8e7",
+     "san": "Be7"
+    },
+    {
+     "uci": "a2a3",
+     "san": "a3"
+    },
+    {
+     "uci": "h8d8",
+     "san": "Rd8"
+    }
+   ],
+   "multipv": [
+    {
+     "cp": -819,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "e7b4",
+       "san": "Qb4"
+      },
+      {
+       "uci": "g5f6",
+       "san": "Bxf6"
+      },
+      {
+       "uci": "g7f6",
+       "san": "gxf6"
+      },
+      {
+       "uci": "b5d7",
+       "san": "Bxd7+"
+      },
+      {
+       "uci": "e8d8",
+       "san": "Kd8"
+      },
+      {
+       "uci": "b3f7",
+       "san": "Qxf7"
+      },
+      {
+       "uci": "d8c7",
+       "san": "Kc7"
+      },
+      {
+       "uci": "d7g4",
+       "san": "Bg4+"
+      },
+      {
+       "uci": "f8e7",
+       "san": "Be7"
+      },
+      {
+       "uci": "a2a3",
+       "san": "a3"
+      },
+      {
+       "uci": "h8d8",
+       "san": "Rd8"
+      }
+     ]
+    }
+   ],
+   "reply_pv": [
+    {
+     "uci": "b5d7",
+     "san": "Bxd7+"
+    },
+    {
+     "uci": "e6d7",
+     "san": "Qxd7"
+    },
+    {
+     "uci": "b3b8",
+     "san": "Qb8+"
+    },
+    {
+     "uci": "e8e7",
+     "san": "Ke7"
+    },
+    {
+     "uci": "b8e5",
+     "san": "Qxe5+"
+    },
+    {
+     "uci": "e7d8",
+     "san": "Kd8"
+    },
+    {
+     "uci": "e5b8",
+     "san": "Qb8+"
+    },
+    {
+     "uci": "d8e7",
+     "san": "Ke7"
+    },
+    {
+     "uci": "d1d7",
+     "san": "Rxd7+"
+    },
+    {
+     "uci": "e7d7",
+     "san": "Kxd7"
+    },
+    {
+     "uci": "b8b7",
+     "san": "Qb7+"
+    },
+    {
+     "uci": "d7e6",
+     "san": "Ke6"
+    },
+    {
+     "uci": "b7c8",
+     "san": "Qc8+"
+    },
+    {
+     "uci": "f6d7",
+     "san": "Nd7"
+    },
+    {
+     "uci": "c8e8",
+     "san": "Qe8+"
+    },
+    {
+     "uci": "e6d6",
+     "san": "Kd6"
+    }
+   ],
+   "motifs": {
+    "played": [],
+    "missed": [],
+    "refutation": [],
+    "sacrifice": null
+   },
+   "phase": "middlegame"
+  },
+  {
+   "ply": 29,
+   "san": "Bxd7+",
+   "uci": "b5d7",
+   "fen_before": "4kb1r/p2r1ppp/4qn2/1B2p1B1/4P3/1Q6/PPP2PPP/2KR4 w k - 2 15",
+   "eval_before_cp": 1035,
+   "eval_after_cp": 335,
+   "mate_before": null,
+   "mate_after": null,
+   "win_before": 97.54474363414323,
+   "win_after": 77.44300099880789,
+   "accuracy": 40.82592510358988,
+   "move_class": "best",
+   "is_miss": false,
+   "best_uci": "b5d7",
+   "best_san": "Bxd7+",
+   "pv": [
+    {
+     "uci": "b5d7",
+     "san": "Bxd7+"
+    },
+    {
+     "uci": "e6d7",
+     "san": "Qxd7"
+    },
+    {
+     "uci": "b3b8",
+     "san": "Qb8+"
+    },
+    {
+     "uci": "e8e7",
+     "san": "Ke7"
+    },
+    {
+     "uci": "b8e5",
+     "san": "Qxe5+"
+    },
+    {
+     "uci": "e7d8",
+     "san": "Kd8"
+    },
+    {
+     "uci": "e5b8",
+     "san": "Qb8+"
+    },
+    {
+     "uci": "d8e7",
+     "san": "Ke7"
+    },
+    {
+     "uci": "d1d7",
+     "san": "Rxd7+"
+    },
+    {
+     "uci": "e7d7",
+     "san": "Kxd7"
+    },
+    {
+     "uci": "b8b7",
+     "san": "Qb7+"
+    },
+    {
+     "uci": "d7e6",
+     "san": "Ke6"
+    },
+    {
+     "uci": "b7c8",
+     "san": "Qc8+"
+    },
+    {
+     "uci": "f6d7",
+     "san": "Nd7"
+    },
+    {
+     "uci": "c8e8",
+     "san": "Qe8+"
+    },
+    {
+     "uci": "e6d6",
+     "san": "Kd6"
+    }
+   ],
+   "multipv": [
+    {
+     "cp": 1035,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "b5d7",
+       "san": "Bxd7+"
+      },
+      {
+       "uci": "e6d7",
+       "san": "Qxd7"
+      },
+      {
+       "uci": "b3b8",
+       "san": "Qb8+"
+      },
+      {
+       "uci": "e8e7",
+       "san": "Ke7"
+      },
+      {
+       "uci": "b8e5",
+       "san": "Qxe5+"
+      },
+      {
+       "uci": "e7d8",
+       "san": "Kd8"
+      },
+      {
+       "uci": "e5b8",
+       "san": "Qb8+"
+      },
+      {
+       "uci": "d8e7",
+       "san": "Ke7"
+      },
+      {
+       "uci": "d1d7",
+       "san": "Rxd7+"
+      },
+      {
+       "uci": "e7d7",
+       "san": "Kxd7"
+      },
+      {
+       "uci": "b8b7",
+       "san": "Qb7+"
+      },
+      {
+       "uci": "d7e6",
+       "san": "Ke6"
+      },
+      {
+       "uci": "b7c8",
+       "san": "Qc8+"
+      },
+      {
+       "uci": "f6d7",
+       "san": "Nd7"
+      },
+      {
+       "uci": "c8e8",
+       "san": "Qe8+"
+      },
+      {
+       "uci": "e6d6",
+       "san": "Kd6"
+      }
+     ]
+    },
+    {
+     "cp": 818,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "g5f6",
+       "san": "Bxf6"
+      },
+      {
+       "uci": "g7f6",
+       "san": "gxf6"
+      },
+      {
+       "uci": "b5d7",
+       "san": "Bxd7+"
+      },
+      {
+       "uci": "e6d7",
+       "san": "Qxd7"
+      },
+      {
+       "uci": "b3b8",
+       "san": "Qb8+"
+      },
+      {
+       "uci": "e8e7",
+       "san": "Ke7"
+      },
+      {
+       "uci": "d1d7",
+       "san": "Rxd7+"
+      },
+      {
+       "uci": "e7d7",
+       "san": "Kxd7"
+      },
+      {
+       "uci": "c1d1",
+       "san": "Kd1"
+      },
+      {
+       "uci": "f8h6",
+       "san": "Bh6"
+      },
+      {
+       "uci": "b8b7",
+       "san": "Qb7+"
+      },
+      {
+       "uci": "d7e6",
+       "san": "Ke6"
+      },
+      {
+       "uci": "b7b3",
+       "san": "Qb3+"
+      },
+      {
+       "uci": "e6e7",
+       "san": "Ke7"
+      }
+     ]
+    },
+    {
+     "cp": 579,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "b3e6",
+       "san": "Qxe6+"
+      },
+      {
+       "uci": "f7e6",
+       "san": "fxe6"
+      },
+      {
+       "uci": "g5f6",
+       "san": "Bxf6"
+      },
+      {
+       "uci": "e8f7",
+       "san": "Kf7"
+      },
+      {
+       "uci": "d1d7",
+       "san": "Rxd7+"
+      },
+      {
+       "uci": "f7f6",
+       "san": "Kxf6"
+      },
+      {
+       "uci": "d7d8",
+       "san": "Rd8"
+      },
+      {
+       "uci": "g7g6",
+       "san": "g6"
+      },
+      {
+       "uci": "c1b1",
+       "san": "Kb1"
+      },
+      {
+       "uci": "f8g7",
+       "san": "Bg7"
+      },
+      {
+       "uci": "d8d3",
+       "san": "Rd3"
+      },
+      {
+       "uci": "h7h5",
+       "san": "h5"
+      },
+      {
+       "uci": "a2a4",
+       "san": "a4"
+      },
+      {
+       "uci": "h5h4",
+       "san": "h4"
+      },
+      {
+       "uci": "d3d7",
+       "san": "Rd7"
+      }
+     ]
+    }
+   ],
+   "reply_pv": [
+    {
+     "uci": "f6d7",
+     "san": "Nxd7"
+    },
+    {
+     "uci": "b3b7",
+     "san": "Qb7"
+    },
+    {
+     "uci": "f7f6",
+     "san": "f6"
+    },
+    {
+     "uci": "b7c8",
+     "san": "Qc8+"
+    },
+    {
+     "uci": "e8e7",
+     "san": "Ke7"
+    },
+    {
+     "uci": "g5e3",
+     "san": "Be3"
+    },
+    {
+     "uci": "g7g6",
+     "san": "g6"
+    },
+    {
+     "uci": "a2a4",
+     "san": "a4"
+    },
+    {
+     "uci": "f8g7",
+     "san": "Bg7"
+    },
+    {
+     "uci": "c8c7",
+     "san": "Qc7"
+    },
+    {
+     "uci": "h8d8",
+     "san": "Rd8"
+    }
+   ],
+   "motifs": {
+    "played": [],
+    "missed": [],
+    "refutation": [],
+    "sacrifice": null
+   },
+   "phase": "middlegame"
+  },
+  {
+   "ply": 30,
+   "san": "Nxd7",
+   "uci": "f6d7",
+   "fen_before": "4kb1r/p2B1ppp/4qn2/4p1B1/4P3/1Q6/PPP2PPP/2KR4 b k - 0 15",
+   "eval_before_cp": -335,
+   "eval_after_cp": -314,
+   "mate_before": null,
+   "mate_after": null,
+   "win_before": 22.556999001192107,
+   "win_after": 23.936334447111165,
+   "accuracy": 100.0,
+   "move_class": "great",
+   "is_miss": false,
+   "best_uci": "f6d7",
+   "best_san": "Nxd7",
+   "pv": [
+    {
+     "uci": "f6d7",
+     "san": "Nxd7"
+    },
+    {
+     "uci": "b3b7",
+     "san": "Qb7"
+    },
+    {
+     "uci": "f7f6",
+     "san": "f6"
+    },
+    {
+     "uci": "b7c8",
+     "san": "Qc8+"
+    },
+    {
+     "uci": "e8e7",
+     "san": "Ke7"
+    },
+    {
+     "uci": "g5e3",
+     "san": "Be3"
+    },
+    {
+     "uci": "g7g6",
+     "san": "g6"
+    },
+    {
+     "uci": "a2a4",
+     "san": "a4"
+    },
+    {
+     "uci": "f8g7",
+     "san": "Bg7"
+    },
+    {
+     "uci": "c8c7",
+     "san": "Qc7"
+    },
+    {
+     "uci": "h8d8",
+     "san": "Rd8"
+    }
+   ],
+   "multipv": [
+    {
+     "cp": -335,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "f6d7",
+       "san": "Nxd7"
+      },
+      {
+       "uci": "b3b7",
+       "san": "Qb7"
+      },
+      {
+       "uci": "f7f6",
+       "san": "f6"
+      },
+      {
+       "uci": "b7c8",
+       "san": "Qc8+"
+      },
+      {
+       "uci": "e8e7",
+       "san": "Ke7"
+      },
+      {
+       "uci": "g5e3",
+       "san": "Be3"
+      },
+      {
+       "uci": "g7g6",
+       "san": "g6"
+      },
+      {
+       "uci": "a2a4",
+       "san": "a4"
+      },
+      {
+       "uci": "f8g7",
+       "san": "Bg7"
+      },
+      {
+       "uci": "c8c7",
+       "san": "Qc7"
+      },
+      {
+       "uci": "h8d8",
+       "san": "Rd8"
+      }
+     ]
+    },
+    {
+     "cp": -1062,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "e6d7",
+       "san": "Qxd7"
+      },
+      {
+       "uci": "b3b8",
+       "san": "Qb8+"
+      },
+      {
+       "uci": "e8e7",
+       "san": "Ke7"
+      },
+      {
+       "uci": "b8e5",
+       "san": "Qxe5+"
+      },
+      {
+       "uci": "e7d8",
+       "san": "Kd8"
+      },
+      {
+       "uci": "e5b8",
+       "san": "Qb8+"
+      },
+      {
+       "uci": "d8e7",
+       "san": "Ke7"
+      },
+      {
+       "uci": "d1d7",
+       "san": "Rxd7+"
+      },
+      {
+       "uci": "e7d7",
+       "san": "Kxd7"
+      },
+      {
+       "uci": "b8b7",
+       "san": "Qb7+"
+      },
+      {
+       "uci": "d7d8",
+       "san": "Kd8"
+      },
+      {
+       "uci": "b7b5",
+       "san": "Qb5"
+      },
+      {
+       "uci": "d8c7",
+       "san": "Kc7"
+      }
+     ]
+    },
+    {
+     "cp": null,
+     "mate": -4,
+     "pv": [
+      {
+       "uci": "e8e7",
+       "san": "Ke7"
+      },
+      {
+       "uci": "b3b4",
+       "san": "Qb4+"
+      },
+      {
+       "uci": "e6d6",
+       "san": "Qd6"
+      },
+      {
+       "uci": "b4d6",
+       "san": "Qxd6+"
+      },
+      {
+       "uci": "e7d8",
+       "san": "Kd8"
+      },
+      {
+       "uci": "d6b8",
+       "san": "Qb8+"
+      },
+      {
+       "uci": "d8e7",
+       "san": "Ke7"
+      },
+      {
+       "uci": "b8e8",
+       "san": "Qe8#"
+      }
+     ]
+    }
+   ],
+   "reply_pv": [
+    {
+     "uci": "b3b7",
+     "san": "Qb7"
+    },
+    {
+     "uci": "f7f6",
+     "san": "f6"
+    },
+    {
+     "uci": "g5e3",
+     "san": "Be3"
+    },
+    {
+     "uci": "a7a5",
+     "san": "a5"
+    },
+    {
+     "uci": "a2a4",
+     "san": "a4"
+    },
+    {
+     "uci": "h7h5",
+     "san": "h5"
+    },
+    {
+     "uci": "d1d3",
+     "san": "Rd3"
+    },
+    {
+     "uci": "h5h4",
+     "san": "h4"
+    }
+   ],
+   "motifs": {
+    "played": [],
+    "missed": [],
+    "refutation": [
+     {
+      "type": "mate_threat",
+      "squares": [
+       "c8",
+       "e8"
+      ],
+      "pieces": [
+       "Q",
+       "k"
+      ],
+      "gain_cp": null,
+      "line": [
+       {
+        "uci": "b3b7",
+        "san": "Qb7"
+       },
+       {
+        "uci": "0000",
+        "san": "--"
+       },
+       {
+        "uci": "b7c8",
+        "san": "Qc8#"
+       }
+      ]
+     },
+     {
+      "type": "back_rank",
+      "squares": [
+       "c8",
+       "e8"
+      ],
+      "pieces": [
+       "Q",
+       "k"
+      ],
+      "gain_cp": null,
+      "line": [
+       {
+        "uci": "b3b7",
+        "san": "Qb7"
+       },
+       {
+        "uci": "0000",
+        "san": "--"
+       },
+       {
+        "uci": "b7c8",
+        "san": "Qc8#"
+       }
+      ]
+     }
+    ],
+    "sacrifice": null
+   },
+   "phase": "middlegame"
+  },
+  {
+   "ply": 31,
+   "san": "Qb8+",
+   "uci": "b3b8",
+   "fen_before": "4kb1r/p2n1ppp/4q3/4p1B1/4P3/1Q6/PPP2PPP/2KR4 w k - 0 16",
+   "eval_before_cp": 314,
+   "eval_after_cp": null,
+   "mate_before": null,
+   "mate_after": 1,
+   "win_before": 76.06366555288884,
+   "win_after": 97.54474363414323,
+   "accuracy": 100.0,
+   "move_class": "brilliant",
+   "is_miss": false,
+   "best_uci": "b3b7",
+   "best_san": "Qb7",
+   "pv": [
+    {
+     "uci": "b3b7",
+     "san": "Qb7"
+    },
+    {
+     "uci": "f7f6",
+     "san": "f6"
+    },
+    {
+     "uci": "g5e3",
+     "san": "Be3"
+    },
+    {
+     "uci": "a7a5",
+     "san": "a5"
+    },
+    {
+     "uci": "a2a4",
+     "san": "a4"
+    },
+    {
+     "uci": "h7h5",
+     "san": "h5"
+    },
+    {
+     "uci": "d1d3",
+     "san": "Rd3"
+    },
+    {
+     "uci": "h5h4",
+     "san": "h4"
+    }
+   ],
+   "multipv": [
+    {
+     "cp": 314,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "b3b7",
+       "san": "Qb7"
+      },
+      {
+       "uci": "f7f6",
+       "san": "f6"
+      },
+      {
+       "uci": "g5e3",
+       "san": "Be3"
+      },
+      {
+       "uci": "a7a5",
+       "san": "a5"
+      },
+      {
+       "uci": "a2a4",
+       "san": "a4"
+      },
+      {
+       "uci": "h7h5",
+       "san": "h5"
+      },
+      {
+       "uci": "d1d3",
+       "san": "Rd3"
+      },
+      {
+       "uci": "h5h4",
+       "san": "h4"
+      }
+     ]
+    }
+   ],
+   "reply_pv": [
+    {
+     "uci": "d7b8",
+     "san": "Nxb8"
+    },
+    {
+     "uci": "d1d8",
+     "san": "Rd8#"
+    }
+   ],
+   "motifs": {
+    "played": [
+     {
+      "type": "mate_in_n",
+      "squares": [
+       "d8",
+       "e8"
+      ],
+      "pieces": [
+       "R",
+       "k"
+      ],
+      "gain_cp": null,
+      "line": [
+       {
+        "uci": "b3b8",
+        "san": "Qb8+"
+       },
+       {
+        "uci": "d7b8",
+        "san": "Nxb8"
+       },
+       {
+        "uci": "d1d8",
+        "san": "Rd8#"
+       }
+      ]
+     },
+     {
+      "type": "back_rank",
+      "squares": [
+       "d8",
+       "e8"
+      ],
+      "pieces": [
+       "R",
+       "k"
+      ],
+      "gain_cp": null,
+      "line": [
+       {
+        "uci": "b3b8",
+        "san": "Qb8+"
+       },
+       {
+        "uci": "d7b8",
+        "san": "Nxb8"
+       },
+       {
+        "uci": "d1d8",
+        "san": "Rd8#"
+       }
+      ]
+     }
+    ],
+    "missed": [
+     {
+      "type": "mate_threat",
+      "squares": [
+       "c8",
+       "e8"
+      ],
+      "pieces": [
+       "Q",
+       "k"
+      ],
+      "gain_cp": null,
+      "line": [
+       {
+        "uci": "b3b7",
+        "san": "Qb7"
+       },
+       {
+        "uci": "0000",
+        "san": "--"
+       },
+       {
+        "uci": "b7c8",
+        "san": "Qc8#"
+       }
+      ]
+     },
+     {
+      "type": "back_rank",
+      "squares": [
+       "c8",
+       "e8"
+      ],
+      "pieces": [
+       "Q",
+       "k"
+      ],
+      "gain_cp": null,
+      "line": [
+       {
+        "uci": "b3b7",
+        "san": "Qb7"
+       },
+       {
+        "uci": "0000",
+        "san": "--"
+       },
+       {
+        "uci": "b7c8",
+        "san": "Qc8#"
+       }
+      ]
+     }
+    ],
+    "refutation": [
+     {
+      "type": "hanging_piece",
+      "squares": [
+       "b8",
+       "b8"
+      ],
+      "pieces": [
+       "n",
+       "Q"
+      ],
+      "gain_cp": 900,
+      "line": [
+       {
+        "uci": "d7b8",
+        "san": "Nxb8"
+       }
+      ]
+     }
+    ],
+    "sacrifice": {
+     "squares": [
+      "b8"
+     ],
+     "material_drop": 9
+    }
+   },
+   "phase": "middlegame"
+  },
+  {
+   "ply": 32,
+   "san": "Nxb8",
+   "uci": "d7b8",
+   "fen_before": "1Q2kb1r/p2n1ppp/4q3/4p1B1/4P3/8/PPP2PPP/2KR4 b k - 1 16",
+   "eval_before_cp": null,
+   "eval_after_cp": null,
+   "mate_before": -1,
+   "mate_after": -1,
+   "win_before": 2.4552563658567763,
+   "win_after": 2.4552563658567763,
+   "accuracy": 100.0,
+   "move_class": "forced",
+   "is_miss": false,
+   "best_uci": "d7b8",
+   "best_san": "Nxb8",
+   "pv": [
+    {
+     "uci": "d7b8",
+     "san": "Nxb8"
+    },
+    {
+     "uci": "d1d8",
+     "san": "Rd8#"
+    }
+   ],
+   "multipv": [
+    {
+     "cp": null,
+     "mate": -1,
+     "pv": [
+      {
+       "uci": "d7b8",
+       "san": "Nxb8"
+      },
+      {
+       "uci": "d1d8",
+       "san": "Rd8#"
+      }
+     ]
+    }
+   ],
+   "reply_pv": [
+    {
+     "uci": "d1d8",
+     "san": "Rd8#"
+    }
+   ],
+   "motifs": {
+    "played": [
+     {
+      "type": "hanging_piece",
+      "squares": [
+       "b8",
+       "b8"
+      ],
+      "pieces": [
+       "n",
+       "Q"
+      ],
+      "gain_cp": 900,
+      "line": [
+       {
+        "uci": "d7b8",
+        "san": "Nxb8"
+       }
+      ]
+     }
+    ],
+    "missed": [],
+    "refutation": [
+     {
+      "type": "mate_in_n",
+      "squares": [
+       "d8",
+       "e8"
+      ],
+      "pieces": [
+       "R",
+       "k"
+      ],
+      "gain_cp": null,
+      "line": [
+       {
+        "uci": "d1d8",
+        "san": "Rd8#"
+       }
+      ]
+     },
+     {
+      "type": "back_rank",
+      "squares": [
+       "d8",
+       "e8"
+      ],
+      "pieces": [
+       "R",
+       "k"
+      ],
+      "gain_cp": null,
+      "line": [
+       {
+        "uci": "d1d8",
+        "san": "Rd8#"
+       }
+      ]
+     }
+    ],
+    "sacrifice": null
+   },
+   "phase": "middlegame"
+  },
+  {
+   "ply": 33,
+   "san": "Rd8#",
+   "uci": "d1d8",
+   "fen_before": "1n2kb1r/p4ppp/4q3/4p1B1/4P3/8/PPP2PPP/2KR4 w k - 0 17",
+   "eval_before_cp": null,
+   "eval_after_cp": null,
+   "mate_before": 1,
+   "mate_after": 0,
+   "win_before": 97.54474363414323,
+   "win_after": 97.54474363414323,
+   "accuracy": 100.0,
+   "move_class": "great",
+   "is_miss": false,
+   "best_uci": "d1d8",
+   "best_san": "Rd8#",
+   "pv": [
+    {
+     "uci": "d1d8",
+     "san": "Rd8#"
+    }
+   ],
+   "multipv": [
+    {
+     "cp": null,
+     "mate": 1,
+     "pv": [
+      {
+       "uci": "d1d8",
+       "san": "Rd8#"
+      }
+     ]
+    },
+    {
+     "cp": -874,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "d1d5",
+       "san": "Rd5"
+      },
+      {
+       "uci": "b8c6",
+       "san": "Nc6"
+      },
+      {
+       "uci": "g5e3",
+       "san": "Be3"
+      },
+      {
+       "uci": "f7f6",
+       "san": "f6"
+      },
+      {
+       "uci": "d5b5",
+       "san": "Rb5"
+      },
+      {
+       "uci": "c6d8",
+       "san": "Nd8"
+      }
+     ]
+    },
+    {
+     "cp": -889,
+     "mate": null,
+     "pv": [
+      {
+       "uci": "d1d3",
+       "san": "Rd3"
+      },
+      {
+       "uci": "f8e7",
+       "san": "Be7"
+      },
+      {
+       "uci": "h2h4",
+       "san": "h4"
+      },
+      {
+       "uci": "f7f6",
+       "san": "f6"
+      },
+      {
+       "uci": "d3b3",
+       "san": "Rb3"
+      },
+      {
+       "uci": "b8c6",
+       "san": "Nc6"
+      },
+      {
+       "uci": "g5e3",
+       "san": "Be3"
+      },
+      {
+       "uci": "e8f7",
+       "san": "Kf7"
+      },
+      {
+       "uci": "b3b7",
+       "san": "Rb7"
+      }
+     ]
+    }
+   ],
+   "reply_pv": null,
+   "motifs": {
+    "played": [
+     {
+      "type": "mate_in_n",
+      "squares": [
+       "d8",
+       "e8"
+      ],
+      "pieces": [
+       "R",
+       "k"
+      ],
+      "gain_cp": null,
+      "line": [
+       {
+        "uci": "d1d8",
+        "san": "Rd8#"
+       }
+      ]
+     },
+     {
+      "type": "back_rank",
+      "squares": [
+       "d8",
+       "e8"
+      ],
+      "pieces": [
+       "R",
+       "k"
+      ],
+      "gain_cp": null,
+      "line": [
+       {
+        "uci": "d1d8",
+        "san": "Rd8#"
+       }
+      ]
+     }
+    ],
+    "missed": [],
+    "refutation": [],
+    "sacrifice": null
+   },
+   "phase": "middlegame"
+  }
+ ]
+}

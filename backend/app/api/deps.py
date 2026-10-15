@@ -9,6 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import Settings
 from app.db.models import User
 from app.db.session import Database
+from app.explain.llm import LLMProvider
+from app.explain.service import Explainer
 
 
 def get_settings(request: Request) -> Settings:
@@ -31,10 +33,20 @@ def get_arq(request: Request) -> ArqRedis:
     return arq
 
 
+def get_explainer(request: Request) -> Explainer:
+    llm: LLMProvider | None = request.app.state.llm
+    return Explainer(
+        llm,
+        get_db(request).sessionmaker,
+        concurrency=get_settings(request).llm_max_concurrency,
+    )
+
+
 SettingsDep = Annotated[Settings, Depends(get_settings)]
 DatabaseDep = Annotated[Database, Depends(get_db)]
 RedisDep = Annotated[Redis, Depends(get_redis)]
 ArqDep = Annotated[ArqRedis, Depends(get_arq)]
+ExplainerDep = Annotated[Explainer, Depends(get_explainer)]
 
 
 async def get_session(db: DatabaseDep) -> AsyncIterator[AsyncSession]:

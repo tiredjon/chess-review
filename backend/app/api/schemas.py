@@ -2,7 +2,7 @@
 
 import uuid
 from datetime import datetime
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
@@ -156,3 +156,28 @@ class ImportJobOut(ORMModel):
     created_at: datetime
     started_at: datetime | None
     finished_at: datetime | None
+
+
+ExplainLang = Literal["ru", "en"]
+
+
+class ExplainIn(BaseModel):
+    # None — язык пользователя.
+    lang: ExplainLang | None = None
+
+
+class MoveExplanationOut(BaseModel):
+    move_id: int
+    ply: int
+    text: str
+    # "template" — шаблонное объяснение без LLM, иначе имя провайдера.
+    provider: str
+    cached: bool
+
+
+class SummaryOut(BaseModel):
+    analysis_id: uuid.UUID
+    # 3–5 пунктов, по строке на пункт, каждый начинается с «- ».
+    text: str
+    provider: str
+    cached: bool

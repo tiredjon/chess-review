@@ -67,6 +67,9 @@ class Settings(BaseSettings):
     gemini_api_key: SecretStr | None = None
     openai_api_key: SecretStr | None = None
     anthropic_api_key: SecretStr | None = None
+    llm_timeout_s: float = Field(default=30.0, gt=0)
+    # Одновременных запросов к LLM при пакетном объяснении ходов разбора.
+    llm_max_concurrency: int = Field(default=4, ge=1)
 
 
 @lru_cache

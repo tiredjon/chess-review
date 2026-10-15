@@ -14,6 +14,7 @@ from app.api.router import api_router
 from app.core.config import Settings, get_settings
 from app.core.logging import configure_logging
 from app.db.session import Database
+from app.explain.llm import make_provider
 
 log = structlog.get_logger(__name__)
 
@@ -28,11 +29,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         # ArqRedis — тот же redis.asyncio.Redis плюс enqueue_job. Подключение ленивое:
         # без Redis API стартует, а /health/ready сообщает об ошибке.
         app.state.redis = ArqRedis(ConnectionPool.from_url(settings.redis_url))
+        # None — LLM_PROVIDER=none: объяснения по шаблонам.
+        app.state.llm = make_provider(settings)
         log.info("api.startup", env=settings.app_env)
         try:
             yield
         finally:
             await app.state.redis.aclose()
+            if app.state.llm is not None:
+                await app.state.llm.close()
             await app.state.db.dispose()
             log.info("api.shutdown")
 
