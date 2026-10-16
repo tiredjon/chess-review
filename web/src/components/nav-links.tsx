@@ -22,6 +22,19 @@ const NAV: { href: string; label: string; icon: ReactNode }[] = [
       </>
     ),
   },
+  {
+    href: "/stats",
+    label: "Статистика",
+    icon: <path d="M4 20h16v-2H4zM5 16h3v-5H5zM10.5 16h3V5h-3zM16 16h3V9h-3z" />,
+  },
+  {
+    href: "/puzzles",
+    label: "Пазлы",
+    // Кусочек пазла.
+    icon: (
+      <path d="M10 3.5a2 2 0 0 1 4 0V5h4a1 1 0 0 1 1 1v4h-1.5a2 2 0 0 0 0 4H19v4a1 1 0 0 1-1 1h-4v-1.5a2 2 0 0 0-4 0V19H6a1 1 0 0 1-1-1v-4h1.5a2 2 0 0 0 0-4H5V6a1 1 0 0 1 1-1h4z" />
+    ),
+  },
 ];
 
 function CurrentNavLinks() {
@@ -44,6 +57,7 @@ function Links({ pathname }: { pathname: string | null }) {
             key={href}
             href={href}
             aria-current={active ? "page" : undefined}
+            title={label}
             className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold md:w-[60px] md:flex-col md:gap-1 md:px-0 md:py-2 md:text-[11px] ${
               active ? "bg-raised text-ink" : "text-muted hover:bg-raised/60 hover:text-ink"
             }`}
@@ -51,7 +65,8 @@ function Links({ pathname }: { pathname: string | null }) {
             <svg aria-hidden viewBox="0 0 24 24" className="h-6 w-6 fill-current">
               {icon}
             </svg>
-            {label}
+            {/* На телефоне — только значки: четыре подписи не помещаются в полосу. */}
+            <span className="max-sm:sr-only">{label}</span>
           </Link>
         );
       })}

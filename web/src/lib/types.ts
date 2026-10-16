@@ -156,3 +156,116 @@ export type MoveExplanation = {
 };
 
 export type Summary = { analysis_id: string; text: string; provider: string; cached: boolean };
+
+// --- Статистика (GET /stats/me) ---
+
+export type TimeClass = "bullet" | "blitz" | "rapid" | "daily";
+export type AccuracyKind = "official" | "cc" | "lichess";
+export type GameOutcome = "win" | "draw" | "loss";
+
+export type AccuracyPoint = {
+  game_id: string;
+  played_at: string | null;
+  accuracy: number;
+  /** Откуда точность: официальная Chess.com, наша «как у Chess.com», формула Lichess. */
+  kind: AccuracyKind;
+  moving_avg: number;
+  opponent: string;
+  outcome: GameOutcome | null;
+  time_class: TimeClass;
+  color: Color;
+};
+
+export type OpeningStat = {
+  eco: string | null;
+  name: string;
+  games: number;
+  wins: number;
+  draws: number;
+  losses: number;
+  accuracy: number | null;
+};
+
+export type MotifExample = {
+  game_id: string;
+  move_id: number;
+  ply: number;
+  fullmove: number;
+  color: Color;
+  san: string;
+  class: MoveClass;
+  is_miss: boolean;
+  played_at: string | null;
+  opponent: string;
+};
+
+export type Stats = {
+  filters: { source: GameSource | null; time_class: TimeClass | null };
+  totals: {
+    games: number;
+    games_without_color: number;
+    analyzed: number;
+    wins: number;
+    draws: number;
+    losses: number;
+    accuracy: number | null;
+    with_accuracy: number;
+  };
+  accuracy: { window: number; points: AccuracyPoint[] };
+  openings: { white: OpeningStat[]; black: OpeningStat[] };
+  /** Точность фаз — по формуле Lichess. */
+  phases: { phase: Phase; accuracy: number | null; games: number }[];
+  classes: {
+    games: number;
+    moves: number;
+    items: { class: MoveClass | "miss"; count: number; per_game: number; share: number }[];
+  };
+  motifs: { type: string; count: number; examples: MotifExample[] }[];
+};
+
+// --- Пазлы ---
+
+export type Puzzle = {
+  id: string;
+  fen: string;
+  color: Color;
+  themes: string[];
+  player_moves: number;
+  /** Подсказка: поле, с которого ходит игрок, на каждый его ход. */
+  hints: string[];
+  box: number;
+  attempts: number;
+  next_review_at: string | null;
+  last_move: { uci: string; san: string; fen_before: string } | null;
+  source: {
+    game_id: string;
+    ply: number;
+    fullmove: number;
+    san: string;
+    class: MoveClass;
+    is_miss: boolean;
+    opponent: string;
+    played_at: string | null;
+  } | null;
+};
+
+export type PuzzleCounts = {
+  due: number;
+  new: number;
+  total: number;
+  streak: number;
+  next_review_at: string | null;
+};
+
+export type PuzzleNext = { puzzle: Puzzle | null; counts: PuzzleCounts };
+
+export type PuzzleAttempt = {
+  result: "continue" | "solved" | "failed";
+  reply_uci: string | null;
+  expected_uci: string | null;
+  solution_uci: string[] | null;
+  solution_san: string[] | null;
+  box: number | null;
+  next_review_at: string | null;
+  streak: number | null;
+};

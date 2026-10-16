@@ -78,6 +78,7 @@ function isTyping(target: EventTarget | null) {
 export function Review({
   plies,
   startFen,
+  initialCursor = 0,
   initialOrientation,
   player,
   subtitle,
@@ -86,6 +87,8 @@ export function Review({
 }: {
   plies: Ply[];
   startFen: string;
+  /** Открыть сразу на этом ходе (разбор по ходам вместо обзора). */
+  initialCursor?: number;
   initialOrientation: Color;
   /** Плашка игрока над / под доской. */
   player: (color: Color) => ReactNode;
@@ -96,9 +99,9 @@ export function Review({
   /** Обзор партии (итог, точность, классы), когда анализ готов. */
   overview: ReactNode;
 }) {
-  const [cursor, setCursor] = useState(0);
+  const [cursor, setCursor] = useState(initialCursor);
   // Панель: обзор партии или разбор по ходам (как «Начать разбор»).
-  const [view, setView] = useState<"overview" | "moves">("overview");
+  const [view, setView] = useState<"overview" | "moves">(initialCursor > 0 ? "moves" : "overview");
   const [mode, setMode] = useState<Mode>(GAME);
   const [playing, setPlaying] = useState(false);
   const [orientation, setOrientation] = useState<Color>(initialOrientation);

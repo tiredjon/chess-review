@@ -144,7 +144,7 @@ def _own_move(ug: CTE) -> ColumnElement[bool]:
     return side == case((ug.c.user_color == Color.WHITE, "w"), else_="b")
 
 
-def _analyzed_moves(stmt: Select[Any], ug: CTE) -> Select[Any]:
+def _analyzed_moves[*Ts](stmt: Select[*Ts], ug: CTE) -> Select[*Ts]:
     return stmt.join(ug, Move.analysis_id == ug.c.analysis_id).where(ug.c.done, _own_move(ug))
 
 
@@ -256,7 +256,7 @@ async def _classes(session: AsyncSession, ug: CTE, analyzed: int) -> ClassesStat
     stmt = _analyzed_moves(
         select(
             Move.move_class,
-            func.count().label("count"),
+            func.count().label("n"),
             func.count().filter(Move.is_miss).label("misses"),
         ),
         ug,
@@ -264,7 +264,7 @@ async def _classes(session: AsyncSession, ug: CTE, analyzed: int) -> ClassesStat
     counts: dict[MoveClass, int] = {}
     misses = 0
     for row in await session.execute(stmt):
-        counts[row.move_class] = row.count
+        counts[row.move_class] = row.n
         misses += row.misses
     moves = sum(counts.values())
 
@@ -314,7 +314,7 @@ async def _motifs(session: AsyncSession, ug: CTE) -> list[MotifStat]:
     )
     ranked = select(
         errors,
-        func.count().over(partition_by=errors.c.type).label("count"),
+        func.count().over(partition_by=errors.c.type).label("n"),
         func.row_number()
         .over(partition_by=errors.c.type, order_by=(errors.c.ts.desc(), errors.c.ply))
         .label("example"),
@@ -322,12 +322,12 @@ async def _motifs(session: AsyncSession, ug: CTE) -> list[MotifStat]:
     rows = await session.execute(
         select(ranked)
         .where(ranked.c.example <= MOTIF_EXAMPLES)
-        .order_by(ranked.c.count.desc(), ranked.c.type, ranked.c.example)
+        .order_by(ranked.c.n.desc(), ranked.c.type, ranked.c.example)
     )
     counts: dict[str, int] = {}
     examples: dict[str, list[MotifExample]] = defaultdict(list)
     for row in rows:
-        counts[row.type] = row.count
+        counts[row.type] = row.n
         _, side, *_, fullmove = row.fen_before.split()
         examples[row.type].append(
             MotifExample(

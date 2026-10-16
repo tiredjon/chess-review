@@ -21,6 +21,7 @@ from app.db.session import Database
 from app.engine.analyzer import Analyzer, PositionEngine
 from app.engine.cache import DbEvalCache
 from app.importers.pgn import parse_game
+from app.puzzles.generate import generate_puzzles
 from app.review.pipeline import GameReview, analyse_game
 from app.workers.progress import ProgressEvent, ProgressReporter, publish
 from app.workers.serialize import accuracy_fields, move_row
@@ -55,6 +56,8 @@ async def analyze_game(ctx: dict[str, Any], analysis_id: str) -> str:
             log_.warning("analysis.missing")
             return "missing"
         if analysis.status == AnalysisStatus.DONE:
+            # Повтор задачи, прерванной при генерации пазлов: она идемпотентна.
+            await _generate_puzzles(ctx, analysis_uuid)
             return "done"
         await session.execute(delete(Move).where(Move.analysis_id == analysis_uuid))
         analysis.status = AnalysisStatus.RUNNING
@@ -97,7 +100,21 @@ async def analyze_game(ctx: dict[str, Any], analysis_id: str) -> str:
         ProgressEvent(status=AnalysisStatus.DONE, done=reporter.total, total=reporter.total),
     )
     log_.info("analysis.done", moves=len(review.moves))
+    await _generate_puzzles(ctx, analysis_uuid)
     return "done"
+
+
+async def _generate_puzzles(ctx: dict[str, Any], analysis_id: uuid.UUID) -> None:
+    """Пазлы из ошибок пользователя. Разбор уже сохранён и показан: сбой генерации только
+    логируется, а отмена задачи (CancelledError) пробрасывается — ARQ повторит задачу."""
+    db: Database = ctx["db"]
+    analyser = Analyzer(ctx["engine"], DbEvalCache(db.sessionmaker))
+    try:
+        count = await generate_puzzles(db, analyser, analysis_id)
+    except Exception:
+        log.exception("puzzles.failed", analysis_id=str(analysis_id))
+        return
+    log.info("puzzles.generated", analysis_id=str(analysis_id), count=count)
 
 
 async def _save_review(db: Database, analysis_id: uuid.UUID, review: GameReview) -> None:

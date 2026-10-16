@@ -106,9 +106,10 @@ async def client(settings: Settings, migrated_db: str) -> AsyncIterator[AsyncCli
 
 @pytest.fixture
 async def db(migrated_db: str) -> AsyncIterator[Database]:
-    """Тестовая БД без партий и кэша оценок (пользователи из миграции остаются)."""
+    """Тестовая БД без партий, пазлов и кэша оценок (пользователи из миграции остаются)."""
     database = Database(migrated_db)
     async with database.engine.begin() as conn:
+        await conn.execute(text("DELETE FROM puzzles"))
         await conn.execute(text("DELETE FROM games"))
         await conn.execute(text("DELETE FROM position_evals"))
     yield database

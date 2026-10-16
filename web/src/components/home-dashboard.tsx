@@ -12,6 +12,7 @@ import { EmptyGames } from "./games-list";
 import { GamesTable, GamesTableSkeleton } from "./games-table";
 import { ImportCard } from "./import-form";
 import { PlayerAvatar } from "./player-avatar";
+import { PuzzlesCard } from "./puzzles/puzzles-card";
 import { ErrorText, Panel } from "./ui";
 
 const HISTORY_SIZE = 10;
@@ -46,6 +47,8 @@ export function HomeDashboard() {
             : games.slice(0, RECENT_SIZE).map((game) => <RecentGame key={game.id} game={game} />)}
         </div>
       </div>
+
+      <PuzzlesCard />
 
       <Panel
         title="История партий"

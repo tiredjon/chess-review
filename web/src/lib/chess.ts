@@ -108,3 +108,23 @@ export function lineLabels(fen: string, line: LineMove[]): string[] {
     return label;
   });
 }
+
+/** SAN хода в UCI; null — ход нелегален. */
+export function uciSan(fen: string, uci: string): string | null {
+  try {
+    return new Chess(fen).move(uciSquares(uci)).san;
+  } catch {
+    return null;
+  }
+}
+
+/** Фигура на клетке в FEN-обозначении (`N` — белый конь, `n` — чёрный) или null. */
+export function pieceOn(fen: string, square: string): string | null {
+  try {
+    const piece = new Chess(fen).get(square as Parameters<Chess["get"]>[0]);
+    if (!piece) return null;
+    return piece.color === "w" ? piece.type.toUpperCase() : piece.type;
+  } catch {
+    return null;
+  }
+}

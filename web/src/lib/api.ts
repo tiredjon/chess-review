@@ -7,7 +7,11 @@ import type {
   GameSource,
   ImportJob,
   MoveExplanation,
+  PuzzleAttempt,
+  PuzzleNext,
+  Stats,
   Summary,
+  TimeClass,
 } from "./types";
 
 export const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").replace(
@@ -78,4 +82,21 @@ export const api = {
 
   explainMove: (moveId: number) => post<MoveExplanation>(`/moves/${moveId}/explain`),
   summary: (analysisId: string) => request<Summary>(`/analyses/${analysisId}/summary`),
+
+  stats: (params: { source?: GameSource | null; timeClass?: TimeClass | null }) => {
+    const query = new URLSearchParams();
+    if (params.source) query.set("source", params.source);
+    if (params.timeClass) query.set("time_class", params.timeClass);
+    const qs = query.toString();
+    return request<Stats>(`/stats/me${qs ? `?${qs}` : ""}`);
+  },
+
+  nextPuzzle: (exclude: string[] = []) => {
+    const query = new URLSearchParams();
+    exclude.forEach((id) => query.append("exclude", id));
+    const qs = query.toString();
+    return request<PuzzleNext>(`/puzzles/next${qs ? `?${qs}` : ""}`);
+  },
+  attemptPuzzle: (id: string, body: { moves_uci: string[]; hint_used?: boolean; gave_up?: boolean }) =>
+    post<PuzzleAttempt>(`/puzzles/${id}/attempt`, body),
 };

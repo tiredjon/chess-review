@@ -25,7 +25,7 @@ import { CoachBubble, GameSummary } from "./summary";
 import { useAnalysis, type AnalysisState } from "./use-analysis";
 
 /** Экран разбора: загрузка партии, запуск анализа с прогрессом, сам разбор. */
-export function GameReview({ id, autoAnalyze }: { id: string; autoAnalyze: boolean }) {
+export function GameReview({ id, autoAnalyze, initialPly = 0 }: { id: string; autoAnalyze: boolean; initialPly?: number }) {
   const [game, setGame] = useState<GameDetail | null>(null);
   const [error, setError] = useState<{ status: number; message: string } | null>(null);
 
@@ -58,16 +58,18 @@ export function GameReview({ id, autoAnalyze }: { id: string; autoAnalyze: boole
     );
   }
   if (!game) return <ReviewSkeleton />;
-  return <LoadedGame game={game} autoAnalyze={autoAnalyze} onAnalysisDone={reload} />;
+  return <LoadedGame game={game} autoAnalyze={autoAnalyze} initialPly={initialPly} onAnalysisDone={reload} />;
 }
 
 function LoadedGame({
   game,
   autoAnalyze,
+  initialPly,
   onAnalysisDone,
 }: {
   game: GameDetail;
   autoAnalyze: boolean;
+  initialPly: number;
   onAnalysisDone: () => void;
 }) {
   const router = useRouter();
@@ -110,6 +112,7 @@ function LoadedGame({
       <Review
         plies={plies}
         startFen={plies.length > 0 ? startFen : START_FEN}
+        initialCursor={Math.min(initialPly, plies.length)}
         initialOrientation={game.user_color ?? "white"}
         player={(color) => <PlayerBar game={game} color={color} />}
         subtitle={subtitle}

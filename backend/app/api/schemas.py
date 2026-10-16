@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field, computed_field
 from app.db.accuracy import pick_accuracy
 from app.db.models import AnalysisStatus, Color, GameSource, ImportStatus
 from app.review.game_rating import TimeClass, game_rating, time_class
+from app.review.thresholds import PUZZLE_MAX_PLAYER_MOVES
 from app.review.types import MoveClass, Phase
 
 # Вставленный PGN: ~1 МБ — это сотни партий, больше через этот эндпоинт не нужно.
@@ -327,3 +328,88 @@ class StatsOut(BaseModel):
     phases: list[PhaseStat]
     classes: ClassesStats
     motifs: list[MotifStat]
+
+
+# --- Пазлы (GET /puzzles/next, POST /puzzles/{id}/attempt) ---
+
+UciMove = Annotated[str, Field(pattern=r"^[a-h][1-8][a-h][1-8][qrbn]?$")]
+
+
+class PuzzleSource(BaseModel):
+    """Ошибка в партии, из которой сделан пазл (ссылка на ход в разборе)."""
+
+    game_id: uuid.UUID
+    ply: int
+    fullmove: int
+    san: str
+    move_class: MoveClass = Field(serialization_alias="class")
+    is_miss: bool
+    opponent: str
+    played_at: datetime | None
+
+
+class PuzzleLastMove(BaseModel):
+    """Ход соперника, после которого возникла позиция пазла: показать его анимацией."""
+
+    uci: str
+    san: str
+    fen_before: str
+
+
+class PuzzleOut(BaseModel):
+    id: uuid.UUID
+    fen: str
+    # Сторона игрока (на ходу в `fen`).
+    color: Color
+    themes: list[str]
+    # Ходов игрока в решении.
+    player_moves: int
+    # Подсказка «показать фигуру»: поле, с которого ходит игрок, на каждый его ход.
+    hints: list[str]
+    box: int
+    attempts: int
+    next_review_at: datetime | None
+    last_move: PuzzleLastMove | None
+    source: PuzzleSource | None
+
+
+class PuzzleCounts(BaseModel):
+    # Пора повторить / новые (ещё не решались) / всего.
+    due: int
+    new: int
+    total: int
+    # Решённых подряд (последние завершённые попытки).
+    streak: int
+    # Ближайшее будущее повторение, если сейчас повторять нечего.
+    next_review_at: datetime | None
+
+
+class PuzzleNextOut(BaseModel):
+    # None — на сейчас пазлов нет.
+    puzzle: PuzzleOut | None
+    counts: PuzzleCounts
+
+
+class AttemptIn(BaseModel):
+    """Ходы попытки с начала пазла: ход игрока, ответ соперника (из ответа API), …"""
+
+    moves_uci: list[UciMove] = Field(max_length=2 * PUZZLE_MAX_PLAYER_MOVES)
+    # Подсказка использована: решение засчитывается, но коробка не растёт.
+    hint_used: bool = False
+    # «Показать решение»: попытка завершается как нерешённая.
+    gave_up: bool = False
+
+
+class AttemptOut(BaseModel):
+    """`continue` — ход верный, соперник отвечает `reply_uci`; `solved` / `failed` — попытка
+    завершена и записана: `expected_uci` — верный ход там, где ошибся игрок."""
+
+    result: Literal["continue", "solved", "failed"]
+    reply_uci: str | None = None
+    expected_uci: str | None = None
+    # Только у завершённой попытки.
+    solution_uci: list[str] | None = None
+    solution_san: list[str] | None = None
+    box: int | None = None
+    next_review_at: datetime | None = None
+    streak: int | None = None
