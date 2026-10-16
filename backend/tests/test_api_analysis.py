@@ -276,8 +276,25 @@ async def _wait_for_subscriber(redis: Redis, name: str) -> None:
     raise AssertionError("SSE-клиент не подписался")
 
 
+@pytest.fixture
+def snapshot_taken(monkeypatch: pytest.MonkeyPatch) -> asyncio.Event:
+    """Событие «поток SSE снял первый снимок состояния». «Воркер» в тестах продолжает
+    только после него: иначе на медленной машине (CI) он успевал завершить анализ раньше
+    снимка, и поток закрывался первым же событием."""
+    taken = asyncio.Event()
+    current_event = analyses_api._current_event
+
+    async def watched(*args: Any) -> ProgressEvent:
+        event = await current_event(*args)
+        taken.set()
+        return event
+
+    monkeypatch.setattr(analyses_api, "_current_event", watched)
+    return taken
+
+
 async def test_events_stream_progress(
-    client: AsyncClient, game_id: str, redis: Redis, db: Database
+    client: AsyncClient, game_id: str, redis: Redis, db: Database, snapshot_taken: asyncio.Event
 ) -> None:
     analysis = await start_analysis(client, game_id)
     analysis_id = uuid.UUID(analysis["id"])
@@ -287,6 +304,7 @@ async def test_events_stream_progress(
 
     async def worker() -> None:
         await _wait_for_subscriber(redis, channel(analysis_id))
+        await snapshot_taken.wait()
         await publish(
             redis, analysis_id, ProgressEvent(status=AnalysisStatus.RUNNING, done=15, total=30)
         )
@@ -321,7 +339,9 @@ async def test_events_recheck_database_when_event_is_lost(
     game_id: str,
     redis: Redis,
     db: Database,
+    *,
     monkeypatch: pytest.MonkeyPatch,
+    snapshot_taken: asyncio.Event,
 ) -> None:
     monkeypatch.setattr(analyses_api, "STATUS_RECHECK_S", 0.05)
     analysis = await start_analysis(client, game_id)
@@ -329,6 +349,7 @@ async def test_events_recheck_database_when_event_is_lost(
 
     async def crash() -> None:
         await _wait_for_subscriber(redis, channel(analysis_id))
+        await snapshot_taken.wait()
         # Воркер пометил анализ упавшим, но событие в Redis не дошло.
         async with db.sessionmaker() as session:
             await session.execute(
