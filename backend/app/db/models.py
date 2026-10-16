@@ -36,6 +36,13 @@ class AnalysisStatus(StrEnum):
     FAILED = "failed"
 
 
+class AnalysisRunner(StrEnum):
+    """Где считались оценки: пул Stockfish воркера или движок в браузере пользователя."""
+
+    SERVER = "server"
+    BROWSER = "browser"
+
+
 class ImportStatus(StrEnum):
     QUEUED = "queued"
     RUNNING = "running"
@@ -116,6 +123,8 @@ class Game(Base):
     # Точность по версии площадки (Chess.com — у партий, разобранных там).
     source_white_accuracy: Mapped[float | None]
     source_black_accuracy: Mapped[float | None]
+    # Публичная ссылка на разбор (`/share/{token}`, бот); None — партия не опубликована.
+    share_token: Mapped[str | None] = mapped_column(String(32), unique=True)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
     user: Mapped[User] = relationship(back_populates="games")
@@ -136,6 +145,11 @@ class Analysis(Base):
     )
     depth: Mapped[int]
     engine_version: Mapped[str | None] = mapped_column(String(64))
+    runner: Mapped[AnalysisRunner] = mapped_column(
+        str_enum(AnalysisRunner, "analysis_runner"),
+        default=AnalysisRunner.SERVER,
+        server_default=AnalysisRunner.SERVER.value,
+    )
     # Точность по формуле Lichess (SPEC §4.3–4.4).
     white_accuracy: Mapped[float | None]
     black_accuracy: Mapped[float | None]
@@ -288,3 +302,14 @@ class PuzzleAttempt(Base):
     correct: Mapped[bool]
     hint_used: Mapped[bool] = mapped_column(default=False, server_default=sa.false())
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
+class TelegramChat(Base):
+    """Чат Telegram-бота: язык ответов (из `language_code`, меняется `/lang`)."""
+
+    __tablename__ = "telegram_chats"
+
+    chat_id: Mapped[int] = mapped_column(sa.BigInteger, primary_key=True, autoincrement=False)
+    lang: Mapped[str] = mapped_column(String(8), default="ru", server_default="ru")
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    last_request_at: Mapped[datetime | None]

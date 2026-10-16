@@ -7,8 +7,8 @@ from typing import Annotated, Any, Literal
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, computed_field
 
 from app.db.accuracy import pick_accuracy
-from app.db.models import AnalysisStatus, Color, GameSource, ImportStatus
-from app.review.game_rating import TimeClass, game_rating, time_class
+from app.db.models import AnalysisRunner, AnalysisStatus, Color, GameSource, ImportStatus
+from app.review.game_rating import TimeClass, game_rating, group_accuracy, time_class
 from app.review.thresholds import PUZZLE_MAX_PLAYER_MOVES
 from app.review.types import MoveClass, Phase
 
@@ -107,6 +107,8 @@ class AnalysisSummary(ORMModel):
     id: uuid.UUID
     status: AnalysisStatus
     depth: int
+    # Где считались оценки: воркер или Stockfish WASM в браузере (сессия 11).
+    runner: AnalysisRunner = AnalysisRunner.SERVER
     # Точность по формуле Lichess.
     white_accuracy: float | None
     black_accuracy: float | None
@@ -174,6 +176,13 @@ class GameRating(BaseModel):
     black: int | None
 
 
+class GroupAccuracy(BaseModel):
+    """Средняя точность игроков с рейтингом и контролем каждого из игроков партии."""
+
+    white: float | None
+    black: float | None
+
+
 class GameOut(ORMModel):
     id: uuid.UUID
     source: GameSource
@@ -211,6 +220,24 @@ class GameOut(ORMModel):
             white=None if white is None else game_rating(white, tc),
             black=None if black is None else game_rating(black, tc),
         )
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def group_accuracy(self) -> GroupAccuracy | None:
+        """Сравнение с рейтинговой группой (кривые `review/game_rating.py`). Только рейтинги
+        Chess.com и только к точности «как у Chess.com» (официальной или нашей)."""
+        if self.source != GameSource.CHESSCOM:
+            return None
+
+        def expected(color: Color) -> float | None:
+            picked = pick_accuracy(self, self.analysis, color)
+            if picked is None or picked[1] == "lichess":
+                return None
+            elo = self.white_elo if color == Color.WHITE else self.black_elo
+            return group_accuracy(elo, self.time_control)
+
+        white, black = expected(Color.WHITE), expected(Color.BLACK)
+        return None if white is None and black is None else GroupAccuracy(white=white, black=black)
 
 
 class GameDetail(GameOut):
@@ -300,6 +327,11 @@ class AccuracyPoint(BaseModel):
     game_id: uuid.UUID
     played_at: datetime | None
     accuracy: float
+    # Рейтинг пользователя в партии и средняя точность его рейтинговой группы (только
+    # Chess.com и точность «как у Chess.com»); скользящее среднее группы — как у точности.
+    rating: int | None = None
+    group_accuracy: float | None = None
+    group_moving_avg: float | None = None
     # Откуда точность: официальная Chess.com, наша «как у Chess.com» или формула Lichess.
     kind: AccuracyKindOut
     # Скользящее среднее по последним `window` партиям (включая эту).
@@ -373,6 +405,18 @@ class MotifStat(BaseModel):
     examples: list[MotifExample]
 
 
+class RatingGroupStat(BaseModel):
+    """Точность пользователя против средней у игроков его рейтинга — по партиям Chess.com
+    одного контроля, где известны и точность («как у Chess.com»), и рейтинг."""
+
+    time_class: TimeClass
+    games: int
+    # Средний рейтинг пользователя в этих партиях.
+    rating: int
+    accuracy: float
+    group_accuracy: float
+
+
 class StatsOut(BaseModel):
     filters: StatsFilters
     totals: StatsTotals
@@ -381,6 +425,7 @@ class StatsOut(BaseModel):
     phases: list[PhaseStat]
     classes: ClassesStats
     motifs: list[MotifStat]
+    rating_groups: list[RatingGroupStat] = []
 
 
 # --- Пазлы (GET /puzzles/next, POST /puzzles/{id}/attempt) ---
@@ -466,3 +511,87 @@ class AttemptOut(BaseModel):
     box: int | None = None
     next_review_at: datetime | None = None
     streak: int | None = None
+
+
+# --- Движок: анализ в браузере и режим исследования (сессия 11) ---
+
+
+class ExternalLineIn(BaseModel):
+    """Линия движка: оценка за сторону на ходу (как в UCI) — ровно одно из cp / mate."""
+
+    cp: int | None = None
+    mate: int | None = None
+    pv: list[UciMove] = Field(min_length=1, max_length=64)
+
+
+class ExternalEvalIn(BaseModel):
+    """Оценка позиции — тот же формат, что в кэше `position_evals`."""
+
+    depth: int = Field(ge=0, le=99)
+    lines: list[ExternalLineIn] = Field(min_length=1, max_length=5)
+
+
+class BrowserAnalysisIn(BaseModel):
+    """Оценки всех позиций партии (после 0, 1, … полуходов); null — только у позиций
+    без ходов (мат, пат)."""
+
+    depth: int = Field(ge=1, le=40)
+    # Например «Stockfish 19 lite (WASM)».
+    engine: str = Field(min_length=1, max_length=64)
+    positions: list[ExternalEvalIn | None] = Field(min_length=1, max_length=2000)
+
+
+class PuzzleProbeOut(BaseModel):
+    """Позиция для проверки пазла: MultiPV=2, если лучший ход движка — `move`
+    (иначе одна линия), как `Analyzer.analyse(..., played={move})`."""
+
+    fen: str
+    move: str
+
+
+class BrowserAnalysisOut(BaseModel):
+    analysis: AnalysisOut
+    # Посчитать в браузере и прислать в `POST /analyses/{id}/browser-puzzles`.
+    puzzle_probes: list[PuzzleProbeOut]
+
+
+class ProbeResultIn(BaseModel):
+    fen: str = Field(min_length=1, max_length=100)
+    move: UciMove
+    eval: ExternalEvalIn
+
+
+class BrowserPuzzlesIn(BaseModel):
+    probes: list[ProbeResultIn] = Field(max_length=500)
+
+
+class BrowserPuzzlesOut(BaseModel):
+    # Пазлов из этого анализа (новых и уже бывших).
+    puzzles: int
+
+
+class EngineConfigOut(BaseModel):
+    analysis_depth: int
+    analysis_multipv: int
+    # Меньшая глубина анализа из браузера не принимается.
+    browser_min_depth: int
+    explore_depth: int
+
+
+class ExploreIn(BaseModel):
+    fen: str = Field(min_length=1, max_length=100)
+
+
+class ExploreLineOut(BaseModel):
+    """Оценка — за сторону на ходу в `fen`; `pv` — `[{uci, san}]`."""
+
+    cp: int | None
+    mate: int | None
+    pv: list[dict[str, str]]
+
+
+class ExploreOut(BaseModel):
+    fen: str
+    depth: int
+    # Пусто — позиция финальная (мат или ничья по правилам).
+    lines: list[ExploreLineOut]

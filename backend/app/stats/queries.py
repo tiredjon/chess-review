@@ -41,6 +41,7 @@ from app.api.schemas import (
     OpeningsStats,
     OpeningStat,
     PhaseStat,
+    RatingGroupStat,
     StatsFilters,
     StatsOut,
     StatsTotals,
@@ -48,7 +49,7 @@ from app.api.schemas import (
 from app.db.accuracy import accuracy_sql
 from app.db.models import Analysis, AnalysisStatus, Color, Game, GameSource, Move
 from app.explain.facts import ERRORS
-from app.review.game_rating import TimeClass
+from app.review.game_rating import CURVES, DAILY_SHIFT, TimeClass
 from app.review.types import MoveClass, Phase
 
 # Скользящее среднее точности — по стольким последним партиям.
@@ -77,6 +78,22 @@ def time_class_sql(time_control: ColumnElement[Any]) -> ColumnElement[str]:
     )
 
 
+def group_accuracy_sql(
+    rating: ColumnElement[Any], time_class: ColumnElement[Any]
+) -> ColumnElement[float]:
+    """SQL-версия `review.game_rating.expected_accuracy` (совпадение проверяет тест):
+    a − b·e^(−r/c), daily — кривая рапида со сдвигом."""
+    rapid = CURVES["rapid"]
+    curves = {**CURVES, "daily": (rapid[0] + DAILY_SHIFT, rapid[1], rapid[2])}
+    return case(
+        *(
+            (time_class == name, a - b * func.exp(-cast(rating, Numeric) / c))
+            for name, (a, b, c) in curves.items()
+        ),
+        else_=null(),
+    )
+
+
 def _user_games(user_id: uuid.UUID, source: GameSource | None, tc: TimeClass | None) -> CTE:
     """Партии пользователя после фильтров + последний анализ + показываемая точность."""
     game = Game.__table__
@@ -98,6 +115,19 @@ def _user_games(user_id: uuid.UUID, source: GameSource | None, tc: TimeClass | N
     user_color = game.c.user_color
     accuracy, kind = accuracy_sql(game, latest, user_color)
     time_class = time_class_sql(game.c.time_control)
+    rating = case((user_color == Color.WHITE, game.c.white_elo), else_=game.c.black_elo)
+    # Рейтинговая группа: кривые подобраны по рейтингам и точности Chess.com.
+    group = case(
+        (
+            and_(
+                game.c.source == GameSource.CHESSCOM,
+                rating.is_not(None),
+                kind.in_(["official", "cc"]),
+            ),
+            cast(group_accuracy_sql(rating, time_class), Float),
+        ),
+        else_=null(),
+    )
     outcome = case(
         (game.c.result == "1/2-1/2", "draw"),
         (
@@ -126,6 +156,8 @@ def _user_games(user_id: uuid.UUID, source: GameSource | None, tc: TimeClass | N
             latest.c.phase_accuracy,
             accuracy.label("accuracy"),
             kind.label("accuracy_kind"),
+            rating.label("rating"),
+            group.label("group_accuracy"),
         )
         .select_from(game)
         .outerjoin(latest, true())
@@ -174,6 +206,9 @@ async def _accuracy_series(session: AsyncSession, ug: CTE) -> AccuracySeries:
             func.avg(ug.c.accuracy)
             .over(order_by=(ug.c.ts, ug.c.id), rows=(-(ACCURACY_WINDOW - 1), 0))
             .label("moving_avg"),
+            func.avg(ug.c.group_accuracy)
+            .over(order_by=(ug.c.ts, ug.c.id), rows=(-(ACCURACY_WINDOW - 1), 0))
+            .label("group_moving_avg"),
         )
         .where(ug.c.user_color.is_not(None), ug.c.accuracy.is_not(None))
         .subquery()
@@ -192,6 +227,9 @@ async def _accuracy_series(session: AsyncSession, ug: CTE) -> AccuracySeries:
                 accuracy=row.accuracy,
                 kind=row.accuracy_kind,
                 moving_avg=row.moving_avg,
+                rating=row.rating,
+                group_accuracy=row.group_accuracy,
+                group_moving_avg=row.group_moving_avg if row.group_accuracy is not None else None,
                 opponent=row.opponent,
                 outcome=row.outcome,
                 time_class=row.time_class,
@@ -200,6 +238,36 @@ async def _accuracy_series(session: AsyncSession, ug: CTE) -> AccuracySeries:
             for row in reversed(rows)
         ],
     )
+
+
+async def _rating_groups(session: AsyncSession, ug: CTE) -> list[RatingGroupStat]:
+    """Точность пользователя против рейтинговой группы — по контролям времени."""
+    rows = await session.execute(
+        select(
+            ug.c.time_class,
+            func.count().label("games"),
+            func.round(func.avg(ug.c.rating)).label("rating"),
+            func.avg(ug.c.accuracy).label("accuracy"),
+            func.avg(ug.c.group_accuracy).label("group_accuracy"),
+        )
+        .where(
+            ug.c.user_color.is_not(None),
+            ug.c.accuracy.is_not(None),
+            ug.c.group_accuracy.is_not(None),
+        )
+        .group_by(ug.c.time_class)
+        .order_by(func.count().desc(), ug.c.time_class)
+    )
+    return [
+        RatingGroupStat(
+            time_class=row.time_class,
+            games=row.games,
+            rating=int(row.rating),
+            accuracy=round(float(row.accuracy), 1),
+            group_accuracy=round(float(row.group_accuracy), 1),
+        )
+        for row in rows
+    ]
 
 
 async def _openings(session: AsyncSession, ug: CTE) -> OpeningsStats:
@@ -364,4 +432,5 @@ async def user_stats(
         phases=await _phases(session, ug),
         classes=await _classes(session, ug, totals.analyzed),
         motifs=await _motifs(session, ug),
+        rating_groups=await _rating_groups(session, ug),
     )

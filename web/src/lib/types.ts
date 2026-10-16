@@ -24,6 +24,8 @@ export type AnalysisSummary = {
   id: string;
   status: JobStatus;
   depth: number;
+  /** Где считались оценки: воркер или Stockfish WASM в браузере (сессия 11). */
+  runner: "server" | "browser";
   /** Точность по формуле Lichess. */
   white_accuracy: number | null;
   black_accuracy: number | null;
@@ -113,6 +115,8 @@ export type GameOut = {
   source_black_accuracy: number | null;
   /** Рейтинг партии по точности (как «Game Rating» Chess.com); null — точности нет. */
   game_rating: { white: number | null; black: number | null } | null;
+  /** Средняя точность игроков рейтинга и контроля каждого игрока (только Chess.com). */
+  group_accuracy: { white: number | null; black: number | null } | null;
   created_at: string;
   analysis: AnalysisSummary | null;
 };
@@ -174,6 +178,10 @@ export type AccuracyPoint = {
   /** Откуда точность: официальная Chess.com, наша «как у Chess.com», формула Lichess. */
   kind: AccuracyKind;
   moving_avg: number;
+  /** Рейтинг пользователя и средняя точность его рейтинговой группы (только Chess.com). */
+  rating: number | null;
+  group_accuracy: number | null;
+  group_moving_avg: number | null;
   opponent: string;
   outcome: GameOutcome | null;
   time_class: TimeClass;
@@ -216,6 +224,8 @@ export type Stats = {
     with_accuracy: number;
   };
   accuracy: { window: number; points: AccuracyPoint[] };
+  /** Точность пользователя против рейтинговой группы — по контролям времени. */
+  rating_groups: { time_class: TimeClass; games: number; rating: number; accuracy: number; group_accuracy: number }[];
   openings: { white: OpeningStat[]; black: OpeningStat[] };
   /** Точность фаз — по формуле Lichess. */
   phases: { phase: Phase; accuracy: number | null; games: number }[];
@@ -297,3 +307,28 @@ export type AuthOut = {
 export type ProfileUpdate = Partial<Pick<User, "lang" | "lichess_username" | "chesscom_username">>;
 
 export type StreamToken = { token: string; expires_in: number };
+
+// --- Движок (сессия 11): анализ в браузере, режим исследования ---
+
+export type EngineConfig = {
+  analysis_depth: number;
+  analysis_multipv: number;
+  browser_min_depth: number;
+  explore_depth: number;
+};
+
+/** Публичная ссылка на разбор партии. */
+export type ShareOut = { token: string; url: string };
+
+export type BrowserAnalysisOut = {
+  analysis: AnalysisOut;
+  /** Позиции для проверки пазлов: посчитать в браузере (MultiPV=2) и прислать обратно. */
+  puzzle_probes: { fen: string; move: string }[];
+};
+
+/** Оценка позиции движком API: за сторону на ходу в `fen`; пусто — позиция финальная. */
+export type ExploreOut = {
+  fen: string;
+  depth: number;
+  lines: { cp: number | null; mate: number | null; pv: LineMove[] }[];
+};

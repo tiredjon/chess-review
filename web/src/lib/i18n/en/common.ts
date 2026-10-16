@@ -22,6 +22,7 @@ export const common: Dict["common"] = {
     puzzles: "Puzzles",
     profile: "Profile",
     login: "Log in",
+    shared: "Game review",
     register: "Sign up",
   },
   actions: {

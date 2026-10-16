@@ -25,7 +25,7 @@ from app.api.schemas import (
     GamePage,
     PgnImportIn,
 )
-from app.db.models import Analysis, AnalysisStatus, Game, GameSource
+from app.db.models import Analysis, AnalysisRunner, AnalysisStatus, Game, GameSource
 from app.importers.pgn import PgnError, parse_pgn
 from app.importers.store import save_games
 from app.workers.analysis import enqueue_analysis
@@ -148,8 +148,8 @@ async def analyze_game(
     response: Response,
     body: Annotated[AnalyzeIn | None, Body()] = None,
 ) -> AnalysisOut:
-    """Ставит анализ в очередь. Если анализ той же глубины уже в очереди, идёт или
-    готов — возвращает его (200), новый не создаётся."""
+    """Ставит анализ в очередь. Если серверный анализ той же глубины уже в очереди, идёт
+    или готов — возвращает его (200), новый не создаётся."""
     depth = body.depth if body is not None and body.depth is not None else settings.analysis_depth
     # Блокировка партии: двойной клик не создаст два анализа.
     game = await _owned_game(session, user, game_id, lock=True)
@@ -159,6 +159,8 @@ async def analyze_game(
             Analysis.game_id == game.id,
             Analysis.depth == depth,
             Analysis.status != AnalysisStatus.FAILED,
+            # Анализ из браузера (другая сеть движка) не заменяет серверный.
+            Analysis.runner == AnalysisRunner.SERVER,
         )
         .order_by(Analysis.created_at.desc())
         .limit(1)

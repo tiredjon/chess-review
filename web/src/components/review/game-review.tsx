@@ -15,11 +15,14 @@ import {
   playerName,
   SOURCE_NAMES,
 } from "@/lib/format";
+import { useAnalysisSource, type EngineSource } from "@/lib/engine/preference";
 import { useI18n } from "@/lib/i18n/use-i18n";
 import type { Color, GameDetail } from "@/lib/types";
 import { PlayerAvatar } from "../player-avatar";
 import { Button, ErrorText } from "../ui";
+import { EngineSourceSwitch } from "./move-panel";
 import { Overview } from "./overview";
+import { ShareButton } from "./share-button";
 import { Review } from "./review";
 import { CoachBubble, GameSummary } from "./summary";
 import { useAnalysis, type AnalysisState } from "./use-analysis";
@@ -75,17 +78,17 @@ function LoadedGame({
   onAnalysisDone: () => void;
 }) {
   const router = useRouter();
-  const { t, lang } = useI18n();
-  const { state, start, starting, startError } = useAnalysis(game.id, game.analysis, onAnalysisDone);
+  const { state, start, cancel, starting, startError } = useAnalysis(game, game.analysis, onAnalysisDone);
+  const [source, setSource] = useAnalysisSource();
 
   // `?analyze=1` (из списков и после вставки PGN): запустить анализ один раз и убрать параметр.
   const autoStarted = useRef(false);
   useEffect(() => {
     if (!autoAnalyze || autoStarted.current) return;
     autoStarted.current = true;
-    if (!game.analysis || game.analysis.status === "failed") void start();
+    if (!game.analysis || game.analysis.status === "failed") void start(source);
     router.replace(`/games/${game.id}`, { scroll: false });
-  }, [autoAnalyze, game.analysis, game.id, router, start]);
+  }, [autoAnalyze, game.analysis, game.id, router, source, start]);
 
   const analysis = game.analysis?.status === "done" ? game.analysis : null;
   const { plies, startFen } = useMemo(
@@ -96,16 +99,7 @@ function LoadedGame({
     [analysis, game.pgn],
   );
 
-  const result = outcome(game);
-  const subtitle = [
-    `${formatResult(game.result)}${result ? ` (${t.common.outcome[result].toLowerCase()})` : ""}`,
-    game.opening_name,
-    formatTimeControl(game.time_control, t),
-    formatDate(game.played_at, lang),
-    SOURCE_NAMES[game.source],
-  ]
-    .filter(Boolean)
-    .join(", ");
+  const subtitle = useGameSubtitle(game);
 
   return (
     <>
@@ -119,7 +113,18 @@ function LoadedGame({
         initialOrientation={game.user_color ?? "white"}
         player={(color) => <PlayerBar game={game} color={color} />}
         subtitle={subtitle}
-        status={<AnalysisStatus state={state} starting={starting} error={startError} onStart={start} />}
+        actions={<ShareButton gameId={game.id} />}
+        status={
+          <AnalysisStatus
+            state={state}
+            starting={starting}
+            error={startError}
+            source={source}
+            onSource={setSource}
+            onStart={() => void start(source)}
+            onCancel={cancel}
+          />
+        }
         overview={
           analysis && (
             <>
@@ -133,10 +138,26 @@ function LoadedGame({
   );
 }
 
-function PlayerBar({ game, color }: { game: GameDetail; color: Color }) {
+/** Подзаголовок панели: результат, дебют, контроль, дата, площадка. */
+export function useGameSubtitle(game: GameDetail): string {
+  const { t, lang } = useI18n();
+  const result = outcome(game);
+  return [
+    `${formatResult(game.result)}${result ? ` (${t.common.outcome[result].toLowerCase()})` : ""}`,
+    game.opening_name,
+    formatTimeControl(game.time_control, t),
+    formatDate(game.played_at, lang),
+    SOURCE_NAMES[game.source],
+  ]
+    .filter(Boolean)
+    .join(", ");
+}
+
+export function PlayerBar({ game, color }: { game: GameDetail; color: Color }) {
   const name = playerName(game, color);
   const elo = playerElo(game, color);
   const accuracy = shownAccuracy(game, color);
+  const group = game.group_accuracy?.[color] ?? null;
   const { t } = useI18n();
   return (
     <div className="flex min-h-10 items-center gap-2.5">
@@ -145,6 +166,11 @@ function PlayerBar({ game, color }: { game: GameDetail; color: Color }) {
         <span className="font-bold">{name}</span>
         {elo && <span className="ml-1.5 font-semibold text-muted">({elo})</span>}
       </p>
+      {accuracy && group !== null && elo && (
+        <span title={t.review.groupAccuracyHint(Number(elo))} className="hidden text-xs font-bold whitespace-nowrap text-muted sm:inline">
+          {t.review.groupAccuracyShort(group.toFixed(1))}
+        </span>
+      )}
       {accuracy && (
         <span
           title={accuracy.official ? t.review.accuracyOfficial : t.review.accuracy}
@@ -163,20 +189,27 @@ function AnalysisStatus({
   state,
   starting,
   error,
+  source,
+  onSource,
   onStart,
+  onCancel,
 }: {
   state: AnalysisState | null;
   starting: boolean;
   error: string | null;
+  source: EngineSource;
+  onSource: (source: EngineSource) => void;
   onStart: () => void;
+  onCancel: () => void;
 }) {
   const { t } = useI18n();
   if (state && (state.status === "queued" || state.status === "running")) {
     const percent = state.total > 0 ? Math.round((state.done / state.total) * 100) : 0;
+    const browser = state.runner === "browser";
     return (
       <div aria-live="polite" className="flex flex-col gap-3">
         <CoachBubble>
-          {state.status === "queued" ? t.review.queued : t.review.running}
+          {browser ? t.review.runningBrowser : state.status === "queued" ? t.review.queued : t.review.running}
         </CoachBubble>
         <div className="flex items-center gap-3">
           <div
@@ -198,6 +231,13 @@ function AnalysisStatus({
             {state.total > 0 ? t.review.progress(state.done, state.total) : "…"}
           </span>
         </div>
+        {browser && (
+          <div>
+            <Button variant="raised" onClick={onCancel}>
+              {t.review.cancel}
+            </Button>
+          </div>
+        )}
       </div>
     );
   }
@@ -210,6 +250,20 @@ function AnalysisStatus({
           : t.review.notAnalyzed}
       </CoachBubble>
       <ErrorText>{error}</ErrorText>
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-xs font-bold uppercase tracking-wide text-muted">{t.review.runnerLabel}</span>
+          <EngineSourceSwitch
+            label={t.review.runnerLabel}
+            value={source}
+            onChange={onSource}
+            options={{ browser: t.review.runnerBrowser, server: t.review.runnerServer }}
+          />
+        </div>
+        <p className="text-xs font-semibold text-muted">
+          {source === "browser" ? t.review.runnerBrowserHint : t.review.runnerServerHint}
+        </p>
+      </div>
       <Button size="lg" onClick={onStart} disabled={starting}>
         {starting ? t.review.starting : failed ? t.review.restart : t.review.start}
       </Button>

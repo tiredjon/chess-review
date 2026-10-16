@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { api, ApiError } from "@/lib/api";
+import { ApiError } from "@/lib/api";
 import { useI18n } from "@/lib/i18n/use-i18n";
+import { useReviewSource } from "./review-source";
 
 /** Реплика «тренера»: значок слева, облачко с текстом справа. */
 export function CoachBubble({ children, busy = false }: { children: ReactNode; busy?: boolean }) {
@@ -43,11 +44,12 @@ export function GameSummary({ analysisId }: { analysisId: string }) {
   const key = `${lang}:${analysisId}`;
   const [result, setResult] = useState<{ key: string; points: string[] } | { key: string; error: string } | null>(null);
   const unavailable = t.review.summaryUnavailable;
+  const source = useReviewSource();
 
   useEffect(() => {
     let cancelled = false;
-    api
-      .summary(analysisId)
+    source
+      .summary(analysisId, lang)
       .then((summary) => {
         if (cancelled) return;
         const points = summary.text
@@ -62,7 +64,7 @@ export function GameSummary({ analysisId }: { analysisId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [analysisId, key, unavailable]);
+  }, [analysisId, key, lang, source, unavailable]);
 
   const [expanded, setExpanded] = useState(false);
   const current = result?.key === key ? result : null;

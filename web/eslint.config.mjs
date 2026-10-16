@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Сторонняя сборка Stockfish.js (scripts/fetch-engine.mjs).
+    "public/engine/**",
   ]),
 ]);
 

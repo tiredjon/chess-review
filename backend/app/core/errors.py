@@ -26,6 +26,8 @@ class ErrorCode(StrEnum):
     PUZZLE_NOT_FOUND = "puzzle_not_found"
     PUZZLE_ATTEMPT_INVALID = "puzzle_attempt_invalid"
     INVALID_CURSOR = "invalid_cursor"
+    # Публичная ссылка на разбор (`/shared/{token}`): неизвестный или отозванный токен.
+    SHARE_NOT_FOUND = "share_not_found"
     # PGN
     PGN_INVALID = "pgn_invalid"
     PGN_TOO_MANY = "pgn_too_many"
@@ -41,6 +43,13 @@ class ErrorCode(StrEnum):
     SOURCE_RATE_LIMITED = "source_rate_limited"
     SOURCE_UNAVAILABLE = "source_unavailable"
     SOURCE_BAD_RESPONSE = "source_bad_response"
+    # Telegram-бот: у пользователя площадки нет партий в классические шахматы.
+    SOURCE_NO_GAMES = "source_no_games"
+    # Движок: анализ из браузера и режим исследования (сессия 11)
+    ENGINE_DATA_INVALID = "engine_data_invalid"
+    DEPTH_TOO_LOW = "depth_too_low"
+    INVALID_FEN = "invalid_fen"
+    ENGINE_UNAVAILABLE = "engine_unavailable"
     # Общие
     VALIDATION_ERROR = "validation_error"
     HTTP_ERROR = "http_error"

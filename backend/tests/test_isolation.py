@@ -80,6 +80,10 @@ def foreign_requests(data: OwnerData) -> list[tuple[str, str, dict[str, object] 
         ("POST", f"/api/v1/moves/{data.move_id}/explain", {}),
         ("GET", f"/api/v1/imports/{data.import_id}", None),
         ("POST", f"/api/v1/puzzles/{data.puzzle_id}/attempt", {"moves_uci": ["e7e5"]}),
+        # Публичная ссылка: включить, посмотреть, отозвать — только владелец.
+        ("POST", f"/api/v1/games/{data.game_id}/share", None),
+        ("GET", f"/api/v1/games/{data.game_id}/share", None),
+        ("DELETE", f"/api/v1/games/{data.game_id}/share", None),
     ]
 
 
@@ -98,13 +102,14 @@ async def test_foreign_resources_are_not_found(
         assert response.status_code == 404, (method, url, response.text)
         assert response.json()["code"].endswith("_not_found"), url
 
-    # Ничего не изменилось: пазл не решён, новый анализ не создан.
+    # Ничего не изменилось: пазл не решён, новый анализ не создан, ссылки нет.
     async with db.sessionmaker() as session:
         puzzle = await session.get(Puzzle, owner_data.puzzle_id)
         games = list(await session.scalars(select(Game)))
     assert puzzle is not None
     assert puzzle.attempts == 0
     assert len(games) == 1
+    assert games[0].share_token is None
 
 
 async def test_foreign_data_absent_from_lists_and_stats(

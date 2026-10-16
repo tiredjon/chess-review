@@ -1,12 +1,17 @@
 // Клиент API v1. Запросы идут из браузера напрямую на API (CORS_ORIGINS в .env) с
 // access-токеном в заголовке (lib/session.ts). Ошибки API приходят с кодом (`code`,
 // `params`) — текст берётся из словаря текущего языка.
+import type { ExternalEval } from "./engine/analyse";
 import { currentDict, currentLang, type Dict } from "./i18n";
 import type { ErrorParams } from "./i18n/ru/errors";
 import { accessToken, API_URL, endSession, refreshSession, startSession } from "./session";
 import type {
   AnalysisOut,
   AuthOut,
+  BrowserAnalysisOut,
+  EngineConfig,
+  ExploreOut,
+  ShareOut,
   GameDetail,
   GameOut,
   GamePage,
@@ -65,7 +70,9 @@ async function send(path: string, init: RequestInit | undefined, token: string |
   headers.set("Accept-Language", currentLang());
   try {
     return await fetch(`${API_URL}/api/v1${path}`, { ...init, headers });
-  } catch {
+  } catch (err) {
+    // Отменённый запрос (режим исследования ушёл на другую позицию) — не ошибка сети.
+    if (err instanceof DOMException && err.name === "AbortError") throw err;
     throw new ApiError(0, currentDict().errors.network(API_URL));
   }
 }
@@ -156,6 +163,26 @@ export const api = {
     const { token } = await post<StreamToken>(`/analyses/${id}/events/token`);
     return `${API_URL}/api/v1/analyses/${id}/events?token=${encodeURIComponent(token)}`;
   },
+
+  engineConfig: () => request<EngineConfig>("/engine/config"),
+  /** Оценки позиций из браузерного движка → разбор на сервере (`lib/engine/analyse.ts`). */
+  saveBrowserAnalysis: (id: string, body: { depth: number; engine: string; positions: (ExternalEval | null)[] }) =>
+    post<BrowserAnalysisOut>(`/games/${id}/browser-analysis`, body),
+  saveBrowserPuzzles: (analysisId: string, probes: { fen: string; move: string; eval: ExternalEval }[]) =>
+    post<{ puzzles: number }>(`/analyses/${analysisId}/browser-puzzles`, { probes }),
+  share: (gameId: string) => post<ShareOut>(`/games/${gameId}/share`),
+  shareStatus: (gameId: string) => request<ShareOut>(`/games/${gameId}/share`),
+  unshare: (gameId: string) => request<null>(`/games/${gameId}/share`, { method: "DELETE" }),
+  /** Публичная ссылка на разбор: без входа, язык объяснений — интерфейса. */
+  shared: {
+    game: (token: string) => request<GameDetail>(`/shared/${encodeURIComponent(token)}`),
+    explainMove: (token: string, moveId: number, lang: string) =>
+      post<MoveExplanation>(`/shared/${encodeURIComponent(token)}/moves/${moveId}/explain`, { lang }),
+    summary: (token: string, lang: string) =>
+      request<Summary>(`/shared/${encodeURIComponent(token)}/summary?lang=${lang}`),
+  },
+  explore: (fen: string, signal?: AbortSignal) =>
+    request<ExploreOut>("/engine/analyse", { method: "POST", body: JSON.stringify({ fen }), signal }),
 
   // Язык объяснений не передаётся: сервер берёт язык пользователя (users.lang).
   explainMove: (moveId: number) => post<MoveExplanation>(`/moves/${moveId}/explain`),

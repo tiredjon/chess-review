@@ -8,6 +8,10 @@
 - объяснения человеческим языком, построенные только на фактах из анализа Stockfish (LLM по желанию; без ключа работают шаблоны);
 - импорт партий с Lichess, Chess.com и вставкой PGN;
 - статистика по всем партиям и пазлы из собственных ошибок с интервальным повторением;
+- сравнение с рейтинговой группой: средняя точность игроков вашего рейтинга и контроля на Chess.com — на плашках партии и в статистике;
+- бесплатный режим: анализ движком Stockfish (WASM) прямо в браузере — разбор тот же, что у сервера;
+- режим исследования: свои ходы на доске разбора, оценка и лучшая линия любой позиции (движок в браузере или на сервере);
+- публичные ссылки на разбор и Telegram-бот: прислал ник — получил разбор последней партии;
 - интерфейс и объяснения на русском и английском.
 
 Полное ТЗ, все принятые решения и заметки по окружению — в [SPEC.md](SPEC.md).
@@ -17,14 +21,14 @@
 | Слой | Технологии |
 |---|---|
 | Backend | Python 3.12, FastAPI, Pydantic v2, SQLAlchemy 2 (async), Alembic |
-| Шахматы | python-chess, Stockfish 19 (пул UCI-процессов) |
+| Шахматы | python-chess, Stockfish 19 (пул UCI-процессов); в браузере — Stockfish.js 19 lite (WASM, Web Workers) |
 | Очередь | ARQ на Redis: анализ и импорт — фоновые задачи |
 | БД | PostgreSQL 17 |
 | Auth | свой JWT (access в памяти браузера, refresh в httpOnly-cookie с ротацией), пароли — argon2id |
 | LLM | Gemini / OpenAI / Anthropic через официальные SDK или без LLM (шаблоны) |
 | Frontend | Next.js 16 (App Router, Cache Components), React 19, TypeScript, Tailwind 4, react-chessboard, chess.js, Recharts |
-| Тесты | pytest + pytest-asyncio, Playwright (smoke) |
-| Инфра | Docker Compose: postgres, redis, migrate, api, worker, web |
+| Тесты | pytest + pytest-asyncio, Playwright (сквозные сценарии) |
+| Инфра | Docker Compose: postgres, redis, migrate, api, worker, web; bot — по профилю |
 
 ## Запуск
 
@@ -49,7 +53,8 @@ cp .env.example .env && make up
 | `make migrate` | миграции к локальной БД |
 | `make test` | линтеры, mypy, tsc и все тесты backend |
 | `make test-docker` | тесты backend в Docker-образе (там есть Stockfish) |
-| `make e2e` | Playwright smoke по поднятому стеку |
+| `make e2e` | Playwright по поднятому стеку: smoke и движок в браузере |
+| `make bot` | Telegram-бот (см. ниже) |
 
 Локально без Docker: `make services`, затем `cd backend && uv run alembic upgrade head && uv run uvicorn app.main:create_app --factory --reload`, воркер — `uv run arq app.workers.settings.WorkerSettings`, web — `cd web && NEXT_PUBLIC_API_URL=http://localhost:8000 npm run dev`. Для анализа нужен Stockfish в `PATH` (`brew install stockfish`).
 
@@ -76,6 +81,29 @@ cp .env.example .env && make up
 | `IMPORT_USER_AGENT`, `LICHESS_TOKEN` | — | User-Agent обязателен для Lichess; токен необязателен (быстрее выгрузка) |
 | `LLM_PROVIDER` | `none` | `none` / `gemini` / `openai` / `anthropic`; ключ — `GEMINI_API_KEY` / `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` |
 | `LLM_MODEL` | — | своя модель вместо модели по умолчанию провайдера |
+| `EXPLORE_DEPTH`, `EXPLORE_POOL_SIZE` | 18, 1 | режим исследования через API: глубина и процессы Stockfish в API (запускаются при первом запросе) |
+| `BROWSER_MIN_DEPTH` | 10 | меньшая глубина анализа из браузера не сохраняется |
+| `RATE_LIMIT_BROWSER`, `RATE_LIMIT_EXPLORE` | 300/hour, 600/hour | сохранение анализов из браузера и оценки позиций движком API — на пользователя |
+| `TELEGRAM_BOT_TOKEN`, `PUBLIC_WEB_URL` | —, `http://localhost:3000` | Telegram-бот и адрес для ссылок на разбор |
+| `BOT_MAX_CONCURRENCY`, `BOT_ANALYSIS_TIMEOUT_S`, `RATE_LIMIT_BOT` | 4, 600, 20/hour | разборов одновременно, ожидание анализа, лимит на чат |
+
+## Движок в браузере и режим исследования
+
+На экране разбора перед запуском анализа выберите «Где считать»: «На сервере» (воркер, полный Stockfish 19) или «В браузере» — бесплатно, считает компьютер пользователя: Stockfish.js 19 lite в нескольких Web Workers по той же схеме, что и сервер, затем сервер делает по этим оценкам обычный разбор (классы, точность, мотивы) и сохраняет его. Пазлы из такого анализа тоже досчитывает браузер.
+
+Сделайте на доске разбора свой ход — откроется исследование: оценка, лучшая линия и стрелка лучшего хода для любой позиции, переключатель «Браузер / Сервер».
+
+Файлы движка лежат в `web/public/engine/` (GPL-3.0, без изменений); обновить — `cd web && node scripts/fetch-engine.mjs --version <версия>` (npm-пакет `stockfish`, архив сверяется по контрольной сумме реестра).
+
+## Telegram-бот
+
+Прислали ник Lichess или Chess.com — бот разбирает последнюю партию: точность обеих сторон, рейтинг партии, до трёх ключевых ошибок игрока, итог и публичная ссылка на полный разбор (`/share/{token}`, открывается без входа).
+
+1. В Telegram напишите [@BotFather](https://t.me/BotFather) → `/newbot`, задайте имя и username бота — он пришлёт токен вида `123456:ABC…`.
+2. Добавьте в `.env`: `TELEGRAM_BOT_TOKEN=<токен>` и `PUBLIC_WEB_URL=<публичный адрес веб-приложения>` (с `localhost` ссылки из Telegram откроются только на этой машине).
+3. При поднятом стеке (`make up`): `make bot`. Логи — `docker compose logs -f bot`.
+
+Команды: `/lichess <ник>`, `/chesscom <ник>`, просто ник — кнопки выбора площадки, `/lang ru|en` — язык ответов, `/help`. Анализ считает тот же воркер, что и для приложения; бот получает обновления long polling'ом (вебхук и открытый порт не нужны). Локально без Docker: `cd backend && uv run python -m app.bot`.
 
 ## Тема Chess.com (необязательно)
 
@@ -95,7 +123,7 @@ make test
 
 Линтеры (ruff, mypy strict, eslint, tsc) и все тесты backend: доменная логика на фиксированных позициях, API на тестовой БД `chess_review_test` (пересоздаётся на каждый прогон) и Redis-базе 15, воркер — на фейковом движке. Тесты с настоящим Stockfish пропускаются, если его нет локально; в Docker-образе — обязательны (`make test-docker`). Сетевые тесты против живых Lichess / Chess.com: `cd backend && NETWORK_TESTS=1 uv run pytest tests/test_import_live.py`.
 
-Smoke в браузере (регистрация → вход → вставка PGN → анализ по SSE → разбор → статистика → пазл → выход) — по уже поднятому стеку, в `make test` не входит:
+Сквозные сценарии в браузере — по уже поднятому стеку, в `make test` не входят: smoke (регистрация → вход → вставка PGN → анализ по SSE → разбор → статистика → пазл → выход) и движок в браузере (анализ в браузере → пазл → исследование движком браузера и сервера → публичная ссылка без входа и её отзыв):
 
 ```bash
 make up && make e2e
@@ -118,11 +146,12 @@ docker compose exec worker python scripts/generate_puzzles.py
 ```
 backend/
   app/
-    api/        роуты v1 (auth, games, analyses, imports, explain, stats, puzzles), схемы, ошибки с кодами, лимиты
+    api/        роуты v1 (auth, games, analyses, browser, engine, imports, explain, stats, puzzles, shared), схемы, ошибки с кодами, лимиты
+    bot/        Telegram-бот: Bot API (long polling), разбор последней партии по нику, тексты RU/EN
     auth/       пароли (argon2), JWT, refresh-токены с ротацией
     core/       конфиг, логирование, коды ошибок, разбор лимитов
     db/         модели SQLAlchemy, сессии, выбор показываемой точности
-    engine/     пул Stockfish, анализатор позиций, кэш оценок
+    engine/     пул Stockfish, анализатор позиций, кэш оценок, проверка оценок из браузера
     review/     чистая доменная логика: win%, точность, классы, фазы, дебюты, мотивы, pipeline
     explain/    факты для объяснений, шаблоны RU/EN, провайдеры LLM, проверка SAN, кэш
     importers/  Lichess, Chess.com, PGN
@@ -133,9 +162,10 @@ backend/
   scripts/      база дебютов, калибровка точности, бэкфилл пазлов
   tests/        pytest
 web/
-  src/app/      страницы: (auth) — вход и регистрация, (app) — главная, партии, разбор, статистика, пазлы, профиль
+  src/app/      страницы: (auth) — вход и регистрация, (app) — главная, партии, разбор, статистика, пазлы, профиль; share — публичный разбор
   src/components/
-  src/lib/      клиент API и сессии, i18n (словари RU/EN), шахматные утилиты, тема доски, звуки
-  e2e/          Playwright smoke
+  src/lib/      клиент API и сессии, i18n (словари RU/EN), движок в браузере (engine/), шахматные утилиты, тема доски, звуки
+  public/engine/ Stockfish.js (WASM), scripts/fetch-engine.mjs
+  e2e/          Playwright: smoke и движок в браузере
 docker-compose.yml, Makefile, .env.example, SPEC.md
 ```

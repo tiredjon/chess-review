@@ -107,6 +107,7 @@ function StatsBody({ stats, filtered }: { stats: Stats; filtered: boolean }) {
           <Empty title={t.stats.accuracy.fewTitle}>{t.stats.accuracy.fewText}</Empty>
         )}
       </Panel>
+      {stats.rating_groups.length > 0 && <RatingGroups stats={stats} />}
       {noAnalysis ? (
         <Panel>
           <Empty title={empty.noAnalysisTitle}>
@@ -440,6 +441,50 @@ function Motifs({ stats }: { stats: Stats }) {
         </ul>
       )}
       <p className="mt-4 text-xs text-muted">{t.stats.motifs.note}</p>
+    </Panel>
+  );
+}
+
+/** Точность пользователя против средней у игроков его рейтинга — по контролям. */
+function RatingGroups({ stats }: { stats: Stats }) {
+  const { t } = useI18n();
+  const labels = t.stats.groups;
+  return (
+    <Panel title={labels.title}>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-xs font-bold text-muted">
+              <th className="py-1.5 pr-3 font-bold">{labels.control}</th>
+              <th className="py-1.5 pr-3 text-right font-bold">{labels.rating}</th>
+              <th className="py-1.5 pr-3 text-right font-bold">{labels.you}</th>
+              <th className="py-1.5 pr-3 text-right font-bold">{labels.group}</th>
+              <th className="py-1.5 text-right font-bold">{labels.diff}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {stats.rating_groups.map((row) => {
+              const diff = row.accuracy - row.group_accuracy;
+              return (
+                <tr key={row.time_class} className="border-t border-line font-semibold">
+                  <td className="py-2 pr-3">
+                    {t.stats.timeClasses[row.time_class]}
+                    <span className="ml-2 text-xs text-muted">{labels.games(row.games)}</span>
+                  </td>
+                  <td className="py-2 pr-3 text-right tabular-nums">{row.rating}</td>
+                  <td className="py-2 pr-3 text-right font-extrabold tabular-nums">{row.accuracy.toFixed(1)}</td>
+                  <td className="py-2 pr-3 text-right tabular-nums text-soft">{row.group_accuracy.toFixed(1)}</td>
+                  <td className={`py-2 text-right font-extrabold tabular-nums ${diff >= 0 ? "text-green" : "text-danger"}`}>
+                    {diff >= 0 ? "+" : "−"}
+                    {Math.abs(diff).toFixed(1)}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-3 text-xs font-semibold text-muted">{labels.note}</p>
     </Panel>
   );
 }

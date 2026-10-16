@@ -9,6 +9,8 @@ const rateLimited: Record<string, (wait: string) => string> = {
   llm: (wait) => `Слишком много запросов объяснений. Попробуйте через ${wait}.`,
   login: (wait) => `Слишком много попыток входа. Попробуйте через ${wait}.`,
   register: (wait) => `Слишком много регистраций с этого адреса. Попробуйте через ${wait}.`,
+  browser: (wait) => `Слишком много анализов из браузера. Попробуйте через ${wait}.`,
+  explore: (wait) => `Слишком много запросов к движку сервера. Переключитесь на браузер или подождите ${wait}.`,
 };
 
 const wait = (seconds: number) => {
@@ -54,6 +56,12 @@ export const errors = {
     source_bad_response: (p: ErrorParams) => `${p.source} вернул некорректный ответ`,
     // Клиентский код: ошибка валидации поля email.
     invalid_email: () => "Некорректный email",
+    share_not_found: () => "Ссылка недействительна",
+    source_no_games: (p: ErrorParams) => `У ${p.username ?? "игрока"} нет партий в классические шахматы`,
+    engine_data_invalid: () => "Браузерный движок прислал некорректные оценки — попробуйте ещё раз",
+    depth_too_low: (p: ErrorParams) => `Глубина анализа должна быть не меньше ${p.min}`,
+    invalid_fen: () => "Некорректная позиция",
+    engine_unavailable: () => "Движок на сервере недоступен — переключитесь на браузер",
     validation_error: (p: ErrorParams) => (p.field ? `Проверьте поле «${p.field}»` : "Проверьте введённые данные"),
     http_error: (p: ErrorParams) => `Ошибка запроса (${p.status})`,
   } as Record<string, (p: ErrorParams) => string>,

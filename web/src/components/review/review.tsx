@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { api, ApiError } from "@/lib/api";
+import { ApiError } from "@/lib/api";
 import { CLASS_COLORS, displayClass } from "@/lib/classes";
-import { boardMoveUci, lineFens, sideToMove, uciSquares, type Ply } from "@/lib/chess";
+import { applyUci, boardMoveUci, lineFens, sideToMove, uciSan, uciSquares, type Ply } from "@/lib/chess";
+import { useExploreSource } from "@/lib/engine/preference";
 import { lineEval, positionEvals, type WhiteEval } from "@/lib/eval";
 import { useI18n } from "@/lib/i18n/use-i18n";
 import { threats } from "@/lib/threats";
@@ -15,7 +16,17 @@ import { EvalGraph } from "./eval-graph";
 import { Button } from "../ui";
 import { ClassBadge } from "./class-badge";
 import { MoveList } from "./move-list";
-import { LinePanel, MovePanel, RetryPanel, type Explanation, type LineKind, type RetryStatus } from "./move-panel";
+import {
+  ExplorePanel,
+  LinePanel,
+  MovePanel,
+  RetryPanel,
+  type Explanation,
+  type LineKind,
+  type RetryStatus,
+} from "./move-panel";
+import { useReviewSource } from "./review-source";
+import { useExploreEval } from "./use-explore-eval";
 
 // Заголовок линии — ключ словаря: текст берётся при показе, на текущем языке.
 type LineTitle = "bestLine" | "continuation" | "refutation";
@@ -31,7 +42,17 @@ type Mode =
       step: number;
       evaluation: WhiteEval | null;
     }
-  | { kind: "retry"; plyIndex: number; status: RetryStatus; fen: string; selected: string | null };
+  | { kind: "retry"; plyIndex: number; status: RetryStatus; fen: string; selected: string | null }
+  /** Свои ходы от позиции партии после `baseCursor` полуходов; `fens[step]` — на доске. */
+  | {
+      kind: "explore";
+      baseCursor: number;
+      baseFen: string;
+      moves: LineMove[];
+      fens: string[];
+      step: number;
+      selected: string | null;
+    };
 
 const GAME: Mode = { kind: "game" };
 // Доска с плашками игроков помещается в экран по высоте.
@@ -88,6 +109,7 @@ export function Review({
   subtitle,
   status,
   overview,
+  actions,
 }: {
   plies: Ply[];
   startFen: string;
@@ -102,6 +124,8 @@ export function Review({
   status: ReactNode;
   /** Обзор партии (итог, точность, классы), когда анализ готов. */
   overview: ReactNode;
+  /** Кнопки в шапке панели рядом со звуком (например, «Поделиться»). */
+  actions?: ReactNode;
 }) {
   const { t, lang } = useI18n();
   const [cursor, setCursor] = useState(initialCursor);
@@ -110,9 +134,14 @@ export function Review({
   const [mode, setMode] = useState<Mode>(GAME);
   const [playing, setPlaying] = useState(false);
   const [orientation, setOrientation] = useState<Color>(initialOrientation);
+  // Выбранная фигура для хода кликами по клеткам в режиме партии (ход уводит в исследование).
+  const [gameSelected, setGameSelected] = useState<{ cursor: number; square: string } | null>(null);
+  const [exploreSource, setExploreSource] = useExploreSource();
+  const exploreEval = useExploreEval(mode.kind === "explore" ? mode.fens[mode.step] : null, exploreSource);
   // Объяснения приходят на языке профиля: ключ — `язык:id хода`, после смены языка — запрос заново.
   const [explanations, setExplanations] = useState<Record<string, Explanation>>({});
   const requested = useRef(new Set<string>());
+  const source = useReviewSource();
 
   const analysed = plies.length > 0 && plies.every((ply) => ply.move !== null);
   const evals = useMemo(
@@ -156,8 +185,8 @@ export function Review({
     if (requested.current.has(key)) return;
     const timer = setTimeout(() => {
       requested.current.add(key);
-      api
-        .explainMove(currentMoveId)
+      source
+        .explainMove(currentMoveId, lang)
         .then((result) => setExplanations((prev) => ({ ...prev, [key]: { text: result.text } })))
         .catch((err) => {
           requested.current.delete(key);
@@ -166,7 +195,7 @@ export function Review({
         });
     }, EXPLAIN_DELAY_MS);
     return () => clearTimeout(timer);
-  }, [currentMoveId, lang, unavailable]);
+  }, [currentMoveId, lang, source, unavailable]);
 
   // Звук шага по линии (проигрывание и ручные шаги).
   const lineKey = mode.kind === "line" ? `${mode.baseFen}|${mode.title}` : null;
@@ -273,6 +302,79 @@ export function Review({
     [mode, tryMove],
   );
 
+  // Ход на доске в режиме партии или исследования: совпал со следующим ходом партии —
+  // просто шаг вперёд, иначе — исследование своей линии от этой позиции.
+  const exploreMove = useCallback(
+    (from: string, to: string): boolean => {
+      if (mode.kind !== "game" && mode.kind !== "explore") return false;
+      const fen = mode.kind === "explore" ? mode.fens[mode.step] : cursor > 0 ? plies[cursor - 1].fenAfter : startFen;
+      setGameSelected(null);
+      const uci = boardMoveUci(fen, from, to);
+      if (!uci) {
+        if (mode.kind === "explore") setMode({ ...mode, selected: null });
+        playSound("illegal");
+        return false;
+      }
+      const san = uciSan(fen, uci) ?? uci;
+      const after = applyUci(fen, uci) ?? fen;
+      if (mode.kind === "game") {
+        if (plies[cursor]?.uci.slice(0, 4) === uci.slice(0, 4)) {
+          goTo(cursor + 1);
+          return true;
+        }
+        setPlaying(false);
+        setMode({ kind: "explore", baseCursor: cursor, baseFen: fen, moves: [{ uci, san }], fens: [fen, after], step: 1, selected: null });
+      } else if (mode.moves[mode.step]?.uci === uci) {
+        setMode({ ...mode, step: mode.step + 1, selected: null });
+      } else {
+        setMode({
+          ...mode,
+          moves: [...mode.moves.slice(0, mode.step), { uci, san }],
+          fens: [...mode.fens.slice(0, mode.step + 1), after],
+          step: mode.step + 1,
+          selected: null,
+        });
+      }
+      playMove(san, sideToMove(fen), selfColor);
+      return true;
+    },
+    [cursor, goTo, mode, plies, selfColor, startFen],
+  );
+
+  const exploreClick = useCallback(
+    (square: string) => {
+      if (mode.kind !== "game" && mode.kind !== "explore") return;
+      const fen = mode.kind === "explore" ? mode.fens[mode.step] : cursor > 0 ? plies[cursor - 1].fenAfter : startFen;
+      const selected = mode.kind === "explore" ? mode.selected : gameSelected?.cursor === cursor ? gameSelected.square : null;
+      const select = (value: string | null) => {
+        if (mode.kind === "explore") setMode({ ...mode, selected: value });
+        else setGameSelected(value ? { cursor, square: value } : null);
+      };
+      const piece = pieceAt(fen, square);
+      const own = piece !== null && (piece === piece.toUpperCase()) === (sideToMove(fen) === "white");
+      if (selected && selected !== square && !own) {
+        exploreMove(selected, square);
+        return;
+      }
+      select(own && selected !== square ? square : null);
+    },
+    [cursor, exploreMove, gameSelected, mode, plies, startFen],
+  );
+
+  // Звук шага по линии исследования кнопками / клавишами (свой ход звучит в exploreMove).
+  const exploreStep = useCallback(
+    (step: number) => {
+      if (mode.kind !== "explore") return;
+      const next = Math.max(0, Math.min(mode.moves.length, step));
+      if (next === mode.step) return;
+      const index = next > mode.step ? next - 1 : mode.step - 1;
+      const move = mode.moves[index];
+      if (move) playMove(move.san, sideToMove(mode.fens[index]), selfColor);
+      setMode({ ...mode, step: next, selected: null });
+    },
+    [mode, selfColor],
+  );
+
   // Клавиатура: ← → по ходам (или по линии), ↑/Home — начало, ↓/End — конец, Esc — к партии,
   // F — перевернуть, M — звук.
   useEffect(() => {
@@ -288,6 +390,7 @@ export function Review({
         return;
       }
       if (key === "Escape") {
+        if (mode.kind === "explore") setCursor(mode.baseCursor);
         setMode(GAME);
         setPlaying(false);
         return;
@@ -299,6 +402,8 @@ export function Review({
       if (mode.kind === "line") {
         setPlaying(false);
         setMode({ ...mode, step: Math.max(0, Math.min(mode.line.length, mode.step + delta)) });
+      } else if (mode.kind === "explore") {
+        exploreStep(mode.step + delta);
       } else if (mode.kind === "game") {
         setView("moves");
         setCursor((c) => Math.max(0, Math.min(plies.length, c + delta)));
@@ -306,12 +411,16 @@ export function Review({
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [mode, plies.length]);
+  }, [exploreStep, mode, plies.length]);
 
   // Что на доске.
   let fen = cursor > 0 ? plies[cursor - 1].fenAfter : startFen;
   let marks: BoardMarks = current ? moveMarks(current) : NO_MARKS;
   let evaluation: WhiteEval | null = evals[cursor] ?? null;
+  const pickedSquare = mode.kind === "game" && gameSelected?.cursor === cursor ? gameSelected.square : null;
+  if (pickedSquare) {
+    marks = { ...marks, key: `${marks.key}-${pickedSquare}`, highlights: { ...marks.highlights, [pickedSquare]: SELECTED } };
+  }
   if (mode.kind === "line") {
     fen = mode.fens[mode.step];
     const last = mode.step > 0 ? mode.line[mode.step - 1] : null;
@@ -329,6 +438,24 @@ export function Review({
       badge: null,
     };
     evaluation = mode.evaluation;
+  } else if (mode.kind === "explore") {
+    fen = mode.fens[mode.step];
+    const last = mode.step > 0 ? mode.moves[mode.step - 1] : null;
+    const highlights: Record<string, string> = {};
+    if (last) {
+      const { from, to } = uciSquares(last.uci);
+      highlights[from] = LINE_MOVE;
+      highlights[to] = LINE_MOVE;
+    }
+    if (mode.selected) highlights[mode.selected] = SELECTED;
+    const best = exploreEval.line[0];
+    marks = {
+      key: `explore-${mode.step}-${fen}-${mode.selected ?? ""}-${best?.uci ?? ""}`,
+      arrows: best ? [{ startSquare: best.uci.slice(0, 2), endSquare: best.uci.slice(2, 4), color: BEST_ARROW }] : [],
+      highlights,
+      badge: null,
+    };
+    evaluation = exploreEval.evaluation;
   } else if (mode.kind === "retry") {
     fen = mode.fen;
     const ply = plies[mode.plyIndex];
@@ -370,6 +497,24 @@ export function Review({
           } else setPlaying(!effectivePlaying);
         }}
         onClose={() => goTo(cursor)}
+      />
+    );
+  } else if (mode.kind === "explore") {
+    const back = mode.baseCursor;
+    panel = (
+      <ExplorePanel
+        baseFen={mode.baseFen}
+        moves={mode.moves}
+        step={mode.step}
+        evaluation={exploreEval}
+        source={exploreSource}
+        onSource={setExploreSource}
+        onStep={exploreStep}
+        onPlayBest={() => {
+          const best = exploreEval.line[0];
+          if (best) exploreMove(best.uci.slice(0, 2), best.uci.slice(2, 4));
+        }}
+        onClose={() => goTo(back)}
       />
     );
   } else if (mode.kind === "retry") {
@@ -421,9 +566,9 @@ export function Review({
               fen={fen}
               orientation={orientation}
               marks={marks}
-              interactive={mode.kind === "retry" && mode.status !== "solved"}
-              onMove={tryMove}
-              onSquareClick={mode.kind === "retry" ? onSquareClick : undefined}
+              interactive={(mode.kind === "retry" && mode.status !== "solved") || mode.kind === "game" || mode.kind === "explore"}
+              onMove={mode.kind === "retry" ? tryMove : exploreMove}
+              onSquareClick={mode.kind === "retry" ? onSquareClick : mode.kind === "line" ? undefined : exploreClick}
             />
           </div>
         </div>
@@ -459,6 +604,7 @@ export function Review({
             </h2>
             <p className="truncate text-xs font-semibold text-muted">{subtitle}</p>
           </div>
+          {actions}
           <button
             type="button"
             onClick={toggleMuted}

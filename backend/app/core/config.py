@@ -69,6 +69,11 @@ class Settings(BaseSettings):
     rate_limit_llm: RateSetting = Rate(300, 3600)
     rate_limit_login: RateSetting = Rate(10, 60)
     rate_limit_register: RateSetting = Rate(10, 3600)
+    # Сессия 11: сохранение анализа из браузера (сервер только разбирает готовые оценки),
+    # оценка позиции в режиме исследования движком API, запросы к Telegram-боту (на чат).
+    rate_limit_browser: RateSetting = Rate(300, 3600)
+    rate_limit_explore: RateSetting = Rate(600, 3600)
+    rate_limit_bot: RateSetting = Rate(20, 3600)
     # IP клиента из X-Forwarded-For (только за своим reverse proxy).
     trust_forwarded_for: bool = False
 
@@ -84,6 +89,23 @@ class Settings(BaseSettings):
     worker_max_jobs: int = Field(default=2, ge=1)
     # Анализ дольше этого считается зависшим и помечается failed.
     analysis_job_timeout_s: int = Field(default=1800, ge=60)
+    # Режим исследования позиции через API: свой небольшой пул движка в процессе API
+    # (запускается при первом запросе), чтобы не ждать в очереди за анализами партий.
+    explore_depth: int = Field(default=18, ge=1, le=40)
+    explore_pool_size: int = Field(default=1, ge=1)
+    # Глубина, на которой браузерный анализ сохраняется (меньше — слишком грубый разбор).
+    browser_min_depth: int = Field(default=10, ge=1, le=40)
+
+    # Telegram-бот (`app/bot/`, сервис `bot` в compose). Без токена бот не запускается.
+    telegram_bot_token: SecretStr | None = None
+    telegram_api_url: str = "https://api.telegram.org"
+    # Системный пользователь, которому принадлежат партии из бота (сид в миграции).
+    bot_user_id: UUID = UUID("00000000-0000-0000-0000-000000000002")
+    # Адрес веб-приложения для ссылок на разбор (`/share/{token}`).
+    public_web_url: str = "http://localhost:3000"
+    # Разборов одновременно и сколько ждать анализа партии.
+    bot_max_concurrency: int = Field(default=4, ge=1)
+    bot_analysis_timeout_s: int = Field(default=600, ge=30)
 
     # Импорт партий. Lichess отвечает 404 на дефолтные User-Agent библиотек
     # (curl/…, python-httpx/…) — нужен собственный.

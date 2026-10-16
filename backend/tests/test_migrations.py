@@ -24,6 +24,7 @@ EXPECTED_TABLES = {
     "import_jobs",
     "puzzle_attempts",
     "refresh_tokens",
+    "telegram_chats",
 }
 
 

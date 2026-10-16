@@ -6,14 +6,14 @@ from typing import Any
 
 import pytest
 from httpx import AsyncClient
-from sqlalchemy import literal, select
+from sqlalchemy import literal, select, update
 
 from app.core.config import Settings
 from app.db.models import Analysis, AnalysisStatus, Color, Game, GameSource, Move
 from app.db.session import Database
-from app.review.game_rating import time_class
+from app.review.game_rating import expected_accuracy, time_class
 from app.review.types import MoveClass, Phase
-from app.stats.queries import time_class_sql
+from app.stats.queries import group_accuracy_sql, time_class_sql
 
 pytestmark = pytest.mark.integration
 
@@ -295,3 +295,49 @@ async def test_time_class_sql_matches_python(db: Database, tc: str | None) -> No
         value = await session.scalar(select(time_class_sql(literal(tc))))
 
     assert value == time_class(tc)
+
+
+@pytest.mark.parametrize("tc", ["bullet", "blitz", "rapid", "daily"])
+@pytest.mark.parametrize("rating", [400, 1500, 2600])
+async def test_group_accuracy_sql_matches_python(db: Database, tc: str, rating: int) -> None:
+    async with db.sessionmaker() as session:
+        value = await session.scalar(select(group_accuracy_sql(literal(rating), literal(tc))))
+
+    assert float(value) == pytest.approx(expected_accuracy(rating, tc))  # type: ignore[arg-type]
+
+
+async def test_rating_groups(
+    client: AsyncClient, db: Database, games: dict[str, uuid.UUID]
+) -> None:
+    """Рейтинговая группа — только Chess.com и точность «как у Chess.com»: A (рапид,
+    официальная 80) — да; B (Lichess) и E (точность по формуле Lichess) — нет."""
+    async with db.sessionmaker() as session:
+        await session.execute(update(Game).values(white_elo=1500, black_elo=1500))
+        await session.commit()
+
+    body = (await client.get("/api/v1/stats/me")).json()
+
+    expected = round(expected_accuracy(1500, "rapid"), 1)
+    assert body["rating_groups"] == [
+        {
+            "time_class": "rapid",
+            "games": 1,
+            "rating": 1500,
+            "accuracy": 80.0,
+            "group_accuracy": expected,
+        }
+    ]
+    points = {point["game_id"]: point for point in body["accuracy"]["points"]}
+    a, b, e = points[str(games["A"])], points[str(games["B"])], points[str(games["E"])]
+    assert a["rating"] == 1500
+    assert a["group_accuracy"] == pytest.approx(expected_accuracy(1500, "rapid"))
+    assert a["group_moving_avg"] == pytest.approx(a["group_accuracy"])
+    assert b["group_accuracy"] is None
+    assert e["group_accuracy"] is None
+    assert e["group_moving_avg"] is None
+
+    # Те же числа — на плашках партии.
+    detail = (await client.get(f"/api/v1/games/{games['A']}")).json()
+    assert detail["group_accuracy"] == {"white": expected, "black": None}
+    lichess = (await client.get(f"/api/v1/games/{games['B']}")).json()
+    assert lichess["group_accuracy"] is None

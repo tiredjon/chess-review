@@ -23,6 +23,10 @@ down: ## Остановить стек
 logs: ## Логи всех сервисов
 	$(COMPOSE) logs -f --tail=100
 
+.PHONY: bot
+bot: ## Поднять Telegram-бота (нужен TELEGRAM_BOT_TOKEN в .env и запущенный стек)
+	$(COMPOSE) --profile bot up -d --build bot
+
 .PHONY: services
 services: ## Поднять только postgres и redis (для локальной разработки и тестов)
 	$(COMPOSE) up -d --wait postgres redis
@@ -72,10 +76,12 @@ PSQL := $(COMPOSE) exec -T postgres psql -U chess -d chess_review -tAc
 DEV_USER_ID ?= 00000000-0000-0000-0000-000000000001
 
 .PHONY: e2e
-e2e: ## Playwright smoke сквозь стек (нужен `make up`; E2E_BASE_URL, по умолчанию localhost:$$WEB_PORT)
+e2e: ## Playwright сквозь стек (smoke + движок в браузере) (нужен `make up`; E2E_BASE_URL, по умолчанию localhost:$$WEB_PORT)
 	@# Первый зарегистрированный получает данные dev-пользователя — это не должен быть тест.
 	@if [ "$$($(PSQL) "SELECT count(*) FROM users WHERE id = '$(DEV_USER_ID)' AND password_hash IS NULL" 2>/dev/null)" = "1" ]; then \
 		echo "Сначала зарегистрируйтесь в приложении: иначе тестовый пользователь получит данные dev-пользователя."; exit 1; fi
+	@# Каждый прогон регистрирует пользователей: счётчики лимитов входа и регистрации — с нуля.
+	@$(COMPOSE) exec -T redis sh -c "for p in 'rl:register:*' 'rl:login:*'; do redis-cli --scan --pattern \"\$$p\" | xargs -r redis-cli del; done" >/dev/null
 	$(WEB) E2E_BASE_URL=$${E2E_BASE_URL:-http://localhost:$${WEB_PORT:-3000}} npx playwright test; \
 		status=$$?; $(PSQL) "DELETE FROM users WHERE email LIKE 'e2e-%@example.com'" >/dev/null 2>&1; exit $$status
 

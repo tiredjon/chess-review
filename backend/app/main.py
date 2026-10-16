@@ -15,6 +15,7 @@ from app.api.router import api_router
 from app.core.config import Settings, get_settings
 from app.core.logging import configure_logging
 from app.db.session import Database
+from app.engine.pool import EnginePool, LazyEnginePool
 from app.explain.llm import make_provider
 
 log = structlog.get_logger(__name__)
@@ -32,10 +33,22 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.redis = ArqRedis(ConnectionPool.from_url(settings.redis_url))
         # None — LLM_PROVIDER=none: объяснения по шаблонам.
         app.state.llm = make_provider(settings)
+        # Движок режима исследования (`app/api/engine.py`): процессы — при первом запросе.
+        explore_engine = LazyEnginePool(
+            lambda: EnginePool(
+                settings.stockfish_path,
+                settings.explore_pool_size,
+                threads=settings.engine_threads,
+                hash_mb=settings.engine_hash_mb,
+                timeout=settings.engine_timeout_s,
+            )
+        )
+        app.state.explore_engine = explore_engine
         log.info("api.startup", env=settings.app_env)
         try:
             yield
         finally:
+            await explore_engine.close()
             await app.state.redis.aclose()
             if app.state.llm is not None:
                 await app.state.llm.close()

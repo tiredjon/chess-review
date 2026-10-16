@@ -55,6 +55,14 @@ def expected_accuracy(rating: float, time_control: TimeClass = "rapid") -> float
     return a - b * math.exp(-rating / c)
 
 
+def group_accuracy(rating: int | None, time_control: str | None) -> float | None:
+    """Средняя точность игроков этого рейтинга и контроля (рейтинговая группа, сессия 11).
+    Рейтинг — Chess.com: кривые подобраны по их пулу (у Lichess шкала другая)."""
+    if rating is None:
+        return None
+    return round(expected_accuracy(rating, time_class(time_control)), 1)
+
+
 def game_rating(accuracy: float, time_control: TimeClass = "rapid") -> int:
     """Рейтинг, который в среднем играет с такой точностью, с шагом STEP."""
     a, b, c = _curve(time_control)

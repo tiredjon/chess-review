@@ -1,6 +1,6 @@
 import { defineConfig } from "@playwright/test";
 
-// Smoke-тест сквозь весь стек (e2e/smoke.spec.ts): нужен поднятый `make up` — web, API,
+// Сквозные тесты по всему стеку (e2e/smoke.spec.ts, e2e/engine.spec.ts): нужен поднятый `make up` — web, API,
 // воркер со Stockfish. Тест не поднимает серверы сам. Браузер — установленный Google Chrome
 // (E2E_CHANNEL=chrome); пустой E2E_CHANNEL — Chromium Playwright (`npx playwright install chromium`).
 export default defineConfig({
@@ -8,6 +8,8 @@ export default defineConfig({
   timeout: 180_000,
   expect: { timeout: 15_000 },
   fullyParallel: false,
+  // По одному: анализ в браузере занимает ядра, параллельный smoke ждал бы воркер дольше.
+  workers: 1,
   retries: 0,
   reporter: [["list"]],
   outputDir: "./e2e/.results",

@@ -8,6 +8,7 @@ import type { AccuracyPoint } from "@/lib/types";
 
 const GAME_DOT = "#d8d3cb";
 const TREND = "var(--green)";
+const GROUP = "#6f98c2";
 
 type Datum = AccuracyPoint & { index: number };
 
@@ -16,7 +17,8 @@ export function AccuracyChart({ points, window }: { points: AccuracyPoint[]; win
   const router = useRouter();
   const { t } = useI18n();
   const data: Datum[] = points.map((point, index) => ({ ...point, index }));
-  const low = Math.min(...points.map((p) => p.accuracy));
+  const hasGroup = points.some((p) => p.group_moving_avg !== null);
+  const low = Math.min(...points.map((p) => Math.min(p.accuracy, p.group_moving_avg ?? 100)));
   const floor = Math.max(0, Math.floor((low - 5) / 10) * 10);
 
   return (
@@ -30,6 +32,12 @@ export function AccuracyChart({ points, window }: { points: AccuracyPoint[]; win
           <span className="h-0.5 w-4 rounded-full" style={{ background: TREND }} />
           {t.stats.accuracy.legendAverage(window)}
         </span>
+        {hasGroup && (
+          <span className="flex items-center gap-1.5">
+            <span className="h-0 w-4 border-t-2 border-dashed" style={{ borderColor: GROUP }} />
+            {t.stats.accuracy.legendGroup}
+          </span>
+        )}
       </div>
       <ComposedChart
         data={data}
@@ -67,6 +75,19 @@ export function AccuracyChart({ points, window }: { points: AccuracyPoint[]; win
           activeDot={{ r: 4, fill: TREND, stroke: "var(--panel)", strokeWidth: 2 }}
           isAnimationActive={false}
         />
+        {hasGroup && (
+          <Line
+            dataKey="group_moving_avg"
+            type="monotone"
+            stroke={GROUP}
+            strokeWidth={2}
+            strokeDasharray="6 4"
+            dot={false}
+            activeDot={false}
+            connectNulls
+            isAnimationActive={false}
+          />
+        )}
         {/* Recharts рисует content через createElement — внутри TooltipBox можно брать хук словаря. */}
         <Tooltip content={TooltipBox} cursor={{ stroke: "#8d877e", strokeWidth: 1 }} isAnimationActive={false} />
       </ComposedChart>
@@ -91,6 +112,11 @@ function TooltipBox({ active, payload }: TooltipContentProps) {
       <p className="text-muted">
         {[formatDate(point.played_at, lang), t.stats.timeClasses[point.time_class]].filter(Boolean).join(" · ")}
       </p>
+      {point.rating !== null && point.group_accuracy !== null && (
+        <p className="font-semibold" style={{ color: GROUP }}>
+          {t.stats.accuracy.group(point.rating, point.group_accuracy.toFixed(1))}
+        </p>
+      )}
       <p className="text-muted">{t.stats.kinds[point.kind]}</p>
     </div>
   );

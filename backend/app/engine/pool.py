@@ -2,7 +2,7 @@
 
 import asyncio
 import contextlib
-from collections.abc import Collection
+from collections.abc import Callable, Collection
 from dataclasses import dataclass
 from types import TracebackType
 from typing import Self
@@ -186,3 +186,35 @@ def _to_position_eval(infos: list[chess.engine.InfoDict], depth: int) -> Positio
         lines=lines,
         depth=min((info.get("depth", depth) for info in infos), default=depth),
     )
+
+
+class LazyEnginePool:
+    """Пул, который запускается при первом анализе. В API движок нужен только режиму
+    исследования (сессия 11): без запросов процессы Stockfish не держим, а без Stockfish
+    API стартует и работает (исследование отвечает 503)."""
+
+    def __init__(self, factory: Callable[[], EnginePool]) -> None:
+        self._factory = factory
+        self._pool: EnginePool | None = None
+        self._lock = asyncio.Lock()
+
+    async def analyse(
+        self,
+        board: chess.Board,
+        *,
+        depth: int,
+        multipv: int,
+        exclude: Collection[chess.Move] = (),
+    ) -> PositionEval:
+        if self._pool is None:
+            async with self._lock:
+                if self._pool is None:
+                    pool = self._factory()
+                    await pool.start()
+                    self._pool = pool
+        return await self._pool.analyse(board, depth=depth, multipv=multipv, exclude=exclude)
+
+    async def close(self) -> None:
+        if self._pool is not None:
+            await self._pool.close()
+            self._pool = None

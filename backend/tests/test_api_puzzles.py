@@ -141,6 +141,20 @@ async def test_generation_is_idempotent(db: Database, fork_game: uuid.UUID) -> N
     assert move.analysis_id == again
 
 
+async def test_no_puzzles_for_skipped_users(
+    db: Database, fork_game: uuid.UUID, settings: Settings
+) -> None:
+    """Партии системного пользователя бота пазлов не дают."""
+    analysis_id = await add_analysis(db, fork_game, fork_moves())
+
+    count = await generate_puzzles(
+        db, fork_analyser(), analysis_id, skip_users=(settings.default_user_id,)
+    )
+
+    assert count == 0
+    assert await puzzles(db) == []
+
+
 async def test_no_puzzles_without_user_color(db: Database, fork_game: uuid.UUID) -> None:
     async with db.sessionmaker() as session:
         await session.execute(update(Game).values(user_color=None))
@@ -161,7 +175,9 @@ async def test_worker_generates_puzzles_after_analysis(
     задачи (прерванной на генерации) — генерирует снова; сбой генерации анализ не валит."""
     calls: list[uuid.UUID] = []
 
-    async def fake_generate(_db: Database, _analyser: object, analysis_id: uuid.UUID) -> int:
+    async def fake_generate(
+        _db: Database, _analyser: object, analysis_id: uuid.UUID, **_: object
+    ) -> int:
         calls.append(analysis_id)
         raise RuntimeError("движок упал")
 

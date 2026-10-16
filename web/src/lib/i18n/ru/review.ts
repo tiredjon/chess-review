@@ -18,6 +18,17 @@ export const review = {
   restart: "Запустить заново",
   start: "Запустить анализ",
   startFailed: "Не удалось запустить анализ",
+  // Где считать анализ (сессия 11).
+  runnerLabel: "Где считать",
+  runnerServer: "На сервере",
+  runnerBrowser: "В браузере",
+  runnerServerHint: "Полный Stockfish 19 на сервере, обычно до минуты.",
+  runnerBrowserHint: "Бесплатно: Stockfish 19 lite считает на вашем компьютере. Вкладку не закрывайте.",
+  runningBrowser: "Stockfish считает в вашем браузере. Не закрывайте вкладку.",
+  cancel: "Остановить",
+  browserEngineFailed: "Не удалось запустить движок в браузере — попробуйте на сервере.",
+  engineNote: (engine: string, runner: "server" | "browser", depth: number) =>
+    `${engine} · ${runner === "browser" ? "в браузере" : "на сервере"} · глубина ${depth}`,
   // Обзор партии.
   players: "Игроки",
   accuracy: "Точность",
@@ -27,13 +38,17 @@ export const review = {
   movesByClass: "Ходы по классам",
   gameRating: "Рейтинг партии",
   gameRatingHint: "Какой рейтинг в среднем играет с такой точностью",
+  groupAccuracy: "Средняя группы",
+  groupAccuracyShort: (value: string) => `ср. ${value}`,
+  groupAccuracyHint: (rating: number) =>
+    `Средняя точность игроков с рейтингом ${rating} в этом контроле на Chess.com`,
   startReview: "Начать разбор",
   // Итог партии в облачке тренера.
   summaryUnavailable: "Итог недоступен",
   collapse: "Свернуть",
   more: (n: number) => `Ещё ${n}`,
   // Панель хода.
-  startPosition: "Начальная позиция. Листайте ходы кнопками внизу или клавишами ← →.",
+  startPosition: "Начальная позиция. Листайте ходы кнопками внизу или клавишами ← →, сделайте свой ход на доске — чтобы исследовать позицию.",
   moveNotAnalyzed: "Оценка и объяснение появятся после анализа.",
   /** Подпись после хода: «e4 — зевок». `key` — класс хода, `label` — его название. */
   verdict: (key: string, label: string) => `— ${label.toLowerCase()}`,
@@ -60,6 +75,35 @@ export const review = {
   retrySolved: "Верно:",
   showLine: "Показать линию",
   showAnswer: "Показать ответ",
+  // Публичная ссылка на разбор (сессия 11).
+  share: {
+    button: "Поделиться",
+    title: "Ссылка на разбор",
+    hint: "Разбор откроется у любого по ссылке, без входа. Ссылку можно закрыть.",
+    link: "Ссылка",
+    copy: "Копировать",
+    copied: "Скопировано",
+    revoke: "Закрыть доступ",
+  },
+  // Публичная страница разбора.
+  shared: {
+    cta: "Разобрать свои партии",
+    analyzing: "Партия ещё анализируется — страница обновится сама.",
+    notAnalyzed: "Эту партию ещё не разобрали.",
+    notFound: "Ссылка недействительна",
+    notFoundText: "Возможно, владелец закрыл доступ к разбору.",
+  },
+  // Режим исследования: свои ходы на доске разбора.
+  explore: "Исследование позиции",
+  exploreHint: "Ходите фигурами на доске: движок оценит любую позицию.",
+  exploreFailed: "Не удалось оценить позицию",
+  exploreThinking: "Считаю…",
+  exploreDepth: (depth: number) => `глубина ${depth}`,
+  exploreMoves: "Ваши ходы",
+  exploreEngine: "Движок",
+  engineBrowser: "Браузер",
+  engineServer: "Сервер",
+  playBest: "Сделать лучший ход",
   // Шапка панели и навигация.
   toOverview: "К обзору партии",
   soundOn: "Включить звук (M)",

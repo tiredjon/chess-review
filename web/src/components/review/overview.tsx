@@ -57,6 +57,25 @@ export function Overview({ game, analysis }: { game: GameDetail; analysis: Analy
         )}
       </div>
 
+      {game.group_accuracy && (
+        <div className={`${ROW} pb-3`}>
+          <span className="text-soft">{t.review.groupAccuracy}</span>
+          {COLORS.map((color) => {
+            const value = game.group_accuracy?.[color];
+            const elo = color === "white" ? game.white_elo : game.black_elo;
+            return (
+              <span
+                key={color}
+                title={elo ? t.review.groupAccuracyHint(elo) : undefined}
+                className={`justify-self-center text-base font-extrabold text-soft ${color === "black" ? "col-start-4" : ""}`}
+              >
+                {value == null ? "—" : value.toFixed(1)}
+              </span>
+            );
+          })}
+        </div>
+      )}
+
       <hr className="my-2 border-line" />
 
       <ul aria-label={t.review.movesByClass}>
@@ -123,6 +142,11 @@ export function Overview({ game, analysis }: { game: GameDetail; analysis: Analy
           </div>
         ))}
       </dl>
+      {analysis.engine_version && (
+        <p className="pt-2 text-xs font-semibold text-muted">
+          {t.review.engineNote(analysis.engine_version, analysis.runner, analysis.depth)}
+        </p>
+      )}
     </div>
   );
 }

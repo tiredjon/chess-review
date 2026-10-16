@@ -7,6 +7,8 @@ const rateLimited: Record<string, (wait: string) => string> = {
   llm: (wait) => `Too many explanation requests. Try again in ${wait}.`,
   login: (wait) => `Too many sign-in attempts. Try again in ${wait}.`,
   register: (wait) => `Too many sign-ups from this address. Try again in ${wait}.`,
+  browser: (wait) => `Too many in-browser analyses saved. Try again in ${wait}.`,
+  explore: (wait) => `Too many server engine requests. Switch to the browser or wait ${wait}.`,
 };
 
 const wait = (seconds: number) => {
@@ -52,6 +54,12 @@ export const errors: Dict["errors"] = {
     source_bad_response: (p: ErrorParams) => `${p.source} returned an invalid response`,
     // Клиентский код: ошибка валидации поля email.
     invalid_email: () => "Invalid email address",
+    share_not_found: () => "Link is no longer valid",
+    source_no_games: (p) => `${p.username ?? "The player"} has no standard chess games`,
+    engine_data_invalid: () => "The in-browser engine sent invalid evaluations — try again",
+    depth_too_low: (p) => `Analysis depth must be at least ${p.min}`,
+    invalid_fen: () => "Invalid position",
+    engine_unavailable: () => "The server engine is unavailable — switch to the browser",
     validation_error: (p: ErrorParams) => (p.field ? `Check the “${p.field}” field` : "Check the entered data"),
     http_error: (p: ErrorParams) => `Request failed (${p.status})`,
   },

@@ -1,10 +1,11 @@
 """Объяснения ходов и общий разбор партии (SPEC §6, §8). Генерация ленивая: по клику
 на ход или пакетом при открытии разбора; результат кэшируется в `explanations`."""
 
-from typing import Annotated, Any
+from typing import Annotated
 
 from fastapi import APIRouter, Body, Query, status
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.analyses import OwnedAnalysis
 from app.api.deps import CurrentUser, ExplainerDep, SessionDep
@@ -12,7 +13,9 @@ from app.api.errors import ApiError, ErrorCode
 from app.api.ratelimit import LimitLLM
 from app.api.schemas import ExplainIn, ExplainLang, MoveExplanationOut, SummaryOut
 from app.db.models import Analysis, AnalysisStatus, Game, Move, User
-from app.explain.facts import GameInfo, is_explained
+from app.explain.facts import is_explained
+from app.explain.rows import game_info
+from app.explain.service import Explainer
 
 router = APIRouter(tags=["explain"])
 
@@ -40,9 +43,16 @@ async def explain_move(
     )
     if move is None:
         raise ApiError(status.HTTP_404_NOT_FOUND, ErrorCode.MOVE_NOT_FOUND, "Ход не найден")
+    return await explain_one(session, explainer, move, _lang(body.lang if body else None, user))
+
+
+async def explain_one(
+    session: AsyncSession, explainer: Explainer, move: Move, lang: ExplainLang
+) -> MoveExplanationOut:
+    """Объяснение найденного хода (общее с `/shared/{token}/…`)."""
     # Не держать соединение, пока ждём LLM.
     await session.close()
-    result = await explainer.explain_move(move, _lang(body.lang if body else None, user))
+    result = await explainer.explain_move(move, lang)
     return MoveExplanationOut(
         move_id=move.id,
         ply=move.ply,
@@ -52,7 +62,7 @@ async def explain_move(
     )
 
 
-async def _done_moves(session: SessionDep, analysis: Analysis) -> list[Move]:
+async def done_moves(session: AsyncSession, analysis: Analysis) -> list[Move]:
     if analysis.status != AnalysisStatus.DONE:
         raise ApiError(
             status.HTTP_409_CONFLICT, ErrorCode.ANALYSIS_NOT_READY, "Анализ ещё не готов"
@@ -72,7 +82,7 @@ async def explain_analysis(
     body: Annotated[ExplainIn | None, Body()] = None,
 ) -> list[MoveExplanationOut]:
     """Пакет: объяснения всех разбираемых ходов (ошибки, brilliant, great, miss)."""
-    moves = [move for move in await _done_moves(session, analysis) if is_explained(move)]
+    moves = [move for move in await done_moves(session, analysis) if is_explained(move)]
     lang = _lang(body.lang if body else None, user)
     await session.close()
     results = await explainer.explain_moves(moves, lang)
@@ -88,12 +98,6 @@ async def explain_analysis(
     ]
 
 
-def _shown_accuracy(*candidates: float | None) -> float | None:
-    """Та же точность, что на плашках (`GameOut.accuracy_of`): официальная Chess.com,
-    иначе наша «как у Chess.com», иначе — по формуле Lichess."""
-    return next((value for value in candidates if value is not None), None)
-
-
 @router.get("/analyses/{analysis_id}/summary", dependencies=[LimitLLM])
 async def analysis_summary(
     analysis: OwnedAnalysis,
@@ -103,28 +107,19 @@ async def analysis_summary(
     lang: Annotated[ExplainLang | None, Query()] = None,
 ) -> SummaryOut:
     """Общий разбор партии: 3–5 пунктов по точности, ключевым моментам и типичным ошибкам."""
-    moves = await _done_moves(session, analysis)
+    return await summarize(session, explainer, analysis, _lang(lang, user))
+
+
+async def summarize(
+    session: AsyncSession, explainer: Explainer, analysis: Analysis, lang: ExplainLang
+) -> SummaryOut:
+    """Общий разбор анализа (общий с `/shared/{token}/summary`); не готов — 409."""
+    moves = await done_moves(session, analysis)
     game = await session.get(Game, analysis.game_id)
     assert game is not None
-    phase_accuracy: Any = analysis.phase_accuracy
-    info = GameInfo(
-        white=game.white,
-        black=game.black,
-        white_elo=game.white_elo,
-        black_elo=game.black_elo,
-        result=game.result,
-        opening_name=game.opening_name,
-        user_color=game.user_color.value if game.user_color else None,
-        white_accuracy=_shown_accuracy(
-            game.source_white_accuracy, analysis.cc_white_accuracy, analysis.white_accuracy
-        ),
-        black_accuracy=_shown_accuracy(
-            game.source_black_accuracy, analysis.cc_black_accuracy, analysis.black_accuracy
-        ),
-        phase_accuracy=phase_accuracy,
-    )
+    info = game_info(game, analysis, user_color=game.user_color)
     await session.close()
-    result = await explainer.summarize(info, moves, _lang(lang, user))
+    result = await explainer.summarize(info, moves, lang)
     return SummaryOut(
         analysis_id=analysis.id, text=result.text, provider=result.provider, cached=result.cached
     )

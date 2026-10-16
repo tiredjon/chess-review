@@ -79,6 +79,19 @@ services:
       redis:
         condition: service_healthy
 
+  # Telegram-бот (`make bot`): нужен TELEGRAM_BOT_TOKEN в .env; анализ считает worker.
+  bot:
+    <<: *backend
+    command: ["python", "-m", "app.bot"]
+    profiles: ["bot"]
+    # Временные сбои при старте; без токена — несколько попыток и остановка.
+    restart: on-failure:5
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
   web:
     build:
       context: ./web

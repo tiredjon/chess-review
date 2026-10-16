@@ -84,7 +84,7 @@ async def analyze_game(ctx: dict[str, Any], analysis_id: str) -> str:
             on_progress=reporter,
         )
         await reporter.flush()
-        await _save_review(db, analysis_uuid, review)
+        await save_review(db, analysis_uuid, review)
     except asyncio.CancelledError:
         # Таймаут задачи или остановка воркера: без этого анализ навсегда остался бы running.
         reporter.cancel()
@@ -114,14 +114,17 @@ async def _generate_puzzles(ctx: dict[str, Any], analysis_id: uuid.UUID) -> None
     db: Database = ctx["db"]
     analyser = Analyzer(ctx["engine"], DbEvalCache(db.sessionmaker))
     try:
-        count = await generate_puzzles(db, analyser, analysis_id)
+        settings: Settings = ctx["settings"]
+        count = await generate_puzzles(
+            db, analyser, analysis_id, skip_users=(settings.bot_user_id,)
+        )
     except Exception:
         log.exception("puzzles.failed", analysis_id=str(analysis_id))
         return
     log.info("puzzles.generated", analysis_id=str(analysis_id), count=count)
 
 
-async def _save_review(db: Database, analysis_id: uuid.UUID, review: GameReview) -> None:
+async def save_review(db: Database, analysis_id: uuid.UUID, review: GameReview) -> None:
     rows = [{**move_row(move), "analysis_id": analysis_id} for move in review.moves]
     async with db.sessionmaker() as session:
         if rows:

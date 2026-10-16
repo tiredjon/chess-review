@@ -23,6 +23,7 @@ export const common = {
     puzzles: "Пазлы",
     profile: "Профиль",
     login: "Вход",
+    shared: "Разбор партии",
     register: "Регистрация",
   },
   actions: {

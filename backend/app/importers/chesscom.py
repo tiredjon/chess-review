@@ -41,10 +41,24 @@ class ChessComClient:
         self, username: str, months: int, *, today: date
     ) -> AsyncIterator[list[SourceGame]]:
         """Партии за последние `months` календарных месяцев, по странице на месяц."""
-        player = f"{self.base_url}/pub/player/{username.lower()}"
-        archives = await self._json(f"{player}/games/archives", username)
         oldest = _month_index(today.year, today.month) - (months - 1)
-        selected = sorted(
+        for year, month in await self._archives(username):
+            if _month_index(year, month) < oldest:
+                break
+            if page := await self._month(username, year, month):
+                yield page
+
+    async def recent(self, username: str, *, archives: int = 2) -> AsyncIterator[list[SourceGame]]:
+        """Партии последних `archives` месяцев, в которых пользователь играл (по архивам,
+        а не по календарю): последняя партия — даже если она была давно."""
+        for year, month in (await self._archives(username))[:archives]:
+            if page := await self._month(username, year, month):
+                yield page
+
+    async def _archives(self, username: str) -> list[tuple[int, int]]:
+        """Месяцы с партиями, новые первыми."""
+        archives = await self._json(f"{self._player(username)}/games/archives", username)
+        return sorted(
             {
                 (int(match[1]), int(match[2]))
                 for url in archives.get("archives", [])
@@ -52,19 +66,20 @@ class ChessComClient:
             },
             reverse=True,
         )
-        for year, month in selected:
-            if _month_index(year, month) < oldest:
-                break
-            # URL месяца строим сами, а не берём из ответа: только наш base_url.
-            data = await self._json(f"{player}/games/{year:04d}/{month:02d}", username)
-            rows = sorted(
-                (row for row in data.get("games", []) if isinstance(row, dict)),
-                key=lambda row: int(row.get("end_time") or 0),
-                reverse=True,
-            )
-            page = [game for row in rows if (game := _source_game(row)) is not None]
-            if page:
-                yield page
+
+    async def _month(self, username: str, year: int, month: int) -> list[SourceGame]:
+        """Партии месяца, новые первыми."""
+        # URL месяца строим сами, а не берём из ответа: только наш base_url.
+        data = await self._json(f"{self._player(username)}/games/{year:04d}/{month:02d}", username)
+        rows = sorted(
+            (row for row in data.get("games", []) if isinstance(row, dict)),
+            key=lambda row: int(row.get("end_time") or 0),
+            reverse=True,
+        )
+        return [game for row in rows if (game := _source_game(row)) is not None]
+
+    def _player(self, username: str) -> str:
+        return f"{self.base_url}/pub/player/{username.lower()}"
 
     async def _json(self, url: str, username: str) -> dict[str, Any]:
         response = await get_with_retry(self.http, url, source=SOURCE, policy=self.policy)

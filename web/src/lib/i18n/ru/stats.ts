@@ -56,6 +56,8 @@ export const stats = {
     fewText: "Точность появляется после разбора партии (или берётся с Chess.com, если партию разбирали там).",
     legendGame: "Точность партии",
     legendAverage: (window: number) => `Среднее за ${window} партий`,
+    legendGroup: "Средняя для вашего рейтинга",
+    group: (rating: number, value: string) => `рейтинг ${rating}: в среднем ${value}`,
     average: (value: string) => `среднее ${value}`,
     table: "Таблицей (последние 30)",
     date: "Дата",
@@ -64,6 +66,17 @@ export const stats = {
     averageColumn: "Среднее",
   },
   versus: (name: string) => `против ${name}`,
+  // Сравнение с рейтинговой группой (сессия 11).
+  groups: {
+    title: "Вы и ваша рейтинговая группа",
+    note: "Средняя точность игроков вашего рейтинга и контроля на Chess.com (по 20 500 партиям из открытых архивов). Только партии Chess.com с точностью «как у Chess.com».",
+    control: "Контроль",
+    rating: "Рейтинг",
+    you: "Вы",
+    group: "Группа",
+    diff: "Разница",
+    games: (n: number) => `${n} ${ruPlural(n, "партия", "партии", "партий")}`,
+  },
   phases: {
     title: "Точность по фазам",
     note: "Точность фаз — по формуле Lichess, как в обзоре партии. С общей точностью «как у Chess.com» напрямую не сравнивается: сравнивайте фазы между собой.",

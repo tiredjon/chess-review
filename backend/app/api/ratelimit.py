@@ -21,7 +21,7 @@ from app.core.rates import Rate
 
 log = structlog.get_logger(__name__)
 
-Scope = Literal["import", "analyze", "llm", "login", "register"]
+Scope = Literal["import", "analyze", "llm", "login", "register", "browser", "explore", "bot"]
 
 
 def rate_for(settings: Settings, scope: Scope) -> Rate:
