@@ -61,7 +61,9 @@ test("анализ в браузере, пазл, исследование, пу
   await page.getByRole("radio", { name: "Сервер" }).click();
   await expect(evaluation).toHaveText(EVAL, { timeout: 30_000 });
   await page.getByRole("button", { name: "Сделать лучший ход" }).click();
-  await expect(page.getByRole("button", { name: /^2\. / })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^2\./ })).toBeVisible();
+  // Ход линии получил класс (как в анализе Chess.com) — по той же логике, что разбор партии.
+  await expect(page.getByTestId("explore-verdict")).toContainText(/лучш|отличн|хорош|теори/i, { timeout: 30_000 });
   await page.getByRole("button", { name: "Вернуться к партии" }).click();
   await expect(page.getByText("Исследование позиции")).toBeHidden();
 

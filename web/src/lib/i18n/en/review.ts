@@ -105,6 +105,7 @@ export const review: Dict["review"] = {
   exploreThinking: "Thinking…",
   exploreDepth: (depth) => `depth ${depth}`,
   exploreMoves: "Your moves",
+  exploreLines: "Top lines",
   exploreEngine: "Engine",
   engineBrowser: "Browser",
   engineServer: "Server",

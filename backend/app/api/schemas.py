@@ -595,3 +595,30 @@ class ExploreOut(BaseModel):
     depth: int
     # Пусто — позиция финальная (мат или ничья по правилам).
     lines: list[ExploreLineOut]
+
+
+class ClassifyIn(BaseModel):
+    """Ход в режиме исследования: позиция до хода, ход и оценки позиций до и после (любым
+    движком, формат — как в `browser-analysis`). Класс считает тот же `review/classify.py`."""
+
+    fen: str = Field(min_length=1, max_length=100)
+    move: UciMove
+    before: ExternalEvalIn
+    # None — после хода у соперника нет ходов (мат, пат).
+    after: ExternalEvalIn | None
+    # Класс предыдущего хода (соперника) — для «упущения»; и позиция перед ним — для жертв.
+    previous: MoveClass | None = None
+    prior_fen: str | None = Field(default=None, max_length=100)
+
+
+class ClassifyOut(BaseModel):
+    move_class: MoveClass = Field(serialization_alias="class")
+    is_miss: bool
+    best_uci: str | None
+    best_san: str | None
+    # Оценки — за сделавшего ход (как у `MoveOut`).
+    eval_before_cp: int | None
+    eval_after_cp: int | None
+    mate_before: int | None
+    mate_after: int | None
+    accuracy: float

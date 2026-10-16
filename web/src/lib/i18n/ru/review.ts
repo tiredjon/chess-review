@@ -100,6 +100,7 @@ export const review = {
   exploreThinking: "Считаю…",
   exploreDepth: (depth: number) => `глубина ${depth}`,
   exploreMoves: "Ваши ходы",
+  exploreLines: "Лучшие линии",
   exploreEngine: "Движок",
   engineBrowser: "Браузер",
   engineServer: "Сервер",

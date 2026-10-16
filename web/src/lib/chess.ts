@@ -81,11 +81,11 @@ export function lineFens(fen: string, line: LineMove[]): string[] {
   return fens;
 }
 
-/** Ход с доски → UCI, если он легален (превращение — в ферзя). */
-export function boardMoveUci(fen: string, from: string, to: string): string | null {
+/** Ход с доски → UCI, если он легален (превращение — в ферзя, если не указано другое). */
+export function boardMoveUci(fen: string, from: string, to: string, promotion = "q"): string | null {
   try {
     const board = new Chess(fen);
-    const move = board.move({ from, to, promotion: "q" });
+    const move = board.move({ from, to, promotion });
     return move.lan;
   } catch {
     return null;

@@ -9,6 +9,7 @@ import type {
   AnalysisOut,
   AuthOut,
   BrowserAnalysisOut,
+  ClassifyOut,
   EngineConfig,
   ExploreOut,
   ShareOut,
@@ -17,6 +18,7 @@ import type {
   GamePage,
   GameSource,
   ImportJob,
+  MoveClass,
   MoveExplanation,
   ProfileUpdate,
   PuzzleAttempt,
@@ -181,6 +183,14 @@ export const api = {
     summary: (token: string, lang: string) =>
       request<Summary>(`/shared/${encodeURIComponent(token)}/summary?lang=${lang}`),
   },
+  classifyMove: (body: {
+    fen: string;
+    move: string;
+    before: ExternalEval;
+    after: ExternalEval | null;
+    previous: MoveClass | null;
+    prior_fen: string | null;
+  }) => post<ClassifyOut>("/engine/classify", body),
   explore: (fen: string, signal?: AbortSignal) =>
     request<ExploreOut>("/engine/analyse", { method: "POST", body: JSON.stringify({ fen }), signal }),
 

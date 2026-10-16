@@ -317,6 +317,19 @@ export type EngineConfig = {
   explore_depth: number;
 };
 
+/** Класс хода режима исследования (`POST /engine/classify`); оценки — за сделавшего ход. */
+export type ClassifyOut = {
+  class: MoveClass;
+  is_miss: boolean;
+  best_uci: string | null;
+  best_san: string | null;
+  eval_before_cp: number | null;
+  eval_after_cp: number | null;
+  mate_before: number | null;
+  mate_after: number | null;
+  accuracy: number;
+};
+
 /** Публичная ссылка на разбор партии. */
 export type ShareOut = { token: string; url: string };
 

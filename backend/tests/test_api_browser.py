@@ -291,8 +291,12 @@ async def test_explore_position(explore_client: AsyncClient, db: Database) -> No
     assert response.status_code == 200, response.text
     body = response.json()
     assert body["fen"] == fen
-    (line,) = body["lines"]
-    assert line == {"cp": 30, "mate": None, "pv": [{"uci": "a2a3", "san": "a3"}]}
+    # Три линии, как в анализе Chess.com.
+    assert body["lines"] == [
+        {"cp": 30, "mate": None, "pv": [{"uci": "a2a3", "san": "a3"}]},
+        {"cp": 20, "mate": None, "pv": [{"uci": "a2a4", "san": "a4"}]},
+        {"cp": 10, "mate": None, "pv": [{"uci": "b1a3", "san": "Na3"}]},
+    ]
     # Оценка легла в общий кэш (серверная — ей можно доверять).
     async with db.sessionmaker() as session:
         cached = await session.scalar(select(PositionEvalRow))
@@ -383,3 +387,91 @@ async def test_mate_in_one_puzzle_without_probes(client: AsyncClient, db: Databa
     async with db.sessionmaker() as session:
         (puzzle,) = await session.scalars(select(Puzzle))
     assert puzzle.solution_uci == ["h5f7"]
+
+
+# --- Класс хода в режиме исследования ---
+
+AFTER_E4 = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1"
+# Мат в 1 (Qxf7#) у белых; ход d3 его упускает, чёрные забирают ферзя.
+MISSED_MATE = "r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4"
+
+
+def line(cp: int | None = None, mate: int | None = None, *pv: str) -> dict[str, Any]:
+    return {"cp": cp, "mate": mate, "pv": list(pv)}
+
+
+async def classify(client: AsyncClient, **body: Any) -> dict[str, Any]:
+    response = await client.post("/api/v1/engine/classify", json=body)
+    assert response.status_code == 200, response.text
+    result: dict[str, Any] = response.json()
+    return result
+
+
+async def test_classify_blunder_and_best(client: AsyncClient) -> None:
+    before = {"depth": 18, "lines": [line(None, 1, "h5f7"), line(-100, None, "d2d3")]}
+
+    blunder = await classify(
+        client,
+        fen=MISSED_MATE,
+        move="d2d3",
+        before=before,
+        after={"depth": 18, "lines": [line(900, None, "f6h5")]},
+    )
+    mate = await classify(client, fen=MISSED_MATE, move="h5f7", before=before, after=None)
+
+    assert blunder["class"] == "blunder"
+    assert (blunder["best_uci"], blunder["best_san"]) == ("h5f7", "Qxf7#")
+    assert (blunder["mate_before"], blunder["eval_after_cp"]) == (1, -900)
+    # Мат на доске: оценка после хода — без движка.
+    assert mate["class"] in {"best", "great"}
+    assert mate["mate_after"] == 0
+
+
+async def test_classify_book_and_miss(client: AsyncClient) -> None:
+    start = chess.Board().fen()
+    book = await classify(
+        client,
+        fen=start,
+        move="e2e4",
+        before={"depth": 18, "lines": [line(30, None, "e2e4"), line(25, None, "d2d4")]},
+        after={"depth": 18, "lines": [line(-30, None, "e7e5")]},
+    )
+    # После ошибки соперника не воспользоваться ею — «упущение» поверх класса.
+    miss = await classify(
+        client,
+        fen=AFTER_E4,
+        move="a7a6",
+        before={"depth": 18, "lines": [line(300, None, "d7d5")]},
+        after={"depth": 18, "lines": [line(-20, None, "d2d4")]},
+        previous="blunder",
+    )
+
+    assert book["class"] == "book"
+    assert miss["is_miss"] is True
+
+
+async def test_classify_validation(client: AsyncClient) -> None:
+    illegal = await client.post(
+        "/api/v1/engine/classify",
+        json={
+            "fen": chess.Board().fen(),
+            "move": "e2e5",
+            "before": {"depth": 1, "lines": [line(0, None, "e2e4")]},
+            "after": None,
+        },
+    )
+    missing_after = await client.post(
+        "/api/v1/engine/classify",
+        json={
+            "fen": chess.Board().fen(),
+            "move": "e2e4",
+            "before": {"depth": 1, "lines": [line(0, None, "e2e4")]},
+            "after": None,
+        },
+    )
+
+    assert (illegal.status_code, illegal.json()["code"]) == (422, "invalid_fen")
+    assert (missing_after.status_code, missing_after.json()["code"]) == (
+        422,
+        "engine_data_invalid",
+    )

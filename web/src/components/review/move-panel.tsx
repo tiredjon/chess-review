@@ -1,12 +1,12 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { CLASS_COLORS, canRetry, classLabel, displayClass, isError } from "@/lib/classes";
-import { lineFens, lineLabels, moveNumber, type Ply } from "@/lib/chess";
+import { CLASS_COLORS, canRetry, classLabel, displayClass, isError, type ClassKey } from "@/lib/classes";
+import { lineLabels, moveNumber, sideToMove, type Ply } from "@/lib/chess";
 import type { EngineSource } from "@/lib/engine/preference";
-import { evalAfter, formatEval, leader } from "@/lib/eval";
+import { evalAfter, formatEval, leader, type WhiteEval } from "@/lib/eval";
 import { useI18n } from "@/lib/i18n/use-i18n";
-import type { LineMove } from "@/lib/types";
+import type { ClassifyOut, LineMove } from "@/lib/types";
 import { Button } from "../ui";
 import { ClassBadge } from "./class-badge";
 import { Figurine } from "./move-list";
@@ -259,52 +259,125 @@ export function EngineSourceSwitch({
   );
 }
 
-/** Режим исследования: свои ходы от позиции партии, оценка и лучшая линия движка. */
+/** Ход линии с номером: `24.` у белых, `24…` у первого хода чёрных, дальше без номера. */
+function lineParts(fen: string, moves: LineMove[]) {
+  let color = sideToMove(fen);
+  let fullmove = Number(fen.split(" ")[5]) || 1;
+  return moves.map((move, i) => {
+    const number = color === "white" ? `${fullmove}.` : i === 0 ? `${fullmove}…` : null;
+    const part = { number, san: move.san, color, uci: move.uci };
+    if (color === "black") fullmove += 1;
+    color = color === "white" ? "black" : "white";
+    return part;
+  });
+}
+
+/** Линия в фигурной нотации, как в анализе Chess.com. */
+function FigurineLine({ fen, moves }: { fen: string; moves: LineMove[] }) {
+  return (
+    <>
+      {lineParts(fen, moves).map((part, i) => (
+        <span key={`${i}-${part.uci}`} className="mr-1.5 whitespace-nowrap">
+          {part.number && <span className="mr-0.5">{part.number}</span>}
+          <Figurine san={part.san} color={part.color} />
+        </span>
+      ))}
+    </>
+  );
+}
+
+/** Класс хода исследования для показа: «упущение» — значком вместо класса, кроме ошибок. */
+export function exploreClassKey(result: ClassifyOut): ClassKey {
+  return result.is_miss && !["mistake", "blunder"].includes(result.class) ? "miss" : result.class;
+}
+
+/** Режим исследования: свои ходы от позиции партии, класс каждого хода, оценка и лучшие
+ *  линии движка — как анализ Chess.com. */
 export function ExplorePanel({
   baseFen,
+  fens,
   moves,
   step,
-  evaluation,
+  classes,
+  current,
+  before,
+  result,
   source,
   onSource,
   onStep,
-  onPlayBest,
+  onPlayMove,
   onClose,
 }: {
   baseFen: string;
+  /** Позиции линии: [0] — исходная, [i] — после i-го хода. */
+  fens: string[];
   moves: LineMove[];
   step: number;
-  evaluation: ExploreEval;
+  /** Класс каждого хода линии, если уже посчитан. */
+  classes: (ClassifyOut | null)[];
+  /** Оценка позиции на доске и позиции до последнего хода. */
+  current: ExploreEval;
+  before: ExploreEval | null;
+  /** Класс последнего хода (на доске). */
+  result: ClassifyOut | null;
   source: EngineSource;
   onSource: (source: EngineSource) => void;
   onStep: (step: number) => void;
-  onPlayBest: () => void;
+  onPlayMove: (uci: string) => void;
   onClose: () => void;
 }) {
   const { t } = useI18n();
-  const labels = lineLabels(baseFen, moves);
-  const lineBase = positionAfter(baseFen, moves.slice(0, step));
-  const best = lineLabels(lineBase, evaluation.line.slice(0, 10));
+  const parts = lineParts(baseFen, moves);
+  const fen = fens[step];
+  const last = step > 0 ? parts[step - 1] : null;
+  const value = result && exploreClassKey(result);
+  const showBest =
+    result !== null &&
+    result.best_san !== null &&
+    result.best_uci !== moves[step - 1]?.uci &&
+    !["book", "forced", "brilliant", "great"].includes(result.class);
+  const bestLine = before?.lines[0];
+  const best = current.lines[0]?.moves[0];
+
   return (
     <div className="flex flex-col gap-3">
       <ModeHeader title={t.review.explore} onClose={onClose} />
       <ol className="flex flex-wrap gap-1 text-[15px] font-bold" aria-label={t.review.exploreMoves}>
-        {moves.map((move, i) => (
-          <li key={`${i}-${move.uci}`}>
-            <button
-              type="button"
-              onClick={() => onStep(i + 1)}
-              aria-current={step === i + 1 ? "true" : undefined}
-              className={`rounded-md px-1.5 py-0.5 ${step === i + 1 ? "bg-raised-hover text-ink" : "text-soft hover:bg-raised/60"}`}
-            >
-              {labels[i]}
-            </button>
-          </li>
-        ))}
+        {parts.map((part, i) => {
+          const done = classes[i];
+          const key = done && exploreClassKey(done);
+          const significant = key !== null && SIGNIFICANT.has(key);
+          return (
+            <li key={`${i}-${part.uci}`}>
+              <button
+                type="button"
+                onClick={() => onStep(i + 1)}
+                aria-current={step === i + 1 ? "true" : undefined}
+                className={`flex items-center gap-1 rounded-md px-1.5 py-0.5 ${
+                  step === i + 1 ? "bg-raised-hover text-ink" : "text-soft hover:bg-raised/60"
+                }`}
+                style={significant ? { color: CLASS_COLORS[key] } : undefined}
+              >
+                {part.number}
+                {significant && <ClassBadge value={key} size={16} />}
+                <Figurine san={part.san} color={part.color} />
+              </button>
+            </li>
+          );
+        })}
       </ol>
-      <div className="flex flex-col gap-2 rounded-lg bg-sunken/70 p-3" aria-live="polite">
+
+      <div className="flex flex-col gap-2.5 rounded-lg bg-sunken/70 p-3" aria-live="polite">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-xs font-bold uppercase tracking-wide text-muted">{t.review.exploreEngine}</span>
+          <span className="text-xs font-bold tracking-wide text-muted uppercase">
+            {t.review.exploreEngine}
+            {current.depth > 0 && (
+              <span className="ml-2 font-semibold normal-case">
+                {t.review.exploreDepth(current.depth)}
+                {current.pending && " …"}
+              </span>
+            )}
+          </span>
           <EngineSourceSwitch
             label={t.review.exploreEngine}
             value={source}
@@ -312,38 +385,74 @@ export function ExplorePanel({
             options={{ browser: t.review.engineBrowser, server: t.review.engineServer }}
           />
         </div>
-        {evaluation.error ? (
-          <p role="alert" className="text-sm font-semibold text-danger">
-            {evaluation.error}
-          </p>
-        ) : (
-          <div className="flex items-baseline gap-2.5">
-            <span className="min-w-14 text-lg font-extrabold tabular-nums" data-testid="explore-eval">
-              {evaluation.evaluation ? formatEval(evaluation.evaluation) : "…"}
-            </span>
-            <span className="min-w-0 flex-1 text-sm font-semibold text-soft">
-              {best.length > 0 ? best.join(" ") : evaluation.pending ? t.review.exploreThinking : null}
-            </span>
+
+        {last && (
+          <div className="flex items-center gap-2" data-testid="explore-verdict">
+            <LineEvalChip evaluation={current.evaluation} />
+            {value ? (
+              <>
+                <ClassBadge value={value} size={22} />
+                <p className="min-w-0 flex-1 leading-tight font-extrabold" style={{ color: CLASS_COLORS[value] }}>
+                  <span className="whitespace-nowrap">
+                    {last.number ?? `${moveNumberOf(fens[step - 1])}`} <Figurine san={last.san} color={last.color} />
+                  </span>{" "}
+                  {t.review.verdict(value, classLabel(t, value))}
+                </p>
+              </>
+            ) : (
+              <p className="flex-1 text-sm font-semibold text-muted">{t.review.exploreThinking}</p>
+            )}
           </div>
         )}
-        <p className="text-xs font-semibold text-muted">
-          {evaluation.depth > 0 && t.review.exploreDepth(evaluation.depth)}
-          {evaluation.pending && evaluation.depth > 0 && " …"}
-        </p>
+        {showBest && bestLine && result && (
+          <div className="flex items-start gap-2">
+            <LineEvalChip evaluation={bestLine.evaluation} />
+            <ClassBadge value="best" size={22} />
+            <p className="min-w-0 flex-1 text-sm leading-snug font-bold text-soft">
+              <span className="mr-1.5 font-extrabold whitespace-nowrap" style={{ color: CLASS_COLORS.best }}>
+                <Figurine san={result.best_san!} color={last!.color} /> {t.review.verdict("best", classLabel(t, "best"))}
+              </span>
+              <FigurineLine fen={fens[step - 1]} moves={bestLine.moves.slice(1, 8)} />
+            </p>
+          </div>
+        )}
+        {last && <hr className="border-line" />}
+
+        {current.error ? (
+          <p role="alert" className="text-sm font-semibold text-danger">
+            {current.error}
+          </p>
+        ) : current.lines.length === 0 ? (
+          <p className="text-sm font-semibold text-muted">
+            {current.pending ? t.review.exploreThinking : current.evaluation ? formatEval(current.evaluation) : null}
+          </p>
+        ) : (
+          <ul className="flex flex-col gap-1.5" aria-label={t.review.exploreLines}>
+            {current.lines.map((line, i) => (
+              <li key={`${i}-${line.moves[0]?.uci}`}>
+                <button
+                  type="button"
+                  onClick={() => line.moves[0] && onPlayMove(line.moves[0].uci)}
+                  className="flex w-full items-start gap-2 rounded-md p-0.5 text-left hover:bg-raised/60"
+                >
+                  <LineEvalChip evaluation={line.evaluation} testId={i === 0 ? "explore-eval" : undefined} />
+                  <span className="min-w-0 flex-1 truncate text-sm leading-6 font-bold text-soft">
+                    <FigurineLine fen={fen} moves={line.moves.slice(0, 8)} />
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
       <div className="grid grid-cols-[1fr_2fr_1fr] gap-2">
         <Button variant="raised" aria-label={t.review.prevMove} disabled={step === 0} onClick={() => onStep(step - 1)}>
           ←
         </Button>
-        <Button variant="raised" disabled={evaluation.line.length === 0} onClick={onPlayBest}>
+        <Button variant="raised" disabled={!best} onClick={() => best && onPlayMove(best.uci)}>
           {t.review.playBest}
         </Button>
-        <Button
-          variant="raised"
-          aria-label={t.review.nextMove}
-          disabled={step >= moves.length}
-          onClick={() => onStep(step + 1)}
-        >
+        <Button variant="raised" aria-label={t.review.nextMove} disabled={step >= moves.length} onClick={() => onStep(step + 1)}>
           →
         </Button>
       </div>
@@ -352,6 +461,23 @@ export function ExplorePanel({
   );
 }
 
-function positionAfter(fen: string, moves: LineMove[]): string {
-  return lineFens(fen, moves).at(-1) ?? fen;
+// Классы, которые в списке ходов выделяются значком и цветом (как в основном списке).
+const SIGNIFICANT = new Set<ClassKey>(["brilliant", "great", "inaccuracy", "mistake", "miss", "blunder"]);
+
+const moveNumberOf = (fen: string) =>
+  `${Number(fen.split(" ")[5]) || 1}${sideToMove(fen) === "white" ? "." : "…"}`;
+
+/** Оценка за белых плашкой: белая — перевес белых, тёмная — чёрных. */
+function LineEvalChip({ evaluation, testId }: { evaluation: WhiteEval | null; testId?: string }) {
+  const white = evaluation !== null && leader(evaluation) === "white";
+  return (
+    <span
+      data-testid={testId}
+      className={`min-w-14 shrink-0 rounded-md px-1.5 py-0.5 text-center text-sm font-extrabold tabular-nums ${
+        white ? "bg-white text-[#2c2925]" : "bg-raised text-ink"
+      }`}
+    >
+      {evaluation ? formatEval(evaluation) : "…"}
+    </span>
+  );
 }

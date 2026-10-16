@@ -9,7 +9,7 @@ import { lineEval, positionEvals, type WhiteEval } from "@/lib/eval";
 import { useI18n } from "@/lib/i18n/use-i18n";
 import { threats } from "@/lib/threats";
 import { playMove, playSound, preloadSounds, toggleMuted, useSoundMuted } from "@/lib/sounds";
-import type { Color, LineMove } from "@/lib/types";
+import type { Color, LineMove, MoveClass } from "@/lib/types";
 import { Board, NO_MARKS, type BoardMarks } from "./board";
 import { EvalBar } from "./eval-bar";
 import { EvalGraph } from "./eval-graph";
@@ -18,6 +18,7 @@ import { ClassBadge } from "./class-badge";
 import { MoveList } from "./move-list";
 import {
   ExplorePanel,
+  exploreClassKey,
   LinePanel,
   MovePanel,
   RetryPanel,
@@ -26,7 +27,7 @@ import {
   type RetryStatus,
 } from "./move-panel";
 import { useReviewSource } from "./review-source";
-import { useExploreEval } from "./use-explore-eval";
+import { cachedExploreClass, useExploreClass, useExploreEvals } from "./use-explore-eval";
 
 // Заголовок линии — ключ словаря: текст берётся при показе, на текущем языке.
 type LineTitle = "bestLine" | "continuation" | "refutation";
@@ -137,7 +138,36 @@ export function Review({
   // Выбранная фигура для хода кликами по клеткам в режиме партии (ход уводит в исследование).
   const [gameSelected, setGameSelected] = useState<{ cursor: number; square: string } | null>(null);
   const [exploreSource, setExploreSource] = useExploreSource();
-  const exploreEval = useExploreEval(mode.kind === "explore" ? mode.fens[mode.step] : null, exploreSource);
+  // Исследование: оценки позиции на доске и позиции до последнего хода (для его класса).
+  const exploreTargets =
+    mode.kind === "explore" ? [mode.fens[mode.step], ...(mode.step > 0 ? [mode.fens[mode.step - 1]] : [])] : [];
+  const exploreEvalOf = useExploreEvals(exploreTargets, exploreSource);
+  const exploreCurrent = mode.kind === "explore" ? exploreEvalOf(mode.fens[mode.step]) : null;
+  const exploreBefore = mode.kind === "explore" && mode.step > 0 ? exploreEvalOf(mode.fens[mode.step - 1]) : null;
+  // Класс предыдущего хода (соперника) — для «упущения»: ход партии или прошлый ход линии.
+  let explorePrevious: { cls: MoveClass | null; fen: string | null } = { cls: null, fen: null };
+  if (mode.kind === "explore" && mode.step > 0) {
+    if (mode.step === 1) {
+      const ply = plies[mode.baseCursor - 1];
+      explorePrevious = { cls: ply?.move?.class ?? null, fen: ply?.fenBefore ?? null };
+    } else {
+      const prev = cachedExploreClass(exploreSource, mode.fens[mode.step - 2], mode.moves[mode.step - 2].uci);
+      explorePrevious = { cls: prev?.class ?? null, fen: mode.fens[mode.step - 2] };
+    }
+  }
+  const exploreResult = useExploreClass(
+    mode.kind === "explore" && mode.step > 0 && exploreCurrent && exploreBefore
+      ? {
+          fenBefore: mode.fens[mode.step - 1],
+          uci: mode.moves[mode.step - 1].uci,
+          before: exploreBefore,
+          after: exploreCurrent,
+          previous: explorePrevious.cls,
+          priorFen: explorePrevious.fen,
+        }
+      : null,
+    exploreSource,
+  );
   // Объяснения приходят на языке профиля: ключ — `язык:id хода`, после смены языка — запрос заново.
   const [explanations, setExplanations] = useState<Record<string, Explanation>>({});
   const requested = useRef(new Set<string>());
@@ -305,11 +335,11 @@ export function Review({
   // Ход на доске в режиме партии или исследования: совпал со следующим ходом партии —
   // просто шаг вперёд, иначе — исследование своей линии от этой позиции.
   const exploreMove = useCallback(
-    (from: string, to: string): boolean => {
+    (from: string, to: string, promotion?: string): boolean => {
       if (mode.kind !== "game" && mode.kind !== "explore") return false;
       const fen = mode.kind === "explore" ? mode.fens[mode.step] : cursor > 0 ? plies[cursor - 1].fenAfter : startFen;
       setGameSelected(null);
-      const uci = boardMoveUci(fen, from, to);
+      const uci = boardMoveUci(fen, from, to, promotion);
       if (!uci) {
         if (mode.kind === "explore") setMode({ ...mode, selected: null });
         playSound("illegal");
@@ -441,21 +471,25 @@ export function Review({
   } else if (mode.kind === "explore") {
     fen = mode.fens[mode.step];
     const last = mode.step > 0 ? mode.moves[mode.step - 1] : null;
+    const value = exploreResult && exploreClassKey(exploreResult);
     const highlights: Record<string, string> = {};
+    let badge: BoardMarks["badge"] = null;
     if (last) {
+      // Как у ходов партии: клетки «откуда-куда» цветом класса и значок на клетке хода.
       const { from, to } = uciSquares(last.uci);
-      highlights[from] = LINE_MOVE;
-      highlights[to] = LINE_MOVE;
+      highlights[from] = value ? alpha(CLASS_COLORS[value], "88") : LINE_MOVE;
+      highlights[to] = value ? alpha(CLASS_COLORS[value], "bb") : LINE_MOVE;
+      if (value) badge = { square: to, value };
     }
     if (mode.selected) highlights[mode.selected] = SELECTED;
-    const best = exploreEval.line[0];
+    const best = exploreCurrent?.lines[0]?.moves[0];
     marks = {
-      key: `explore-${mode.step}-${fen}-${mode.selected ?? ""}-${best?.uci ?? ""}`,
+      key: `explore-${mode.step}-${fen}-${mode.selected ?? ""}-${best?.uci ?? ""}-${value ?? ""}`,
       arrows: best ? [{ startSquare: best.uci.slice(0, 2), endSquare: best.uci.slice(2, 4), color: BEST_ARROW }] : [],
       highlights,
-      badge: null,
+      badge,
     };
-    evaluation = exploreEval.evaluation;
+    evaluation = exploreCurrent?.evaluation ?? null;
   } else if (mode.kind === "retry") {
     fen = mode.fen;
     const ply = plies[mode.plyIndex];
@@ -504,16 +538,17 @@ export function Review({
     panel = (
       <ExplorePanel
         baseFen={mode.baseFen}
+        fens={mode.fens}
         moves={mode.moves}
         step={mode.step}
-        evaluation={exploreEval}
+        classes={mode.moves.map((move, i) => cachedExploreClass(exploreSource, mode.fens[i], move.uci))}
+        current={exploreCurrent!}
+        before={exploreBefore}
+        result={exploreResult}
         source={exploreSource}
         onSource={setExploreSource}
         onStep={exploreStep}
-        onPlayBest={() => {
-          const best = exploreEval.line[0];
-          if (best) exploreMove(best.uci.slice(0, 2), best.uci.slice(2, 4));
-        }}
+        onPlayMove={(uci) => exploreMove(uci.slice(0, 2), uci.slice(2, 4), uci[4])}
         onClose={() => goTo(back)}
       />
     );
