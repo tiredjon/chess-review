@@ -1,0 +1,47 @@
+# CI: `make test` (ruff, mypy, eslint, tsc, pytest на postgres + redis из compose)
+# на каждый push и pull request.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      # Тесты с настоящим движком не пропускаются (как в Docker-образе).
+      REQUIRE_STOCKFISH: "1"
+      STOCKFISH_VERSION: sf_19
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.8.22"
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Stockfish
+        run: |
+          # Тот же официальный бинарник, что в backend/Dockerfile.
+          curl -fsSL "https://github.com/official-stockfish/Stockfish/releases/download/${STOCKFISH_VERSION}/stockfish-linux-x86-64-universal.tar.gz" | tar xz -C /tmp
+          sudo install -m 0755 /tmp/stockfish/stockfish-linux-x86-64-universal /usr/local/bin/stockfish
+          printf 'uci\nquit\n' | stockfish | grep -q '^uciok'
+
+      - name: Зависимости
+        run: make install
+
+      - name: make test
+        run: make test
