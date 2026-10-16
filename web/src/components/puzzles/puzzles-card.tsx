@@ -3,10 +3,13 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import { useI18n } from "@/lib/i18n/use-i18n";
 import type { PuzzleCounts } from "@/lib/types";
 
 /** Карточка на главной: сколько пазлов на сегодня (пора повторить + новые) и серия. */
 export function PuzzlesCard() {
+  const { t } = useI18n();
+  const copy = t.home.puzzlesCard;
   const [counts, setCounts] = useState<PuzzleCounts | null>(null);
 
   useEffect(() => {
@@ -24,7 +27,7 @@ export function PuzzlesCard() {
   const today = counts.due + counts.new;
   return (
     <section
-      aria-label="Пазлы на сегодня"
+      aria-label={copy.label}
       className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-xl bg-panel px-4 py-3 sm:px-5"
     >
       <span aria-hidden className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-raised text-green">
@@ -34,14 +37,14 @@ export function PuzzlesCard() {
       </span>
       <div className="min-w-0 flex-1">
         <p className="text-lg font-extrabold">
-          {counts.total === 0 ? "Пазлы из ваших ошибок" : `Пазлов на сегодня: ${today}`}
+          {counts.total === 0 ? copy.emptyTitle : copy.today(today)}
         </p>
         <p className="text-sm font-semibold text-muted">
           {counts.total === 0
-            ? "Появятся после разбора партий: каждая ошибка — позиция, где нужно найти лучший ход."
+            ? copy.emptyText
             : today === 0
-              ? `Всё решено. Решено подряд: ${counts.streak}.`
-              : `${counts.due} на повторение · ${counts.new} новых · решено подряд ${counts.streak}`}
+              ? copy.allSolved(counts.streak)
+              : copy.summary(counts.due, counts.new, counts.streak)}
         </p>
       </div>
       {today > 0 && (
@@ -49,7 +52,7 @@ export function PuzzlesCard() {
           href="/puzzles"
           className="flex min-h-11 items-center justify-center rounded-lg bg-green px-5 text-[15px] font-bold text-white shadow-[0_4px_0_0_var(--green-edge)] hover:bg-green-hover max-sm:w-full"
         >
-          Решать
+          {copy.solve}
         </Link>
       )}
     </section>

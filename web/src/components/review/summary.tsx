@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { api, ApiError } from "@/lib/api";
+import { useI18n } from "@/lib/i18n/use-i18n";
 
 /** Реплика «тренера»: значок слева, облачко с текстом справа. */
 export function CoachBubble({ children, busy = false }: { children: ReactNode; busy?: boolean }) {
@@ -37,7 +38,11 @@ const SUMMARY_PREVIEW = 2;
 
 /** Общий разбор партии (§6.3): 3–5 пунктов, строки «- …». */
 export function GameSummary({ analysisId }: { analysisId: string }) {
-  const [result, setResult] = useState<{ id: string; points: string[] } | { id: string; error: string } | null>(null);
+  const { t, lang } = useI18n();
+  // Итог приходит на языке профиля: ключ — анализ и язык, после смены языка — запрос заново.
+  const key = `${lang}:${analysisId}`;
+  const [result, setResult] = useState<{ key: string; points: string[] } | { key: string; error: string } | null>(null);
+  const unavailable = t.review.summaryUnavailable;
 
   useEffect(() => {
     let cancelled = false;
@@ -49,18 +54,18 @@ export function GameSummary({ analysisId }: { analysisId: string }) {
           .split("\n")
           .map((line) => line.replace(/^\s*[-•]\s*/, "").trim())
           .filter(Boolean);
-        setResult({ id: analysisId, points });
+        setResult({ key, points });
       })
       .catch((err) => {
-        if (!cancelled) setResult({ id: analysisId, error: err instanceof ApiError ? err.message : "Итог недоступен" });
+        if (!cancelled) setResult({ key, error: err instanceof ApiError ? err.message : unavailable });
       });
     return () => {
       cancelled = true;
     };
-  }, [analysisId]);
+  }, [analysisId, key, unavailable]);
 
   const [expanded, setExpanded] = useState(false);
-  const current = result?.id === analysisId ? result : null;
+  const current = result?.key === key ? result : null;
   const points = current && "points" in current ? current.points : [];
   const shown = expanded ? points : points.slice(0, SUMMARY_PREVIEW);
   return (
@@ -81,7 +86,7 @@ export function GameSummary({ analysisId }: { analysisId: string }) {
               aria-expanded={expanded}
               className="mt-1.5 text-sm font-bold text-[#557a2f] hover:underline"
             >
-              {expanded ? "Свернуть" : `Ещё ${points.length - SUMMARY_PREVIEW}`}
+              {expanded ? t.review.collapse : t.review.more(points.length - SUMMARY_PREVIEW)}
             </button>
           )}
         </>

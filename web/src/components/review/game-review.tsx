@@ -4,18 +4,18 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { shownAccuracy } from "@/lib/accuracy";
-import { api, ApiError } from "@/lib/api";
+import { api, ApiError, codeText } from "@/lib/api";
 import { pliesFromMoves, pliesFromPgn, START_FEN } from "@/lib/chess";
 import {
   formatDate,
   formatResult,
   formatTimeControl,
   outcome,
-  OUTCOME_LABELS,
   playerElo,
   playerName,
   SOURCE_NAMES,
 } from "@/lib/format";
+import { useI18n } from "@/lib/i18n/use-i18n";
 import type { Color, GameDetail } from "@/lib/types";
 import { PlayerAvatar } from "../player-avatar";
 import { Button, ErrorText } from "../ui";
@@ -26,8 +26,10 @@ import { useAnalysis, type AnalysisState } from "./use-analysis";
 
 /** Экран разбора: загрузка партии, запуск анализа с прогрессом, сам разбор. */
 export function GameReview({ id, autoAnalyze, initialPly = 0 }: { id: string; autoAnalyze: boolean; initialPly?: number }) {
+  const { t } = useI18n();
   const [game, setGame] = useState<GameDetail | null>(null);
-  const [error, setError] = useState<{ status: number; message: string } | null>(null);
+  // `message: null` — сеть/неизвестная ошибка: текст по текущему языку при показе.
+  const [error, setError] = useState<{ status: number; message: string | null } | null>(null);
 
   const reload = useCallback(() => {
     api
@@ -37,7 +39,7 @@ export function GameReview({ id, autoAnalyze, initialPly = 0 }: { id: string; au
         setError(
           err instanceof ApiError
             ? { status: err.status, message: err.message }
-            : { status: 0, message: "Не удалось загрузить партию" },
+            : { status: 0, message: null },
         ),
       );
   }, [id]);
@@ -48,11 +50,11 @@ export function GameReview({ id, autoAnalyze, initialPly = 0 }: { id: string; au
     return (
       <div className="flex flex-col items-start gap-3 py-10">
         <p className="text-xl font-extrabold">
-          {error.status === 404 ? "Партия не найдена" : "Не удалось открыть партию"}
+          {error.status === 404 ? t.review.notFound : t.review.openFailed}
         </p>
-        <ErrorText>{error.status === 404 ? null : error.message}</ErrorText>
+        <ErrorText>{error.status === 404 ? null : (error.message ?? t.review.loadFailed)}</ErrorText>
         <Link href="/games" className="font-bold text-green hover:underline">
-          К списку партий
+          {t.review.toGames}
         </Link>
       </div>
     );
@@ -73,6 +75,7 @@ function LoadedGame({
   onAnalysisDone: () => void;
 }) {
   const router = useRouter();
+  const { t, lang } = useI18n();
   const { state, start, starting, startError } = useAnalysis(game.id, game.analysis, onAnalysisDone);
 
   // `?analyze=1` (из списков и после вставки PGN): запустить анализ один раз и убрать параметр.
@@ -95,10 +98,10 @@ function LoadedGame({
 
   const result = outcome(game);
   const subtitle = [
-    `${formatResult(game.result)}${result ? ` (${OUTCOME_LABELS[result].toLowerCase()})` : ""}`,
+    `${formatResult(game.result)}${result ? ` (${t.common.outcome[result].toLowerCase()})` : ""}`,
     game.opening_name,
-    formatTimeControl(game.time_control),
-    formatDate(game.played_at),
+    formatTimeControl(game.time_control, t),
+    formatDate(game.played_at, lang),
     SOURCE_NAMES[game.source],
   ]
     .filter(Boolean)
@@ -134,6 +137,7 @@ function PlayerBar({ game, color }: { game: GameDetail; color: Color }) {
   const name = playerName(game, color);
   const elo = playerElo(game, color);
   const accuracy = shownAccuracy(game, color);
+  const { t } = useI18n();
   return (
     <div className="flex min-h-10 items-center gap-2.5">
       <PlayerAvatar name={name} color={color} size={36} />
@@ -143,7 +147,7 @@ function PlayerBar({ game, color }: { game: GameDetail; color: Color }) {
       </p>
       {accuracy && (
         <span
-          title={accuracy.official ? "Точность по данным Chess.com" : "Точность"}
+          title={accuracy.official ? t.review.accuracyOfficial : t.review.accuracy}
           className={`rounded-md px-2.5 py-1 text-sm font-extrabold ${
             color === "white" ? "bg-white text-[#2c2925]" : "bg-sunken text-ink"
           }`}
@@ -166,19 +170,18 @@ function AnalysisStatus({
   error: string | null;
   onStart: () => void;
 }) {
+  const { t } = useI18n();
   if (state && (state.status === "queued" || state.status === "running")) {
     const percent = state.total > 0 ? Math.round((state.done / state.total) * 100) : 0;
     return (
       <div aria-live="polite" className="flex flex-col gap-3">
         <CoachBubble>
-          {state.status === "queued"
-            ? "Партия в очереди на анализ. Ходы уже можно листать."
-            : "Stockfish разбирает партию. Обычно это занимает до минуты."}
+          {state.status === "queued" ? t.review.queued : t.review.running}
         </CoachBubble>
         <div className="flex items-center gap-3">
           <div
             role="progressbar"
-            aria-label="Прогресс анализа"
+            aria-label={t.review.progressLabel}
             aria-valuemin={0}
             aria-valuemax={state.total || 1}
             aria-valuenow={state.done}
@@ -192,7 +195,7 @@ function AnalysisStatus({
             />
           </div>
           <span className="w-24 text-right text-sm font-bold text-soft">
-            {state.total > 0 ? `${state.done} из ${state.total}` : "…"}
+            {state.total > 0 ? t.review.progress(state.done, state.total) : "…"}
           </span>
         </div>
       </div>
@@ -203,12 +206,12 @@ function AnalysisStatus({
     <div className="flex flex-col gap-3">
       <CoachBubble>
         {failed
-          ? `Анализ не удался: ${state.error ?? "неизвестная ошибка"}`
-          : "Партия ещё не разобрана. Stockfish оценит каждый ход, найдёт ошибки и упущенную тактику."}
+          ? t.review.failed(codeText(t, state.error_code, {}, state.error ?? t.review.unknownError))
+          : t.review.notAnalyzed}
       </CoachBubble>
       <ErrorText>{error}</ErrorText>
       <Button size="lg" onClick={onStart} disabled={starting}>
-        {starting ? "Запускаю…" : failed ? "Запустить заново" : "Запустить анализ"}
+        {starting ? t.review.starting : failed ? t.review.restart : t.review.start}
       </Button>
     </div>
   );

@@ -1,11 +1,15 @@
+import uuid
 from collections.abc import AsyncIterator
 from typing import Annotated
 
 from arq.connections import ArqRedis
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import Depends, Request, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.errors import ApiError, ErrorCode
+from app.auth.tokens import TokenError, decode_token
 from app.core.config import Settings
 from app.db.models import User
 from app.db.session import Database
@@ -57,16 +61,43 @@ async def get_session(db: DatabaseDep) -> AsyncIterator[AsyncSession]:
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
 
-async def get_current_user(session: SessionDep, settings: SettingsDep) -> User:
-    """Текущий пользователь.
+_bearer = HTTPBearer(auto_error=False)
+BearerDep = Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer)]
 
-    До сессии 10 это всегда dev-пользователь из DEFAULT_USER_ID (создаётся миграцией).
-    С появлением JWT меняется только эта функция — роуты зависят от CurrentUser.
-    """
-    user = await session.get(User, settings.default_user_id)
+
+def _unauthorized(code: ErrorCode, message: str) -> ApiError:
+    return ApiError(
+        status.HTTP_401_UNAUTHORIZED, code, message, headers={"WWW-Authenticate": "Bearer"}
+    )
+
+
+def token_error(exc: TokenError) -> ApiError:
+    if exc.expired:
+        return _unauthorized(ErrorCode.TOKEN_EXPIRED, "Токен истёк")
+    return _unauthorized(ErrorCode.TOKEN_INVALID, "Некорректный токен")
+
+
+async def load_user(session: AsyncSession, user_id: uuid.UUID) -> User:
+    user = await session.get(User, user_id)
     if user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Пользователь не найден")
+        raise _unauthorized(ErrorCode.TOKEN_INVALID, "Пользователь не найден")
     return user
+
+
+async def get_current_user(
+    session: SessionDep, settings: SettingsDep, credentials: BearerDep
+) -> User:
+    """Текущий пользователь по access-токену (`Authorization: Bearer <JWT>`).
+
+    Все роуты получают пользователя только отсюда (через CurrentUser).
+    """
+    if credentials is None:
+        raise _unauthorized(ErrorCode.NOT_AUTHENTICATED, "Нужен вход")
+    try:
+        claims = decode_token(settings, credentials.credentials)
+    except TokenError as exc:
+        raise token_error(exc) from exc
+    return await load_user(session, claims.user_id)
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]

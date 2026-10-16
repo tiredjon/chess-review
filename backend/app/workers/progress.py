@@ -25,6 +25,8 @@ class ProgressEvent(BaseModel):
     done: int = 0
     total: int = 0
     error: str | None = None
+    # Код для интерфейса (`app/api/errors.py`), `error` — подробности.
+    error_code: str | None = None
 
     @property
     def is_final(self) -> bool:

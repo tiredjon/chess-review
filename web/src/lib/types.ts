@@ -88,6 +88,8 @@ export type AnalysisOut = AnalysisSummary & {
   engine_version: string | null;
   phase_accuracy: PhaseAccuracy | null;
   error: string | null;
+  /** Код ошибки (backend/app/core/errors.py) — текст по нему в словаре `errors.codes`. */
+  error_code: string | null;
   started_at: string | null;
   progress: Progress | null;
   moves: MoveOut[];
@@ -133,6 +135,7 @@ export type ImportJob = {
   imported: number;
   skipped: number;
   error: string | null;
+  error_code: string | null;
   created_at: string;
   started_at: string | null;
   finished_at: string | null;
@@ -144,6 +147,7 @@ export type ProgressEvent = {
   done: number;
   total: number;
   error: string | null;
+  error_code: string | null;
 };
 
 export type MoveExplanation = {
@@ -269,3 +273,27 @@ export type PuzzleAttempt = {
   next_review_at: string | null;
   streak: number | null;
 };
+
+export type Lang = "ru" | "en";
+
+export type User = {
+  id: string;
+  email: string;
+  lang: Lang;
+  lichess_username: string | null;
+  chesscom_username: string | null;
+  created_at: string;
+};
+
+/** Ответ входа / регистрации / обновления: access-токен (держим в памяти) и пользователь;
+ * refresh-токен — в httpOnly-cookie, JavaScript его не видит. */
+export type AuthOut = {
+  access_token: string;
+  token_type: "bearer";
+  expires_in: number;
+  user: User;
+};
+
+export type ProfileUpdate = Partial<Pick<User, "lang" | "lichess_username" | "chesscom_username">>;
+
+export type StreamToken = { token: string; expires_in: number };

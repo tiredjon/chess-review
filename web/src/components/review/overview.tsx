@@ -2,16 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { shownAccuracy } from "@/lib/accuracy";
-import { CLASS_META, CLASS_ORDER, displayClass, PHASE_LABELS, phaseClass, type ClassKey } from "@/lib/classes";
+import { CLASS_COLORS, CLASS_ORDER, classPlural, displayClass, phaseClass, type ClassKey } from "@/lib/classes";
+import { useI18n } from "@/lib/i18n/use-i18n";
 import type { AnalysisOut, Color, GameDetail, Phase } from "@/lib/types";
 import { PlayerAvatar } from "../player-avatar";
 import { ClassBadge } from "./class-badge";
 
 const COLORS: Color[] = ["white", "black"];
+const PHASES: Phase[] = ["opening", "middlegame", "endgame"];
 const ROW = "grid grid-cols-[minmax(0,1fr)_5.5rem_2rem_5.5rem] items-center gap-x-2";
 
 /** Обзор партии: игроки, точность, ходы по классам, фазы. */
 export function Overview({ game, analysis }: { game: GameDetail; analysis: AnalysisOut }) {
+  const { t } = useI18n();
   const counts: Record<Color, Map<ClassKey, number>> = { white: new Map(), black: new Map() };
   for (const move of analysis.moves) {
     const value = displayClass(move);
@@ -24,7 +27,7 @@ export function Overview({ game, analysis }: { game: GameDetail; analysis: Analy
   return (
     <div className="flex flex-col text-[15px] font-bold">
       <div className={`${ROW} pb-2`}>
-        <span className="text-soft">Игроки</span>
+        <span className="text-soft">{t.review.players}</span>
         {COLORS.map((color) => (
           <span key={color} className={`flex flex-col items-center gap-1.5 ${color === "black" ? "col-start-4" : ""}`}>
             <span className="max-w-full truncate text-xs text-soft">{name[color]}</span>
@@ -36,7 +39,7 @@ export function Overview({ game, analysis }: { game: GameDetail; analysis: Analy
       </div>
 
       <div className={`${ROW} pb-3`}>
-        <span className="text-soft">Точность</span>
+        <span className="text-soft">{t.review.accuracy}</span>
         {COLORS.map((color) => (
           <span
             key={color}
@@ -49,26 +52,26 @@ export function Overview({ game, analysis }: { game: GameDetail; analysis: Analy
         ))}
         {accuracy.white && (
           <span className="col-span-4 pt-1.5 text-xs font-semibold text-muted">
-            {official ? "по данным Chess.com" : "оценка по формуле, близкой к Chess.com"}
+            {official ? t.review.accuracyOfficialNote : t.review.accuracyFormulaNote}
           </span>
         )}
       </div>
 
       <hr className="my-2 border-line" />
 
-      <ul aria-label="Ходы по классам">
+      <ul aria-label={t.review.movesByClass}>
         {CLASS_ORDER.map((key, i) => {
-          const meta = CLASS_META[key];
+          const color = CLASS_COLORS[key];
           return (
             <li key={key} className={`${ROW} cc-rise py-1.5`} style={{ animationDelay: `${150 + i * 45}ms` }}>
-              <span className="text-soft">{meta.plural}</span>
-              <span className="text-center" style={{ color: meta.color }}>
+              <span className="text-soft">{classPlural(t, key)}</span>
+              <span className="text-center" style={{ color }}>
                 {counts.white.get(key) ?? 0}
               </span>
               <span className="flex justify-center">
                 <ClassBadge value={key} size={26} />
               </span>
-              <span className="text-center" style={{ color: meta.color }}>
+              <span className="text-center" style={{ color }}>
                 {counts.black.get(key) ?? 0}
               </span>
             </li>
@@ -79,8 +82,8 @@ export function Overview({ game, analysis }: { game: GameDetail; analysis: Analy
       <hr className="my-2 border-line" />
 
       {game.game_rating && (
-        <div className={`${ROW} py-1.5`} title="Какой рейтинг в среднем играет с такой точностью">
-          <span className="text-soft">Рейтинг партии</span>
+        <div className={`${ROW} py-1.5`} title={t.review.gameRatingHint}>
+          <span className="text-soft">{t.review.gameRating}</span>
           {COLORS.map((color) => (
             <span
               key={color}
@@ -96,9 +99,9 @@ export function Overview({ game, analysis }: { game: GameDetail; analysis: Analy
 
 
       <dl>
-        {(Object.keys(PHASE_LABELS) as Phase[]).map((phase) => (
+        {PHASES.map((phase) => (
           <div key={phase} className={`${ROW} py-1.5`}>
-            <dt className="text-soft">{PHASE_LABELS[phase]}</dt>
+            <dt className="text-soft">{t.common.phases[phase]}</dt>
             {COLORS.map((color) => {
               const value = analysis.phase_accuracy?.[color]?.[phase];
               return (

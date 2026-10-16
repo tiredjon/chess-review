@@ -7,8 +7,8 @@ from typing import Any
 
 import httpx
 import pytest
-from asgi_lifespan import LifespanManager
-from httpx import ASGITransport, AsyncClient
+from fastapi import FastAPI
+from httpx import AsyncClient
 from redis.asyncio import Redis
 from sqlalchemy import delete, select, update
 
@@ -16,8 +16,8 @@ from app.api.deps import get_arq
 from app.core.config import Settings
 from app.db.models import Game, ImportJob, ImportStatus, User
 from app.db.session import Database
-from app.main import create_app
 from app.workers.imports import import_games, job_id
+from tests.conftest import api_client
 from tests.import_fakes import FakeChessCom, FakeLichess, routed
 
 pytestmark = pytest.mark.integration
@@ -292,6 +292,7 @@ async def test_import_fails_with_readable_error(
     failed = await status_of(client, missing)
     assert failed["status"] == "failed"
     assert failed["error"] == "Пользователь nobody не найден на Lichess"
+    assert failed["error_code"] == "source_user_not_found"
     assert failed["finished_at"] is not None
 
     # Источник лежит: после всех попыток — failed, партии предыдущих страниц остаются.
@@ -300,6 +301,7 @@ async def test_import_fails_with_readable_error(
     down = await start(client, "lichess", username="carol")
     assert await import_games(ctx, down["job_id"]) == "failed"
     assert (await status_of(client, down))["error"] == "Lichess: ошибка сервера 503"
+    assert (await status_of(client, down))["error_code"] == "source_unavailable"
 
     # Неожиданная ошибка — тоже failed, с типом исключения.
     async def explode(request: httpx.Request) -> httpx.Response:
@@ -310,6 +312,7 @@ async def test_import_fails_with_readable_error(
         result = await import_games({**ctx, "http": http}, broken["job_id"])
     assert result == "failed"
     assert (await status_of(client, broken))["error"] == "RuntimeError: boom"
+    assert (await status_of(client, broken))["error_code"] == "internal"
 
     # Готовый импорт и несуществующий не трогаются.
     assert await import_games(ctx, str(uuid.uuid4())) == "missing"
@@ -362,12 +365,10 @@ class BrokenQueue:
 
 @pytest.mark.usefixtures("clean_user")
 async def test_import_reports_unavailable_queue(settings: Settings, db: Database) -> None:
-    app = create_app(settings)
-    app.dependency_overrides[get_arq] = BrokenQueue
-    async with (
-        LifespanManager(app) as manager,
-        AsyncClient(transport=ASGITransport(app=manager.app), base_url="http://test") as ac,
-    ):
+    def setup(app: FastAPI) -> None:
+        app.dependency_overrides[get_arq] = BrokenQueue
+
+    async with api_client(settings, setup=setup) as ac:
         response = await ac.post("/api/v1/imports/lichess", json={"username": "gina"})
 
     assert response.status_code == 503
@@ -375,3 +376,4 @@ async def test_import_reports_unavailable_queue(settings: Settings, db: Database
         (job,) = await session.scalars(select(ImportJob))
     assert job.status == ImportStatus.FAILED
     assert job.error == "Не удалось поставить импорт в очередь"
+    assert job.error_code == "enqueue_failed"

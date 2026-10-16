@@ -3,16 +3,21 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { api, ApiError } from "@/lib/api";
+import type { Dict } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n/use-i18n";
+import { SOURCE_NAMES } from "@/lib/format";
 import type { GameOut, GameSource } from "@/lib/types";
+import { DocumentTitle } from "./document-title";
 import { GamesTable, GamesTableSkeleton } from "./games-table";
 import { Button, ErrorText } from "./ui";
 
 const PAGE_SIZE = 30;
 
-const errorText = (err: unknown) => (err instanceof ApiError ? err.message : "Не удалось загрузить партии");
+const errorText = (err: unknown, t: Dict) => (err instanceof ApiError ? err.message : t.home.gamesLoadFailed);
 
 /** Список партий с курсорной пагинацией. */
 export function GamesList({ source }: { source: GameSource | null }) {
+  const { t } = useI18n();
   const [games, setGames] = useState<GameOut[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -27,12 +32,12 @@ export function GamesList({ source }: { source: GameSource | null }) {
         setGames(page.items);
         setCursor(page.next_cursor);
       })
-      .catch((err) => !cancelled && setError(errorText(err)))
+      .catch((err) => !cancelled && setError(errorText(err, t)))
       .finally(() => !cancelled && setLoading(false));
     return () => {
       cancelled = true;
     };
-  }, [source]);
+  }, [source, t]);
 
   async function loadMore() {
     setLoading(true);
@@ -42,7 +47,7 @@ export function GamesList({ source }: { source: GameSource | null }) {
       setGames((current) => [...current, ...page.items]);
       setCursor(page.next_cursor);
     } catch (err) {
-      setError(errorText(err));
+      setError(errorText(err, t));
     } finally {
       setLoading(false);
     }
@@ -59,7 +64,7 @@ export function GamesList({ source }: { source: GameSource | null }) {
       {cursor && (
         <div className="flex justify-center">
           <Button variant="raised" disabled={loading} onClick={loadMore}>
-            {loading ? "Загружаю…" : "Показать ещё"}
+            {loading ? t.common.actions.loading : t.common.actions.more}
           </Button>
         </div>
       )}
@@ -68,15 +73,57 @@ export function GamesList({ source }: { source: GameSource | null }) {
 }
 
 export function EmptyGames() {
+  const { t } = useI18n();
+  const copy = t.home.list;
   return (
     <div className="flex flex-col items-center gap-2 px-6 py-10 text-center">
-      <p className="text-lg font-bold">Партий пока нет</p>
+      <p className="text-lg font-bold">{copy.empty}</p>
       <p className="text-soft">
         <Link href="/" className="font-bold text-green hover:underline">
-          Загрузите партии
+          {copy.emptyLink}
         </Link>{" "}
-        с Lichess, Chess.com или вставьте PGN.
+        {copy.emptyRest}
       </p>
     </div>
+  );
+}
+
+export function GamesHeader() {
+  const { t } = useI18n();
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <DocumentTitle page="games" />
+      <h1 className="text-2xl font-extrabold sm:text-3xl">{t.home.historyTitle}</h1>
+      <Link href="/" className="text-sm font-bold text-green hover:underline">
+        {t.home.loadMore}
+      </Link>
+    </div>
+  );
+}
+
+/** Фильтр по источнику — ссылками, состояние в URL (`?source=`). */
+export function SourceFilter({ current }: { current: GameSource | null }) {
+  const { t } = useI18n();
+  const options: [GameSource | null, string][] = [
+    [null, t.home.list.all],
+    ...(Object.keys(SOURCE_NAMES) as GameSource[]).map((source): [GameSource, string] => [source, SOURCE_NAMES[source]]),
+  ];
+  return (
+    <nav aria-label={t.home.list.filterLabel} className="flex flex-wrap gap-2">
+      {options.map(([source, label]) => (
+        <Link
+          key={source ?? "all"}
+          href={source ? `/games?source=${source}` : "/games"}
+          aria-current={current === source ? "page" : undefined}
+          className={`flex min-h-10 items-center rounded-lg px-4 text-sm font-semibold ${
+            current === source
+              ? "bg-raised text-ink ring-2 ring-green ring-inset"
+              : "bg-raised/60 text-soft hover:bg-raised hover:text-ink"
+          }`}
+        >
+          {label}
+        </Link>
+      ))}
+    </nav>
   );
 }

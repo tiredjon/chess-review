@@ -1,9 +1,10 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { CLASS_META, canRetry, displayClass, isError } from "@/lib/classes";
+import { CLASS_COLORS, canRetry, classLabel, displayClass, isError } from "@/lib/classes";
 import { lineLabels, moveNumber, type Ply } from "@/lib/chess";
 import { evalAfter, formatEval, leader } from "@/lib/eval";
+import { useI18n } from "@/lib/i18n/use-i18n";
 import type { LineMove } from "@/lib/types";
 import { Button } from "../ui";
 import { ClassBadge } from "./class-badge";
@@ -26,8 +27,9 @@ export function MovePanel({
   onShowLine: (kind: LineKind) => void;
   onRetry: () => void;
 }) {
+  const { t } = useI18n();
   if (!ply) {
-    return <CoachBubble>Начальная позиция. Листайте ходы кнопками внизу или клавишами ← →.</CoachBubble>;
+    return <CoachBubble>{t.review.startPosition}</CoachBubble>;
   }
   const move = ply.move;
   if (!move) {
@@ -36,13 +38,13 @@ export function MovePanel({
         <span className="font-bold">
           {moveNumber(ply)} {ply.san}
         </span>
-        . Оценка и объяснение появятся после анализа.
+        . {t.review.moveNotAnalyzed}
       </CoachBubble>
     );
   }
 
   const value = displayClass(move);
-  const meta = CLASS_META[value];
+  const color = CLASS_COLORS[value];
   const differsFromBest = move.best_san !== null && move.best_uci !== move.uci;
   const showBest = differsFromBest && !["book", "forced", "brilliant", "great"].includes(move.class);
   const errorLike = isError(move) || move.is_miss;
@@ -52,11 +54,11 @@ export function MovePanel({
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2.5">
         <ClassBadge value={value} size={30} />
-        <p className="min-w-0 flex-1 text-lg leading-tight font-extrabold" style={{ color: meta.color }}>
+        <p className="min-w-0 flex-1 text-lg leading-tight font-extrabold" style={{ color }}>
           <span className="whitespace-nowrap">
             {moveNumber(ply)} <Figurine san={ply.san} color={ply.color} />
           </span>{" "}
-          — {meta.label.toLowerCase()}
+          {t.review.verdict(value, classLabel(t, value))}
         </p>
         <EvalChip text={formatEval(evaluation)} white={leader(evaluation) === "white"} />
       </div>
@@ -64,8 +66,8 @@ export function MovePanel({
       {showBest && (
         <p className="flex items-center gap-2 text-[15px] font-bold text-soft">
           <ClassBadge value="best" size={20} />
-          {errorLike ? "Лучше было" : "Лучший ход"}
-          <span style={{ color: CLASS_META.best.color }}>
+          {errorLike ? t.review.betterWas : t.review.bestMove}
+          <span style={{ color: CLASS_COLORS.best }}>
             <Figurine san={move.best_san!} color={ply.color} />
           </span>
         </p>
@@ -78,17 +80,17 @@ export function MovePanel({
       <div className="flex flex-wrap gap-2">
         {move.pv && move.pv.length > 0 && (
           <Button variant="raised" size="sm" onClick={() => onShowLine("best")}>
-            {differsFromBest ? "Лучшая линия" : "Продолжение"}
+            {differsFromBest ? t.review.bestLine : t.review.continuation}
           </Button>
         )}
         {errorLike && move.reply_pv && move.reply_pv.length > 0 && (
           <Button variant="raised" size="sm" onClick={() => onShowLine("refutation")}>
-            Чем наказывается
+            {t.review.refutation}
           </Button>
         )}
         {canRetry(move) && (
           <Button size="sm" onClick={onRetry}>
-            Найти лучший ход
+            {t.review.retry}
           </Button>
         )}
       </div>
@@ -97,9 +99,10 @@ export function MovePanel({
 }
 
 function EvalChip({ text, white }: { text: string; white: boolean }) {
+  const { t } = useI18n();
   return (
     <span
-      title="Оценка после хода, за белых"
+      title={t.review.evalAfter}
       className={`shrink-0 rounded-md px-2 py-1 text-sm font-extrabold ${white ? "bg-white text-[#2c2925]" : "bg-sunken text-ink"}`}
     >
       {text}
@@ -108,11 +111,12 @@ function EvalChip({ text, white }: { text: string; white: boolean }) {
 }
 
 function ModeHeader({ title, onClose }: { title: ReactNode; onClose: () => void }) {
+  const { t } = useI18n();
   return (
     <div className="flex items-center justify-between gap-3">
       <p className="text-lg font-extrabold">{title}</p>
       <button type="button" onClick={onClose} className="text-sm font-bold text-green hover:underline">
-        Вернуться к партии
+        {t.review.backToGame}
       </button>
     </div>
   );
@@ -137,11 +141,12 @@ export function LinePanel({
   onTogglePlay: () => void;
   onClose: () => void;
 }) {
+  const { t } = useI18n();
   const labels = lineLabels(baseFen, line);
   return (
     <div className="flex flex-col gap-3">
       <ModeHeader title={title} onClose={onClose} />
-      <ol className="flex flex-wrap gap-1 text-[15px] font-bold" aria-label="Ходы линии">
+      <ol className="flex flex-wrap gap-1 text-[15px] font-bold" aria-label={t.review.lineMoves}>
         {line.map((move, i) => (
           <li key={`${i}-${move.uci}`}>
             <button
@@ -158,15 +163,15 @@ export function LinePanel({
         ))}
       </ol>
       <div className="grid grid-cols-[1fr_2fr_1fr] gap-2">
-        <Button variant="raised" aria-label="Ход назад" disabled={step === 0} onClick={() => onStep(step - 1)}>
+        <Button variant="raised" aria-label={t.review.prevMove} disabled={step === 0} onClick={() => onStep(step - 1)}>
           ←
         </Button>
         <Button variant="raised" onClick={onTogglePlay}>
-          {playing ? "Пауза" : step >= line.length ? "Сначала" : "Проиграть"}
+          {playing ? t.review.pause : step >= line.length ? t.review.replay : t.review.play}
         </Button>
         <Button
           variant="raised"
-          aria-label="Ход вперёд"
+          aria-label={t.review.nextMove}
           disabled={step >= line.length}
           onClick={() => onStep(step + 1)}
         >
@@ -192,19 +197,17 @@ export function RetryPanel({
   onShowLine: () => void;
   onClose: () => void;
 }) {
-  const side = ply.color === "white" ? "белых" : "чёрных";
+  const { t } = useI18n();
   return (
     <div className="flex flex-col gap-3">
-      <ModeHeader title="Найдите лучший ход" onClose={onClose} />
+      <ModeHeader title={t.review.findBest} onClose={onClose} />
       <CoachBubble>
         <span role="status">
-          {status === "waiting" && (
-            <>Ход {side}. В партии было {ply.san} — найдите сильнее: перетащите фигуру или кликните по клеткам.</>
-          )}
-          {status === "wrong" && <>Не лучший ход. Попробуйте ещё раз.</>}
+          {status === "waiting" && t.review.retryWaiting(ply.color, ply.san)}
+          {status === "wrong" && t.review.retryWrong}
           {status === "solved" && (
             <>
-              Верно: <span className="font-extrabold">{ply.move?.best_san}</span>.
+              {t.review.retrySolved} <span className="font-extrabold">{ply.move?.best_san}</span>.
             </>
           )}
         </span>
@@ -212,11 +215,11 @@ export function RetryPanel({
       <div>
         {status === "solved" ? (
           <Button variant="raised" onClick={onShowLine}>
-            Показать линию
+            {t.review.showLine}
           </Button>
         ) : (
           <Button variant="raised" onClick={onShowAnswer}>
-            Показать ответ
+            {t.review.showAnswer}
           </Button>
         )}
       </div>

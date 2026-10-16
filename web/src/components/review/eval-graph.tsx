@@ -1,9 +1,10 @@
 "use client";
 
 import { Area, AreaChart, ReferenceLine, Tooltip, XAxis, YAxis, type TooltipContentProps } from "recharts";
-import { CLASS_META, displayClass, type ClassKey } from "@/lib/classes";
+import { CLASS_COLORS, displayClass, type ClassKey } from "@/lib/classes";
 import { moveNumber, type Ply } from "@/lib/chess";
 import { formatEval, whiteWinPercent, type WhiteEval } from "@/lib/eval";
+import { useI18n } from "@/lib/i18n/use-i18n";
 
 type Point = { index: number; white: number; label: string; eval: string; mark: ClassKey | null };
 
@@ -28,13 +29,14 @@ export function EvalGraph({
   /** Прорисовать график слева направо при появлении (обзор партии). */
   draw?: boolean;
 }) {
+  const { t } = useI18n();
   const data: Point[] = evals.map((evaluation, index) => {
     const ply = index > 0 ? plies[index - 1] : null;
     const value = ply?.move ? displayClass(ply.move) : null;
     return {
       index,
       white: whiteWinPercent(evaluation),
-      label: ply ? `${moveNumber(ply)} ${ply.san}` : "Начало",
+      label: ply ? `${moveNumber(ply)} ${ply.san}` : t.review.graphStart,
       eval: formatEval(evaluation),
       mark: value && MARKED.includes(value) ? value : null,
     };
@@ -84,7 +86,7 @@ function renderDot(props: { cx?: number; cy?: number; payload?: Point; index?: n
       cx={cx}
       cy={cy}
       r={4}
-      fill={CLASS_META[payload.mark].color}
+      fill={CLASS_COLORS[payload.mark]}
       stroke="none"
     />
   );

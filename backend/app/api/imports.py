@@ -3,10 +3,12 @@
 import uuid
 
 import structlog
-from fastapi import APIRouter, HTTPException, Response, status
+from fastapi import APIRouter, Response, status
 from sqlalchemy import func, select
 
 from app.api.deps import ArqDep, CurrentUser, SessionDep
+from app.api.errors import ApiError, ErrorCode
+from app.api.ratelimit import UserLimiter, UserLimiterDep
 from app.api.schemas import ChessComImportIn, ImportJobOut, LichessImportIn
 from app.db.models import GameSource, ImportJob, ImportStatus, User
 from app.workers.imports import enqueue_import
@@ -20,9 +22,11 @@ ACTIVE = (ImportStatus.QUEUED, ImportStatus.RUNNING)
 async def _start_import(
     session: SessionDep,
     arq: ArqDep,
+    *,
     user: User,
     response: Response,
     job: ImportJob,
+    limiter: UserLimiter,
 ) -> ImportJobOut:
     """Ставит импорт в очередь. Если импорт того же ника с той же площадки уже
     в очереди или идёт — возвращает его (200), новый не создаётся."""
@@ -47,6 +51,8 @@ async def _start_import(
         response.status_code = status.HTTP_200_OK
         return ImportJobOut.model_validate(existing)
 
+    # Лимит — только на новый импорт: повторный клик возвращает идущий.
+    await limiter.hit("import")
     session.add(job)
     await session.commit()
     try:
@@ -55,9 +61,12 @@ async def _start_import(
         log.exception("import.enqueue_failed", import_id=str(job.id))
         job.status = ImportStatus.FAILED
         job.error = "Не удалось поставить импорт в очередь"
+        job.error_code = ErrorCode.ENQUEUE_FAILED
         await session.commit()
-        raise HTTPException(
-            status.HTTP_503_SERVICE_UNAVAILABLE, "Очередь импорта недоступна"
+        raise ApiError(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            ErrorCode.QUEUE_UNAVAILABLE,
+            "Очередь импорта недоступна",
         ) from exc
     await session.refresh(job)
     return ImportJobOut.model_validate(job)
@@ -66,31 +75,35 @@ async def _start_import(
 @router.post("/imports/lichess", status_code=status.HTTP_202_ACCEPTED)
 async def import_lichess(
     body: LichessImportIn,
+    *,
     session: SessionDep,
     arq: ArqDep,
     user: CurrentUser,
+    limiter: UserLimiterDep,
     response: Response,
 ) -> ImportJobOut:
     """Импорт последних `max` партий пользователя Lichess (в фоне)."""
     job = ImportJob(
         user_id=user.id, source=GameSource.LICHESS, username=body.username, max_games=body.max
     )
-    return await _start_import(session, arq, user, response, job)
+    return await _start_import(session, arq, user=user, response=response, job=job, limiter=limiter)
 
 
 @router.post("/imports/chesscom", status_code=status.HTTP_202_ACCEPTED)
 async def import_chesscom(
     body: ChessComImportIn,
+    *,
     session: SessionDep,
     arq: ArqDep,
     user: CurrentUser,
+    limiter: UserLimiterDep,
     response: Response,
 ) -> ImportJobOut:
     """Импорт партий пользователя Chess.com за `months` последних месяцев (в фоне)."""
     job = ImportJob(
         user_id=user.id, source=GameSource.CHESSCOM, username=body.username, months=body.months
     )
-    return await _start_import(session, arq, user, response, job)
+    return await _start_import(session, arq, user=user, response=response, job=job, limiter=limiter)
 
 
 @router.get("/imports/{job_id}")
@@ -100,5 +113,5 @@ async def get_import(job_id: uuid.UUID, session: SessionDep, user: CurrentUser) 
         select(ImportJob).where(ImportJob.id == job_id, ImportJob.user_id == user.id)
     )
     if job is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Импорт не найден")
+        raise ApiError(status.HTTP_404_NOT_FOUND, ErrorCode.IMPORT_NOT_FOUND, "Импорт не найден")
     return ImportJobOut.model_validate(job)

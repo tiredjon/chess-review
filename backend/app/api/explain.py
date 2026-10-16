@@ -3,11 +3,13 @@
 
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Body, HTTPException, Query, status
+from fastapi import APIRouter, Body, Query, status
 from sqlalchemy import select
 
 from app.api.analyses import OwnedAnalysis
 from app.api.deps import CurrentUser, ExplainerDep, SessionDep
+from app.api.errors import ApiError, ErrorCode
+from app.api.ratelimit import LimitLLM
 from app.api.schemas import ExplainIn, ExplainLang, MoveExplanationOut, SummaryOut
 from app.db.models import Analysis, AnalysisStatus, Game, Move, User
 from app.explain.facts import GameInfo, is_explained
@@ -21,7 +23,7 @@ def _lang(requested: ExplainLang | None, user: User) -> ExplainLang:
     return "en" if user.lang == "en" else "ru"
 
 
-@router.post("/moves/{move_id}/explain")
+@router.post("/moves/{move_id}/explain", dependencies=[LimitLLM])
 async def explain_move(
     move_id: int,
     session: SessionDep,
@@ -37,7 +39,7 @@ async def explain_move(
         .where(Move.id == move_id, Game.user_id == user.id)
     )
     if move is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Ход не найден")
+        raise ApiError(status.HTTP_404_NOT_FOUND, ErrorCode.MOVE_NOT_FOUND, "Ход не найден")
     # Не держать соединение, пока ждём LLM.
     await session.close()
     result = await explainer.explain_move(move, _lang(body.lang if body else None, user))
@@ -52,14 +54,16 @@ async def explain_move(
 
 async def _done_moves(session: SessionDep, analysis: Analysis) -> list[Move]:
     if analysis.status != AnalysisStatus.DONE:
-        raise HTTPException(status.HTTP_409_CONFLICT, "Анализ ещё не готов")
+        raise ApiError(
+            status.HTTP_409_CONFLICT, ErrorCode.ANALYSIS_NOT_READY, "Анализ ещё не готов"
+        )
     moves = await session.scalars(
         select(Move).where(Move.analysis_id == analysis.id).order_by(Move.ply)
     )
     return list(moves)
 
 
-@router.post("/analyses/{analysis_id}/explanations")
+@router.post("/analyses/{analysis_id}/explanations", dependencies=[LimitLLM])
 async def explain_analysis(
     analysis: OwnedAnalysis,
     session: SessionDep,
@@ -90,7 +94,7 @@ def _shown_accuracy(*candidates: float | None) -> float | None:
     return next((value for value in candidates if value is not None), None)
 
 
-@router.get("/analyses/{analysis_id}/summary")
+@router.get("/analyses/{analysis_id}/summary", dependencies=[LimitLLM])
 async def analysis_summary(
     analysis: OwnedAnalysis,
     session: SessionDep,

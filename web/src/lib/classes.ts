@@ -1,24 +1,27 @@
-// Классы ходов (SPEC §4.5): подписи и цвета для доски, списка ходов и графика.
+// Классы ходов (SPEC §4.5): цвета и подписи для доски, списка ходов и графика.
 // Значки — src/components/review/class-badge.tsx.
+import type { Dict } from "./i18n";
 import type { MoveClass, MoveOut } from "./types";
 
 export type ClassKey = MoveClass | "miss";
 
-type ClassMeta = { label: string; plural: string; color: string };
-
-export const CLASS_META: Record<ClassKey, ClassMeta> = {
-  brilliant: { label: "Блестящий", plural: "Блестящие", color: "#1fb5a0" },
-  great: { label: "Отличный", plural: "Отличные", color: "#6f98c2" },
-  best: { label: "Лучший", plural: "Лучшие", color: "#7fb04a" },
-  excellent: { label: "Превосходный", plural: "Превосходные", color: "#7fb04a" },
-  good: { label: "Хороший", plural: "Хорошие", color: "#95b47a" },
-  book: { label: "Теория", plural: "Теория", color: "#c99a72" },
-  forced: { label: "Вынужденный", plural: "Вынужденные", color: "#9a948c" },
-  inaccuracy: { label: "Неточность", plural: "Неточности", color: "#f1c232" },
-  mistake: { label: "Ошибка", plural: "Ошибки", color: "#f59a4c" },
-  miss: { label: "Упущение", plural: "Упущения", color: "#f2705e" },
-  blunder: { label: "Зевок", plural: "Зевки", color: "#e8402e" },
+/** Цвет класса; подписи — `classLabel` / `classPlural` (словарь `common.classes`). */
+export const CLASS_COLORS: Record<ClassKey, string> = {
+  brilliant: "#1fb5a0",
+  great: "#6f98c2",
+  best: "#7fb04a",
+  excellent: "#7fb04a",
+  good: "#95b47a",
+  book: "#c99a72",
+  forced: "#9a948c",
+  inaccuracy: "#f1c232",
+  mistake: "#f59a4c",
+  miss: "#f2705e",
+  blunder: "#e8402e",
 };
+
+export const classLabel = (t: Dict, key: ClassKey) => t.common.classes[key].label;
+export const classPlural = (t: Dict, key: ClassKey) => t.common.classes[key].plural;
 
 /** Порядок строк в таблице классов. */
 export const CLASS_ORDER: ClassKey[] = [
@@ -50,12 +53,7 @@ export const isError = (move: MoveOut) =>
 export const canRetry = (move: MoveOut) =>
   move.best_uci !== null && move.best_uci !== move.uci && (isError(move) || move.is_miss);
 
-export const PHASE_LABELS = {
-  opening: "Дебют",
-  middlegame: "Миттельшпиль",
-  endgame: "Эндшпиль",
-} as const;
-
+/** Подпись фазы — `t.common.phases[phase]`. */
 /** Значок фазы по её точности: как оценка хода (пороги — на глаз, для наглядности). */
 export function phaseClass(accuracy: number): ClassKey {
   if (accuracy >= 90) return "best";

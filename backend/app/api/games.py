@@ -9,11 +9,13 @@ from datetime import datetime
 from typing import Annotated
 
 import structlog
-from fastapi import APIRouter, Body, HTTPException, Query, Response, status
+from fastapi import APIRouter, Body, Query, Response, status
 from sqlalchemy import Select, and_, or_, select
 
 from app.api.analyses import analysis_out, latest_analyses
 from app.api.deps import ArqDep, CurrentUser, RedisDep, SessionDep, SettingsDep
+from app.api.errors import ApiError, ErrorCode
+from app.api.ratelimit import UserLimiterDep, limit_user
 from app.api.schemas import (
     AnalysisOut,
     AnalysisSummary,
@@ -39,7 +41,7 @@ def _game_out(game: Game, analysis: Analysis | None) -> GameOut:
     return result
 
 
-@router.post("/games/pgn")
+@router.post("/games/pgn", dependencies=[limit_user("import")])
 async def import_pgn(body: PgnImportIn, session: SessionDep, user: CurrentUser) -> list[GameOut]:
     """Импорт одной или нескольких партий из PGN. Повторный импорт той же партии
     возвращает уже сохранённую."""
@@ -47,7 +49,9 @@ async def import_pgn(body: PgnImportIn, session: SessionDep, user: CurrentUser) 
         # Разбор и поиск дебюта — CPU; первый вызов ещё и грузит базу дебютов.
         parsed = await asyncio.to_thread(parse_pgn, body.pgn)
     except PgnError as exc:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
+        raise ApiError(
+            status.HTTP_422_UNPROCESSABLE_CONTENT, ErrorCode(exc.code), str(exc), params=exc.params
+        ) from exc
     games = await save_games(session, user, GameSource.PGN, parsed)
     await session.commit()
     latest = await latest_analyses(session, [game.id for game in games])
@@ -66,7 +70,9 @@ def decode_cursor(cursor: str) -> tuple[datetime | None, uuid.UUID]:
         played = datetime.fromisoformat(payload["p"]) if payload["p"] is not None else None
         return played, uuid.UUID(payload["id"])
     except (binascii.Error, ValueError, KeyError, TypeError) as exc:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Некорректный cursor") from exc
+        raise ApiError(
+            status.HTTP_422_UNPROCESSABLE_CONTENT, ErrorCode.INVALID_CURSOR, "Некорректный cursor"
+        ) from exc
 
 
 def _after_cursor(stmt: Select[Game], cursor: str) -> Select[Game]:
@@ -113,7 +119,7 @@ async def _owned_game(
     stmt = select(Game).where(Game.id == game_id, Game.user_id == user.id)
     game = await session.scalar(stmt.with_for_update() if lock else stmt)
     if game is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Партия не найдена")
+        raise ApiError(status.HTTP_404_NOT_FOUND, ErrorCode.GAME_NOT_FOUND, "Партия не найдена")
     return game
 
 
@@ -138,6 +144,7 @@ async def analyze_game(
     arq: ArqDep,
     user: CurrentUser,
     settings: SettingsDep,
+    limiter: UserLimiterDep,
     response: Response,
     body: Annotated[AnalyzeIn | None, Body()] = None,
 ) -> AnalysisOut:
@@ -164,6 +171,8 @@ async def analyze_game(
         response.status_code = status.HTTP_200_OK
         return await analysis_out(session, arq, existing)
 
+    # Лимит — только на новый анализ: открыть уже идущий или готовый можно всегда.
+    await limiter.hit("analyze")
     analysis = Analysis(game_id=game.id, depth=depth, status=AnalysisStatus.QUEUED)
     session.add(analysis)
     await session.commit()
@@ -173,9 +182,12 @@ async def analyze_game(
         log.exception("analysis.enqueue_failed", analysis_id=str(analysis.id))
         analysis.status = AnalysisStatus.FAILED
         analysis.error = "Не удалось поставить анализ в очередь"
+        analysis.error_code = ErrorCode.ENQUEUE_FAILED
         await session.commit()
-        raise HTTPException(
-            status.HTTP_503_SERVICE_UNAVAILABLE, "Очередь анализа недоступна"
+        raise ApiError(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            ErrorCode.QUEUE_UNAVAILABLE,
+            "Очередь анализа недоступна",
         ) from exc
     await session.refresh(analysis)
     return await analysis_out(session, arq, analysis)

@@ -9,6 +9,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from redis.asyncio import ConnectionPool
 
+from app.api.errors import install_error_handlers
 from app.api.health import router as health_router
 from app.api.router import api_router
 from app.core.config import Settings, get_settings
@@ -50,6 +51,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+        expose_headers=["Retry-After", "x-request-id"],
     )
 
     @app.middleware("http")
@@ -71,6 +73,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
         return response
 
+    install_error_handlers(app)
     app.include_router(health_router)
     app.include_router(api_router)
     return app

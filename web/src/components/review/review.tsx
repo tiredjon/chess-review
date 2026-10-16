@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { api, ApiError } from "@/lib/api";
-import { CLASS_META, displayClass } from "@/lib/classes";
+import { CLASS_COLORS, displayClass } from "@/lib/classes";
 import { boardMoveUci, lineFens, sideToMove, uciSquares, type Ply } from "@/lib/chess";
 import { lineEval, positionEvals, type WhiteEval } from "@/lib/eval";
+import { useI18n } from "@/lib/i18n/use-i18n";
 import { threats } from "@/lib/threats";
 import { playMove, playSound, preloadSounds, toggleMuted, useSoundMuted } from "@/lib/sounds";
 import type { Color, LineMove } from "@/lib/types";
@@ -16,11 +17,14 @@ import { ClassBadge } from "./class-badge";
 import { MoveList } from "./move-list";
 import { LinePanel, MovePanel, RetryPanel, type Explanation, type LineKind, type RetryStatus } from "./move-panel";
 
+// Заголовок линии — ключ словаря: текст берётся при показе, на текущем языке.
+type LineTitle = "bestLine" | "continuation" | "refutation";
+
 type Mode =
   | { kind: "game" }
   | {
       kind: "line";
-      title: string;
+      title: LineTitle;
       baseFen: string;
       fens: string[];
       line: LineMove[];
@@ -56,7 +60,7 @@ function moveMarks(ply: Ply): BoardMarks {
   }));
   if (!move) return { key, arrows, highlights: { [from]: LAST_MOVE, [to]: LAST_MOVE }, badge: null };
   const value = displayClass(move);
-  const color = CLASS_META[value].color;
+  const color = CLASS_COLORS[value];
   // Лучший ход — синей стрелкой, если сыграно другое; сыгранный виден по подсветке и значку.
   if (move.best_uci && move.best_uci !== move.uci && !["book", "forced"].includes(move.class)) {
     const best = uciSquares(move.best_uci);
@@ -99,14 +103,16 @@ export function Review({
   /** Обзор партии (итог, точность, классы), когда анализ готов. */
   overview: ReactNode;
 }) {
+  const { t, lang } = useI18n();
   const [cursor, setCursor] = useState(initialCursor);
   // Панель: обзор партии или разбор по ходам (как «Начать разбор»).
   const [view, setView] = useState<"overview" | "moves">(initialCursor > 0 ? "moves" : "overview");
   const [mode, setMode] = useState<Mode>(GAME);
   const [playing, setPlaying] = useState(false);
   const [orientation, setOrientation] = useState<Color>(initialOrientation);
-  const [explanations, setExplanations] = useState<Record<number, Explanation>>({});
-  const requested = useRef(new Set<number>());
+  // Объяснения приходят на языке профиля: ключ — `язык:id хода`, после смены языка — запрос заново.
+  const [explanations, setExplanations] = useState<Record<string, Explanation>>({});
+  const requested = useRef(new Set<string>());
 
   const analysed = plies.length > 0 && plies.every((ply) => ply.move !== null);
   const evals = useMemo(
@@ -143,21 +149,24 @@ export function Review({
 
   // Ленивая загрузка объяснения текущего хода; при быстром листании — только последнего.
   const currentMoveId = mode.kind === "game" ? (current?.move?.id ?? null) : null;
+  const unavailable = t.review.explanationUnavailable;
   useEffect(() => {
-    if (currentMoveId === null || requested.current.has(currentMoveId)) return;
+    if (currentMoveId === null) return;
+    const key = `${lang}:${currentMoveId}`;
+    if (requested.current.has(key)) return;
     const timer = setTimeout(() => {
-      requested.current.add(currentMoveId);
+      requested.current.add(key);
       api
         .explainMove(currentMoveId)
-        .then((result) => setExplanations((prev) => ({ ...prev, [currentMoveId]: { text: result.text } })))
+        .then((result) => setExplanations((prev) => ({ ...prev, [key]: { text: result.text } })))
         .catch((err) => {
-          requested.current.delete(currentMoveId);
-          const error = err instanceof ApiError ? err.message : "Объяснение недоступно";
-          setExplanations((prev) => ({ ...prev, [currentMoveId]: { error } }));
+          requested.current.delete(key);
+          const error = err instanceof ApiError ? err.message : unavailable;
+          setExplanations((prev) => ({ ...prev, [key]: { error } }));
         });
     }, EXPLAIN_DELAY_MS);
     return () => clearTimeout(timer);
-  }, [currentMoveId]);
+  }, [currentMoveId, lang, unavailable]);
 
   // Звук шага по линии (проигрывание и ручные шаги).
   const lineKey = mode.kind === "line" ? `${mode.baseFen}|${mode.title}` : null;
@@ -200,7 +209,7 @@ export function Review({
       const best = move.multipv?.[0];
       setMode({
         kind: "line",
-        title: kind === "best" ? (move.best_uci === move.uci ? "Продолжение" : "Лучшая линия") : "Чем наказывается",
+        title: kind === "best" ? (move.best_uci === move.uci ? "continuation" : "bestLine") : "refutation",
         baseFen,
         fens,
         line: line.slice(0, fens.length - 1),
@@ -335,7 +344,7 @@ export function Review({
       marks = {
         key: `retry-${mode.plyIndex}-solved`,
         arrows: [],
-        highlights: { [from]: alpha(CLASS_META.best.color, "88"), [to]: alpha(CLASS_META.best.color, "bb") },
+        highlights: { [from]: alpha(CLASS_COLORS.best, "88"), [to]: alpha(CLASS_COLORS.best, "bb") },
         badge: { square: to, value: "best" },
       };
     }
@@ -345,7 +354,7 @@ export function Review({
   if (mode.kind === "line") {
     panel = (
       <LinePanel
-        title={mode.title}
+        title={t.review[mode.title]}
         baseFen={mode.baseFen}
         line={mode.line}
         step={mode.step}
@@ -382,7 +391,7 @@ export function Review({
       <MovePanel
         key={current?.index ?? "start"}
         ply={current}
-        explanation={current?.move ? explanations[current.move.id] : undefined}
+        explanation={current?.move ? explanations[`${lang}:${current.move.id}`] : undefined}
         onShowLine={showLine}
         onRetry={startRetry}
       />
@@ -422,7 +431,7 @@ export function Review({
       </div>
 
       <section
-        aria-label="Разбор партии"
+        aria-label={t.review.title}
         className="flex min-w-0 flex-col rounded-xl bg-panel lg:h-0 lg:min-h-[max(100%,calc(100dvh-2rem))] lg:overflow-hidden"
       >
         <header className="flex items-center gap-3 rounded-t-xl border-b border-line bg-sunken/60 px-4 py-3">
@@ -434,8 +443,8 @@ export function Review({
                 setPlaying(false);
                 setView("overview");
               }}
-              aria-label="К обзору партии"
-              title="К обзору партии"
+              aria-label={t.review.toOverview}
+              title={t.review.toOverview}
               className="flex h-9 w-9 items-center justify-center rounded-lg text-soft hover:bg-raised hover:text-ink"
             >
               <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5">
@@ -446,7 +455,7 @@ export function Review({
           <div className="min-w-0 flex-1">
             <h2 className="flex items-center gap-2 text-lg font-extrabold">
               <ClassBadge value="best" size={22} title={false} />
-              Разбор партии
+              {t.review.title}
             </h2>
             <p className="truncate text-xs font-semibold text-muted">{subtitle}</p>
           </div>
@@ -454,8 +463,8 @@ export function Review({
             type="button"
             onClick={toggleMuted}
             aria-pressed={muted}
-            aria-label={muted ? "Включить звук (M)" : "Выключить звук (M)"}
-            title={muted ? "Включить звук (M)" : "Выключить звук (M)"}
+            aria-label={muted ? t.review.soundOn : t.review.soundOff}
+            title={muted ? t.review.soundOn : t.review.soundOff}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-soft hover:bg-raised hover:text-ink"
           >
             <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -474,7 +483,7 @@ export function Review({
             {/* На телефоне главная кнопка и навигация липнут к низу экрана. */}
             <div className="sticky bottom-0 rounded-b-xl border-t border-line bg-panel p-4 lg:static">
               <Button size="lg" className="w-full" onClick={() => goTo(Math.max(cursor, 1))}>
-                Начать разбор
+                {t.review.startReview}
               </Button>
             </div>
           </>
@@ -535,18 +544,19 @@ function NavBar({
   onGo: (index: number) => void;
   onFlip: () => void;
 }) {
+  const { t } = useI18n();
   const buttons: [keyof typeof NAV_ICONS, string, () => void, boolean][] = [
-    ["first", "К началу (↑)", () => onGo(0), cursor === 0],
-    ["prev", "Ход назад (←)", () => onGo(cursor - 1), cursor === 0],
-    ["next", "Ход вперёд (→)", () => onGo(cursor + 1), cursor >= total],
-    ["last", "К концу (↓)", () => onGo(total), cursor >= total],
-    ["flip", "Перевернуть доску (F)", onFlip, false],
+    ["first", t.review.navFirst, () => onGo(0), cursor === 0],
+    ["prev", t.review.navPrev, () => onGo(cursor - 1), cursor === 0],
+    ["next", t.review.navNext, () => onGo(cursor + 1), cursor >= total],
+    ["last", t.review.navLast, () => onGo(total), cursor >= total],
+    ["flip", t.review.navFlip, onFlip, false],
   ];
   return (
     <div
       className="sticky bottom-0 grid grid-cols-[1fr_1fr_1.4fr_1fr_0.8fr] gap-1.5 rounded-b-xl border-t border-line bg-panel p-3 lg:static"
       role="toolbar"
-      aria-label="Навигация по ходам"
+      aria-label={t.review.navLabel}
     >
       {buttons.map(([icon, label, action, disabled]) => (
         <button

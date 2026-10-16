@@ -16,6 +16,7 @@ from sqlalchemy import delete, insert, update
 from sqlalchemy.orm import selectinload
 
 from app.core.config import Settings
+from app.core.errors import ErrorCode
 from app.db.models import Analysis, AnalysisStatus, Move
 from app.db.session import Database
 from app.engine.analyzer import Analyzer, PositionEngine
@@ -64,6 +65,7 @@ async def analyze_game(ctx: dict[str, Any], analysis_id: str) -> str:
         analysis.started_at = datetime.now(UTC)
         analysis.finished_at = None
         analysis.error = None
+        analysis.error_code = None
         analysis.engine_version = ctx["engine_version"]
         pgn, depth = analysis.game.pgn, analysis.depth
         await session.commit()
@@ -86,12 +88,14 @@ async def analyze_game(ctx: dict[str, Any], analysis_id: str) -> str:
     except asyncio.CancelledError:
         # Таймаут задачи или остановка воркера: без этого анализ навсегда остался бы running.
         reporter.cancel()
-        await asyncio.shield(_fail(db, redis, analysis_uuid, "Анализ прерван"))
+        await asyncio.shield(
+            _fail(db, redis, analysis_uuid, "Анализ прерван", ErrorCode.INTERRUPTED)
+        )
         raise
     except Exception as exc:
         log_.exception("analysis.failed")
         reporter.cancel()
-        await _fail(db, redis, analysis_uuid, f"{type(exc).__name__}: {exc}")
+        await _fail(db, redis, analysis_uuid, f"{type(exc).__name__}: {exc}", ErrorCode.INTERNAL)
         return "failed"
 
     await publish(
@@ -134,15 +138,26 @@ async def _save_review(db: Database, analysis_id: uuid.UUID, review: GameReview)
         await session.commit()
 
 
-async def _fail(db: Database, redis: Redis, analysis_id: uuid.UUID, error: str) -> None:
+async def _fail(
+    db: Database, redis: Redis, analysis_id: uuid.UUID, error: str, code: ErrorCode
+) -> None:
     error = error[:ERROR_MAX_LEN]
     async with db.sessionmaker() as session:
         await session.execute(
             update(Analysis)
             .where(Analysis.id == analysis_id)
-            .values(status=AnalysisStatus.FAILED, error=error, finished_at=datetime.now(UTC))
+            .values(
+                status=AnalysisStatus.FAILED,
+                error=error,
+                error_code=code,
+                finished_at=datetime.now(UTC),
+            )
         )
         await session.commit()
     # Статус уже в БД; SSE-клиент без события увидит его при следующей проверке.
     with contextlib.suppress(Exception):
-        await publish(redis, analysis_id, ProgressEvent(status=AnalysisStatus.FAILED, error=error))
+        await publish(
+            redis,
+            analysis_id,
+            ProgressEvent(status=AnalysisStatus.FAILED, error=error, error_code=code),
+        )

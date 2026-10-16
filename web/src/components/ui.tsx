@@ -54,6 +54,10 @@ export function Panel({ title, children, className = "", aside }: { title?: Reac
   );
 }
 
+/** Поле ввода в тёмной теме (импорт, вход, профиль). */
+export const fieldClass =
+  "w-full rounded-lg border border-line bg-sunken px-3 py-2.5 text-base text-ink placeholder:text-muted focus:border-green focus:outline-none";
+
 export function ErrorText({ children }: { children: ReactNode }) {
   if (!children) return null;
   return (

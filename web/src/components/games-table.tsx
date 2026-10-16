@@ -1,6 +1,9 @@
+"use client";
+
 import Link from "next/link";
 import { shownAccuracy } from "@/lib/accuracy";
-import { formatDate, formatTimeControl, gameHref, outcome, OUTCOME_LABELS, score, SOURCE_NAMES } from "@/lib/format";
+import { formatDate, formatTimeControl, gameHref, outcome, score, SOURCE_NAMES } from "@/lib/format";
+import { useI18n } from "@/lib/i18n/use-i18n";
 import type { Color, GameOut } from "@/lib/types";
 import { ColorSquare } from "./player-avatar";
 
@@ -9,21 +12,23 @@ const GRID =
 
 /** «История партий»: строка — ссылка на разбор (без анализа — с его запуском). */
 export function GamesTable({ games }: { games: GameOut[] }) {
+  const { t } = useI18n();
+  const copy = t.home.table;
   return (
-    <div role="table" aria-label="История партий" className="text-[15px]">
+    <div role="table" aria-label={copy.label} className="text-[15px]">
       <div role="row" className={`${GRID} border-b border-line px-3 pb-2 text-xs font-semibold text-muted`}>
         <span role="columnheader" className="hidden sm:block">
-          Контроль
+          {copy.timeControl}
         </span>
-        <span role="columnheader">Игроки</span>
+        <span role="columnheader">{copy.players}</span>
         <span role="columnheader" className="text-center">
-          Результат
+          {copy.result}
         </span>
         <span role="columnheader" className="text-center">
-          Точность
+          {copy.accuracy}
         </span>
         <span role="columnheader" className="hidden text-right sm:block">
-          Дата
+          {copy.date}
         </span>
       </div>
       {games.map((game) => (
@@ -34,6 +39,7 @@ export function GamesTable({ games }: { games: GameOut[] }) {
 }
 
 function GameRow({ game }: { game: GameOut }) {
+  const { t, lang } = useI18n();
   const result = outcome(game);
   return (
     <Link
@@ -43,13 +49,13 @@ function GameRow({ game }: { game: GameOut }) {
     >
       <span role="cell" className="hidden flex-col items-center gap-0.5 text-center sm:flex">
         <ClockIcon />
-        <span className="text-xs font-semibold text-soft">{formatTimeControl(game.time_control) ?? "—"}</span>
+        <span className="text-xs font-semibold text-soft">{formatTimeControl(game.time_control, t) ?? "—"}</span>
       </span>
       <span role="cell" className="flex min-w-0 flex-col gap-1">
         <Player game={game} color="white" />
         <Player game={game} color="black" />
         <span className="truncate text-xs text-muted sm:hidden">
-          {[SOURCE_NAMES[game.source], formatDate(game.played_at)].filter(Boolean).join(", ")}
+          {[SOURCE_NAMES[game.source], formatDate(game.played_at, lang)].filter(Boolean).join(", ")}
         </span>
       </span>
       <span role="cell" className="flex items-center justify-center gap-2">
@@ -63,7 +69,7 @@ function GameRow({ game }: { game: GameOut }) {
         <Accuracy game={game} />
       </span>
       <span role="cell" className="hidden text-right text-sm font-medium text-soft sm:block">
-        {formatDate(game.played_at) ?? "—"}
+        {formatDate(game.played_at, lang) ?? "—"}
         <span className="block text-xs text-muted">{SOURCE_NAMES[game.source]}</span>
       </span>
     </Link>
@@ -85,6 +91,7 @@ function Player({ game, color }: { game: GameOut; color: Color }) {
 }
 
 function Accuracy({ game }: { game: GameOut }) {
+  const { t } = useI18n();
   const analysis = game.analysis;
   const white = shownAccuracy(game, "white");
   const black = shownAccuracy(game, "black");
@@ -92,7 +99,7 @@ function Accuracy({ game }: { game: GameOut }) {
     return (
       <span
         className="flex flex-col text-center font-semibold leading-6 text-soft"
-        title={white.official ? "Точность по данным Chess.com" : "Точность"}
+        title={white.official ? t.home.table.officialAccuracy : t.home.table.accuracy}
       >
         <span>{white.value.toFixed(1)}</span>
         <span>{black.value.toFixed(1)}</span>
@@ -102,22 +109,24 @@ function Accuracy({ game }: { game: GameOut }) {
   if (!analysis || analysis.status === "failed") {
     return (
       <span className="rounded-md bg-raised px-2.5 py-1.5 text-sm font-bold text-soft shadow-[0_2px_0_0_rgba(0,0,0,0.35)]">
-        Разбор
+        {t.home.table.review}
       </span>
     );
   }
-  return <span className="text-xs font-semibold text-muted">Анализ…</span>;
+  return <span className="text-xs font-semibold text-muted">{t.home.table.analyzing}</span>;
 }
 
 function OutcomeIcon({ outcome: value }: { outcome: NonNullable<ReturnType<typeof outcome>> }) {
+  const { t } = useI18n();
+  const label = t.common.outcome[value];
   const look = {
     win: ["bg-green", "M5 10h10M10 5v10"],
     loss: ["bg-[#e8402e]", "M5 10h10"],
     draw: ["bg-muted", "M5 7.5h10M5 12.5h10"],
   }[value];
   return (
-    <span title={OUTCOME_LABELS[value]} className={`flex h-5 w-5 items-center justify-center rounded ${look[0]}`}>
-      <svg role="img" aria-label={OUTCOME_LABELS[value]} viewBox="0 0 20 20" className="h-3.5 w-3.5">
+    <span title={label} className={`flex h-5 w-5 items-center justify-center rounded ${look[0]}`}>
+      <svg role="img" aria-label={label} viewBox="0 0 20 20" className="h-3.5 w-3.5">
         <path d={look[1]} stroke="white" strokeWidth="3" strokeLinecap="round" />
       </svg>
     </span>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { CLASS_META, displayClass, NOTABLE } from "@/lib/classes";
+import { CLASS_COLORS, displayClass, NOTABLE } from "@/lib/classes";
 import type { Ply } from "@/lib/chess";
 import type { PieceCode } from "@/lib/theme";
 import type { Color } from "@/lib/types";
@@ -116,7 +116,7 @@ function MoveCell({ ply, cursor, onSelect }: { ply: Ply | null; cursor: number; 
       className={`my-0.5 mr-1 flex items-center gap-1.5 rounded-md px-1.5 py-1 text-left ${
         current ? "bg-raised-hover shadow-[0_2px_0_0_rgba(0,0,0,0.4)]" : "hover:bg-raised/60"
       }`}
-      style={notable ? { color: CLASS_META[value].color } : { color: "var(--soft)" }}
+      style={notable ? { color: CLASS_COLORS[value] } : { color: "var(--soft)" }}
     >
       <span className="flex w-[22px] justify-center">{notable && <ClassBadge value={value} size={22} />}</span>
       <span className="whitespace-nowrap">

@@ -14,16 +14,23 @@ import httpx
 import structlog
 
 from app.core.config import Settings
+from app.core.errors import ErrorCode
 
 log = structlog.get_logger(__name__)
 
 
 class SourceError(Exception):
-    """Источник не отдал партии. Текст показывается пользователю в статусе импорта."""
+    """Источник не отдал партии. Текст — подробности в статусе импорта, `code` —
+    для интерфейса (`app/core/errors.py`)."""
+
+    def __init__(self, message: str, code: ErrorCode = ErrorCode.SOURCE_BAD_RESPONSE) -> None:
+        super().__init__(message)
+        self.code = code
 
 
 class UserNotFoundError(SourceError):
-    pass
+    def __init__(self, message: str) -> None:
+        super().__init__(message, ErrorCode.SOURCE_USER_NOT_FOUND)
 
 
 @dataclass(frozen=True, slots=True)
@@ -69,16 +76,19 @@ async def get_with_retry(
             response = await http.get(url, params=params, headers=headers)
         except httpx.TransportError as exc:
             problem, wait = f"{source} недоступен ({type(exc).__name__})", backoff
+            code = ErrorCode.SOURCE_UNAVAILABLE
         else:
             if response.status_code == httpx.codes.TOO_MANY_REQUESTS:
                 problem = f"{source}: превышен лимит запросов"
                 wait = _retry_after(response) or policy.rate_limit_wait_s
+                code = ErrorCode.SOURCE_RATE_LIMITED
             elif response.status_code >= 500:
                 problem, wait = f"{source}: ошибка сервера {response.status_code}", backoff
+                code = ErrorCode.SOURCE_UNAVAILABLE
             else:
                 return response
         if attempt == policy.attempts:
-            raise SourceError(problem)
+            raise SourceError(problem, code)
         log.warning("import.http_retry", url=url, problem=problem, attempt=attempt, wait_s=wait)
         await policy.sleep(wait)
     raise AssertionError("unreachable")  # pragma: no cover

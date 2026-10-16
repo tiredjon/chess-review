@@ -5,12 +5,13 @@ from datetime import UTC, datetime
 from typing import Annotated
 
 import chess
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Query, status
 from sqlalchemy import and_, case, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 
 from app.api.deps import CurrentUser, SessionDep
+from app.api.errors import ApiError, ErrorCode
 from app.api.schemas import (
     AttemptIn,
     AttemptOut,
@@ -163,11 +164,13 @@ async def attempt_puzzle(
         select(Puzzle).where(Puzzle.id == puzzle_id, Puzzle.user_id == user.id).with_for_update()
     )
     if puzzle is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Пазл не найден")
+        raise ApiError(status.HTTP_404_NOT_FOUND, ErrorCode.PUZZLE_NOT_FOUND, "Пазл не найден")
     try:
         check = check_attempt(puzzle.fen, puzzle.solution_uci, body.moves_uci, gave_up=body.gave_up)
     except AttemptError as exc:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
+        raise ApiError(
+            status.HTTP_422_UNPROCESSABLE_CONTENT, ErrorCode.PUZZLE_ATTEMPT_INVALID, str(exc)
+        ) from exc
     if check.result == "continue":
         await session.rollback()
         return AttemptOut(result="continue", reply_uci=check.reply)

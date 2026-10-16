@@ -59,12 +59,35 @@ class User(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     email: Mapped[str] = mapped_column(String(320), unique=True)
+    # argon2; None — войти нельзя (dev-пользователь до регистрации владельца).
+    password_hash: Mapped[str | None] = mapped_column(String(255))
     lichess_username: Mapped[str | None] = mapped_column(String(64))
     chesscom_username: Mapped[str | None] = mapped_column(String(64))
     lang: Mapped[str] = mapped_column(String(8), default="ru", server_default="ru")
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
     games: Mapped[list["Game"]] = relationship(back_populates="user", passive_deletes=True)
+
+
+class RefreshToken(Base):
+    """Refresh-токен (в cookie — сам токен, здесь — его sha256). Токены одного входа
+    образуют цепочку `family_id`: обновление заменяет токен следующим, выход и повтор
+    заменённого токена отзывают всю цепочку."""
+
+    __tablename__ = "refresh_tokens"
+    __table_args__ = (Index("ix_refresh_tokens_family_id", "family_id"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    family_id: Mapped[uuid.UUID]
+    expires_at: Mapped[datetime]
+    # Заменён следующим токеном цепочки (при обновлении).
+    replaced_at: Mapped[datetime | None]
+    revoked_at: Mapped[datetime | None]
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
 
 class Game(Base):
@@ -121,6 +144,8 @@ class Analysis(Base):
     cc_black_accuracy: Mapped[float | None]
     phase_accuracy: Mapped[dict[str, Any] | None]
     error: Mapped[str | None] = mapped_column(Text)
+    # Код ошибки для интерфейса (`app/api/errors.py`); `error` — подробности.
+    error_code: Mapped[str | None] = mapped_column(String(32))
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
     started_at: Mapped[datetime | None]
     finished_at: Mapped[datetime | None]
@@ -188,6 +213,8 @@ class ImportJob(Base):
     imported: Mapped[int] = mapped_column(default=0, server_default="0")
     skipped: Mapped[int] = mapped_column(default=0, server_default="0")
     error: Mapped[str | None] = mapped_column(Text)
+    # Код ошибки для интерфейса (`app/api/errors.py`); `error` — подробности.
+    error_code: Mapped[str | None] = mapped_column(String(32))
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
     started_at: Mapped[datetime | None]
     finished_at: Mapped[datetime | None]

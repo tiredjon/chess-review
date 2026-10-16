@@ -9,8 +9,8 @@ from typing import Any
 
 import chess
 import pytest
-from asgi_lifespan import LifespanManager
-from httpx import ASGITransport, AsyncClient
+from fastapi import FastAPI
+from httpx import AsyncClient
 from redis.asyncio import Redis
 from sqlalchemy import func, select, update
 
@@ -21,10 +21,10 @@ from app.db.models import Analysis, AnalysisStatus, Game, Move
 from app.db.models import PositionEval as PositionEvalRow
 from app.db.session import Database
 from app.engine.pool import EnginePool
-from app.main import create_app
 from app.review.types import PositionEval
 from app.workers.analysis import analyze_game, job_id
 from app.workers.progress import ProgressEvent, channel, publish
+from tests.conftest import api_client
 from tests.test_analyzer import FakeEngine
 
 pytestmark = pytest.mark.integration
@@ -117,12 +117,10 @@ class BrokenQueue:
 async def test_analyze_reports_unavailable_queue(
     settings: Settings, db: Database, game_id: str
 ) -> None:
-    app = create_app(settings)
-    app.dependency_overrides[get_arq] = BrokenQueue
-    async with (
-        LifespanManager(app) as manager,
-        AsyncClient(transport=ASGITransport(app=manager.app), base_url="http://test") as ac,
-    ):
+    def setup(app: FastAPI) -> None:
+        app.dependency_overrides[get_arq] = BrokenQueue
+
+    async with api_client(settings, setup=setup) as ac:
         response = await ac.post(f"/api/v1/games/{game_id}/analyze", json={"depth": 6})
 
     assert response.status_code == 503
@@ -266,6 +264,7 @@ async def test_cancelled_job_marks_analysis_failed(
     result = (await client.get(f"/api/v1/analyses/{analysis['id']}")).json()
     assert result["status"] == "failed"
     assert result["error"] == "Анализ прерван"
+    assert result["error_code"] == "interrupted"
 
 
 async def _wait_for_subscriber(redis: Redis, name: str) -> None:
@@ -335,7 +334,7 @@ async def test_events_recheck_database_when_event_is_lost(
             await session.execute(
                 update(Analysis)
                 .where(Analysis.id == analysis_id)
-                .values(status=AnalysisStatus.FAILED, error="boom")
+                .values(status=AnalysisStatus.FAILED, error="boom", error_code="internal")
             )
             await session.commit()
 
@@ -346,6 +345,7 @@ async def test_events_recheck_database_when_event_is_lost(
     events = parse_sse(response.text)
     assert [e["status"] for e in events] == ["queued", "failed"]
     assert events[-1]["error"] == "boom"
+    assert events[-1]["error_code"] == "internal"
 
 
 async def test_worker_with_stockfish(

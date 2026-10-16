@@ -1,5 +1,8 @@
+"use client";
+
 import type { ReactNode } from "react";
-import { CLASS_META, type ClassKey } from "@/lib/classes";
+import { CLASS_COLORS, classLabel, type ClassKey } from "@/lib/classes";
+import { useI18n } from "@/lib/i18n/use-i18n";
 
 // Белые символы на цветном круге, viewBox 0 0 24 24.
 const text = (value: string, size = 13) => (
@@ -53,18 +56,19 @@ export function ClassBadge({
   size?: number | string;
   title?: boolean;
 }) {
-  const meta = CLASS_META[value];
+  const { t } = useI18n();
+  const label = classLabel(t, value);
   return (
     <svg
       role="img"
-      aria-label={meta.label}
+      aria-label={label}
       viewBox="0 0 24 24"
       width={size}
       height={typeof size === "number" ? size : undefined}
       className="block shrink-0"
     >
-      {title && <title>{meta.label}</title>}
-      <circle cx="12" cy="12" r="12" fill={meta.color} />
+      {title && <title>{label}</title>}
+      <circle cx="12" cy="12" r="12" fill={CLASS_COLORS[value]} />
       {GLYPHS[value]}
     </svg>
   );

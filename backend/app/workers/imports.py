@@ -17,6 +17,7 @@ import structlog
 from sqlalchemy import update
 
 from app.core.config import Settings
+from app.core.errors import ErrorCode
 from app.db.models import GameSource, ImportJob, ImportStatus, User
 from app.db.session import Database
 from app.importers.chesscom import ChessComClient
@@ -78,6 +79,7 @@ async def import_games(ctx: dict[str, Any], import_id: str) -> str:
         job.started_at = datetime.now(UTC)
         job.finished_at = None
         job.error = None
+        job.error_code = None
         job.fetched = job.imported = job.skipped = 0
         await session.commit()
 
@@ -100,15 +102,15 @@ async def import_games(ctx: dict[str, Any], import_id: str) -> str:
                 await session.commit()
         await _finish(db, job, user)
     except asyncio.CancelledError:
-        await asyncio.shield(_fail(db, import_uuid, "Импорт прерван"))
+        await asyncio.shield(_fail(db, import_uuid, "Импорт прерван", ErrorCode.INTERRUPTED))
         raise
     except SourceError as exc:
         log_.warning("import.source_failed", error=str(exc))
-        await _fail(db, import_uuid, str(exc))
+        await _fail(db, import_uuid, str(exc), exc.code)
         return "failed"
     except Exception as exc:
         log_.exception("import.failed")
-        await _fail(db, import_uuid, f"{type(exc).__name__}: {exc}")
+        await _fail(db, import_uuid, f"{type(exc).__name__}: {exc}", ErrorCode.INTERNAL)
         return "failed"
     log_.info("import.done")
     return "done"
@@ -133,7 +135,7 @@ async def _finish(db: Database, job: ImportJob, user: User) -> None:
         await session.commit()
 
 
-async def _fail(db: Database, import_id: uuid.UUID, error: str) -> None:
+async def _fail(db: Database, import_id: uuid.UUID, error: str, code: ErrorCode) -> None:
     async with db.sessionmaker() as session:
         await session.execute(
             update(ImportJob)
@@ -141,6 +143,7 @@ async def _fail(db: Database, import_id: uuid.UUID, error: str) -> None:
             .values(
                 status=ImportStatus.FAILED,
                 error=error[:ERROR_MAX_LEN],
+                error_code=code,
                 finished_at=datetime.now(UTC),
             )
         )

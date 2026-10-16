@@ -3,36 +3,48 @@
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
 import { api, ApiError } from "@/lib/api";
-import { CLASS_META, CLASS_ORDER, PHASE_LABELS, phaseClass, type ClassKey } from "@/lib/classes";
+import { CLASS_COLORS, CLASS_ORDER, classPlural, phaseClass, type ClassKey } from "@/lib/classes";
 import { formatDate } from "@/lib/format";
+import { useI18n } from "@/lib/i18n/use-i18n";
 import { motifName } from "@/lib/motifs";
 import type { GameSource, OpeningStat, Stats, TimeClass } from "@/lib/types";
 import { ClassBadge } from "../review/class-badge";
 import { ColorSquare } from "../player-avatar";
 import { ErrorText, Panel } from "../ui";
-import { AccuracyChart, KIND_LABELS } from "./accuracy-chart";
+import { AccuracyChart } from "./accuracy-chart";
 import { StatsFilters } from "./filters";
 
 type Props = { source: GameSource | null; timeClass: TimeClass | null };
 
+/** Заголовок страницы: в серверной page.tsx текста нет, язык известен только в браузере. */
+export function StatsHeading() {
+  const { t } = useI18n();
+  return <h1 className="text-2xl font-extrabold sm:text-3xl">{t.stats.title}</h1>;
+}
+
 /** Дашборд статистики. Фильтры в URL; при смене фильтра прежние данные остаются (приглушённо). */
 export function StatsDashboard({ source, timeClass }: Props) {
+  const { t } = useI18n();
   // Ответ помнит свой фильтр: пока новый не пришёл, старые данные видны приглушённо.
   const key = `${source ?? ""}|${timeClass ?? ""}`;
-  const [result, setResult] = useState<{ key: string; stats: Stats | null; error: string | null } | null>(null);
+  // `failed` без `error` — неизвестная ошибка: текст по умолчанию берётся при рендере (на текущем языке).
+  const [result, setResult] = useState<{ key: string; stats: Stats | null; failed: boolean; error: string | null } | null>(
+    null,
+  );
 
   useEffect(() => {
     let cancelled = false;
     api
       .stats({ source, timeClass })
-      .then((stats) => !cancelled && setResult({ key, stats, error: null }))
+      .then((stats) => !cancelled && setResult({ key, stats, failed: false, error: null }))
       .catch(
         (err) =>
           !cancelled &&
           setResult((prev) => ({
             key,
             stats: prev?.stats ?? null,
-            error: err instanceof ApiError ? err.message : "Не удалось загрузить статистику",
+            failed: true,
+            error: err instanceof ApiError ? err.message : null,
           })),
       );
     return () => {
@@ -42,7 +54,7 @@ export function StatsDashboard({ source, timeClass }: Props) {
 
   const loading = result?.key !== key;
   const stats = result?.stats ?? null;
-  const error = loading ? null : (result?.error ?? null);
+  const error = loading || !result?.failed ? null : (result.error ?? t.stats.loadError);
   return (
     <div className="flex flex-col gap-5">
       <StatsFilters source={source} timeClass={timeClass} />
@@ -59,19 +71,21 @@ export function StatsDashboard({ source, timeClass }: Props) {
 }
 
 function StatsBody({ stats, filtered }: { stats: Stats; filtered: boolean }) {
+  const { t } = useI18n();
+  const { empty } = t.stats;
   const { totals } = stats;
   if (totals.games === 0) {
     return (
       <Panel>
-        <Empty title={filtered ? "Под этот фильтр партий нет" : "Статистики пока нет"}>
+        <Empty title={filtered ? empty.filteredTitle : empty.noneTitle}>
           {filtered ? (
-            "Выберите другой источник или контроль времени."
+            empty.filteredText
           ) : (
             <>
               <Link href="/" className="font-bold text-green hover:underline">
-                Загрузите партии
+                {empty.importLink}
               </Link>{" "}
-              с Lichess или Chess.com — статистика считается по вашим партиям.
+              {empty.importText}
             </>
           )}
           {totals.games_without_color > 0 && <WithoutColor count={totals.games_without_color} />}
@@ -83,26 +97,24 @@ function StatsBody({ stats, filtered }: { stats: Stats; filtered: boolean }) {
   return (
     <div className="flex flex-col gap-5">
       <Totals stats={stats} />
-      <Panel title="Точность по партиям">
+      <Panel title={t.stats.accuracy.title}>
         {stats.accuracy.points.length > 1 ? (
           <>
             <AccuracyChart points={stats.accuracy.points} window={stats.accuracy.window} />
             <AccuracyTable stats={stats} />
           </>
         ) : (
-          <Empty title="Мало данных для графика">
-            Точность появляется после разбора партии (или берётся с Chess.com, если партию разбирали там).
-          </Empty>
+          <Empty title={t.stats.accuracy.fewTitle}>{t.stats.accuracy.fewText}</Empty>
         )}
       </Panel>
       {noAnalysis ? (
         <Panel>
-          <Empty title="Нет разобранных партий">
-            Фазы, классы ходов и частые ошибки считаются по партиям с готовым разбором.{" "}
+          <Empty title={empty.noAnalysisTitle}>
+            {empty.noAnalysisText}{" "}
             <Link href="/games" className="font-bold text-green hover:underline">
-              Откройте партию
+              {empty.noAnalysisLink}
             </Link>{" "}
-            и запустите анализ.
+            {empty.noAnalysisAfter}
           </Empty>
         </Panel>
       ) : (
@@ -149,39 +161,29 @@ function Empty({ title, children }: { title: string; children: ReactNode }) {
 }
 
 function WithoutColor({ count }: { count: number }) {
-  return (
-    <p className="mt-2 text-sm text-muted">
-      {count} {plural(count, "партия", "партии", "партий")} без вашего цвета не учтены: укажите ник Lichess или
-      Chess.com при импорте, чтобы вставленные PGN определялись.
-    </p>
-  );
-}
-
-function plural(n: number, one: string, few: string, many: string) {
-  const mod10 = n % 10;
-  const mod100 = n % 100;
-  if (mod10 === 1 && mod100 !== 11) return one;
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
-  return many;
+  const { t } = useI18n();
+  return <p className="mt-2 text-sm text-muted">{t.stats.withoutColor(count)}</p>;
 }
 
 const percent = (part: number, total: number) => (total > 0 ? Math.round((100 * part) / total) : 0);
 
 function Totals({ stats }: { stats: Stats }) {
+  const { t } = useI18n();
+  const labels = t.stats.totals;
   const { totals } = stats;
   const decided = totals.wins + totals.draws + totals.losses;
   return (
     <div className="flex flex-col gap-2">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Tile label="Партий" value={String(totals.games)} note={`разобрано ${totals.analyzed}`} />
+        <Tile label={labels.games} value={String(totals.games)} note={labels.analyzed(totals.analyzed)} />
         <Tile
-          label="Средняя точность"
+          label={labels.accuracy}
           value={totals.accuracy === null ? "—" : totals.accuracy.toFixed(1)}
-          note={`по ${totals.with_accuracy} ${plural(totals.with_accuracy, "партии", "партиям", "партиям")}`}
+          note={labels.accuracyOver(totals.with_accuracy)}
         />
-        <Tile label="Побед" value={`${percent(totals.wins, decided)}%`} note={`${totals.wins} из ${decided}`} />
+        <Tile label={labels.wins} value={`${percent(totals.wins, decided)}%`} note={labels.winsOf(totals.wins, decided)} />
         <div className="flex flex-col justify-between gap-2 rounded-xl bg-panel p-4">
-          <p className="text-xs font-semibold text-muted">Результаты</p>
+          <p className="text-xs font-semibold text-muted">{labels.results}</p>
           <ResultBar wins={totals.wins} draws={totals.draws} losses={totals.losses} />
           <p className="text-xs font-semibold text-soft">
             {totals.wins} / {totals.draws} / {totals.losses}
@@ -207,24 +209,25 @@ function Tile({ label, value, note }: { label: string; value: string; note: stri
 const OUTCOME_COLORS = { wins: "#7fb04a", draws: "#9b958c", losses: "#e8402e" };
 
 function ResultBar({ wins, draws, losses }: { wins: number; draws: number; losses: number }) {
+  const { t } = useI18n();
   const total = wins + draws + losses;
   const parts = [
-    ["wins", wins, "побед"],
-    ["draws", draws, "ничьих"],
-    ["losses", losses, "поражений"],
+    ["wins", wins],
+    ["draws", draws],
+    ["losses", losses],
   ] as const;
   return (
     <div
       role="img"
-      aria-label={`${wins} побед, ${draws} ничьих, ${losses} поражений`}
+      aria-label={parts.map(([key, value]) => t.stats.results[key](value)).join(", ")}
       className="flex h-2.5 w-full gap-0.5 overflow-hidden rounded-full bg-sunken"
     >
       {total > 0 &&
-        parts.map(([key, value, label]) =>
+        parts.map(([key, value]) =>
           value > 0 ? (
             <span
               key={key}
-              title={`${value} ${label}`}
+              title={t.stats.results[key](value)}
               className="h-full"
               style={{ width: `${(100 * value) / total}%`, background: OUTCOME_COLORS[key] }}
             />
@@ -235,29 +238,31 @@ function ResultBar({ wins, draws, losses }: { wins: number; draws: number; losse
 }
 
 function AccuracyTable({ stats }: { stats: Stats }) {
+  const { t, lang } = useI18n();
+  const labels = t.stats.accuracy;
   const rows = stats.accuracy.points.slice(-30).reverse();
   return (
     <details className="mt-3 text-sm">
-      <summary className="cursor-pointer font-semibold text-soft hover:text-ink">Таблицей (последние 30)</summary>
+      <summary className="cursor-pointer font-semibold text-soft hover:text-ink">{labels.table}</summary>
       <table className="mt-2 w-full">
         <thead className="text-left text-xs text-muted">
           <tr>
-            <th className="py-1 font-semibold">Дата</th>
-            <th className="py-1 font-semibold">Соперник</th>
-            <th className="py-1 text-right font-semibold">Точность</th>
-            <th className="py-1 text-right font-semibold">Среднее</th>
+            <th className="py-1 font-semibold">{labels.date}</th>
+            <th className="py-1 font-semibold">{labels.opponent}</th>
+            <th className="py-1 text-right font-semibold">{labels.accuracy}</th>
+            <th className="py-1 text-right font-semibold">{labels.averageColumn}</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((point) => (
             <tr key={point.game_id} className="border-t border-line">
-              <td className="py-1.5 text-soft">{formatDate(point.played_at) ?? "—"}</td>
+              <td className="py-1.5 text-soft">{formatDate(point.played_at, lang) ?? "—"}</td>
               <td className="max-w-0 truncate py-1.5">
                 <Link href={`/games/${point.game_id}`} className="hover:underline">
                   {point.opponent}
                 </Link>
               </td>
-              <td className="py-1.5 text-right font-bold" title={KIND_LABELS[point.kind]}>
+              <td className="py-1.5 text-right font-bold" title={t.stats.kinds[point.kind]}>
                 {point.accuracy.toFixed(1)}
               </td>
               <td className="py-1.5 text-right text-soft">{point.moving_avg.toFixed(1)}</td>
@@ -278,8 +283,9 @@ function Meter({ value, color }: { value: number; color: string }) {
 }
 
 function Phases({ stats }: { stats: Stats }) {
+  const { t } = useI18n();
   return (
-    <Panel title="Точность по фазам">
+    <Panel title={t.stats.phases.title}>
       <ul className="flex flex-col gap-4">
         {stats.phases.map(({ phase, accuracy, games }) => (
           <li key={phase} className="flex items-center gap-3">
@@ -290,72 +296,66 @@ function Phases({ stats }: { stats: Stats }) {
             )}
             <div className="flex min-w-0 flex-1 flex-col gap-1.5">
               <div className="flex items-baseline justify-between gap-2">
-                <span className="font-bold">{PHASE_LABELS[phase]}</span>
-                <span className="text-xs font-semibold text-muted">
-                  {games} {plural(games, "партия", "партии", "партий")}
-                </span>
+                <span className="font-bold">{t.common.phases[phase]}</span>
+                <span className="text-xs font-semibold text-muted">{t.common.games(games)}</span>
               </div>
-              <Meter value={accuracy ?? 0} color={accuracy === null ? "transparent" : CLASS_META[phaseClass(accuracy)].color} />
+              <Meter value={accuracy ?? 0} color={accuracy === null ? "transparent" : CLASS_COLORS[phaseClass(accuracy)]} />
             </div>
             <span className="w-12 text-right text-lg font-extrabold">{accuracy === null ? "—" : accuracy.toFixed(1)}</span>
           </li>
         ))}
       </ul>
-      <p className="mt-4 text-xs text-muted">
-        Точность фаз — по формуле Lichess, как в обзоре партии. С общей точностью «как у Chess.com» напрямую не
-        сравнивается: сравнивайте фазы между собой.
-      </p>
+      <p className="mt-4 text-xs text-muted">{t.stats.phases.note}</p>
     </Panel>
   );
 }
 
 function Classes({ stats }: { stats: Stats }) {
+  const { t } = useI18n();
   const items = new Map(stats.classes.items.map((item) => [item.class as ClassKey, item]));
   const max = Math.max(1, ...stats.classes.items.map((item) => item.share));
   return (
     <Panel
-      title="Классы ходов"
-      aside={<span className="text-xs font-semibold text-muted">на партию · доля ходов</span>}
+      title={t.stats.classes.title}
+      aside={<span className="text-xs font-semibold text-muted">{t.stats.classes.aside}</span>}
     >
       <ul className="flex flex-col gap-2">
         {CLASS_ORDER.map((key) => {
           const item = items.get(key);
           if (!item) return null;
-          const meta = CLASS_META[key];
           return (
             <li key={key} className="grid grid-cols-[1.5rem_minmax(0,7.5rem)_minmax(0,1fr)_2.75rem_3rem] items-center gap-2 text-sm">
               <ClassBadge value={key} size={22} />
-              <span className="truncate font-semibold">{meta.plural}</span>
-              <Meter value={(100 * item.share) / max} color={meta.color} />
+              <span className="truncate font-semibold">{classPlural(t, key)}</span>
+              <Meter value={(100 * item.share) / max} color={CLASS_COLORS[key]} />
               <span className="text-right font-bold">{item.per_game.toFixed(1)}</span>
               <span className="text-right text-soft">{item.share.toFixed(1)}%</span>
             </li>
           );
         })}
       </ul>
-      <p className="mt-4 text-xs text-muted">
-        {stats.classes.moves} ваших ходов в {stats.classes.games} разобранных{" "}
-        {plural(stats.classes.games, "партии", "партиях", "партиях")}. «Упущения» — флаг поверх класса: соперник ошибся, а
-        вы не наказали.
-      </p>
+      <p className="mt-4 text-xs text-muted">{t.stats.classes.note(stats.classes.moves, stats.classes.games)}</p>
     </Panel>
   );
 }
 
 function Openings({ stats }: { stats: Stats }) {
+  const { t } = useI18n();
   const { white, black } = stats.openings;
   if (white.length === 0 && black.length === 0) return null;
   return (
-    <Panel title="Дебюты">
+    <Panel title={t.stats.openings.title}>
       <div className="grid gap-6 lg:grid-cols-2">
-        <OpeningTable color="white" title="Белыми" rows={white} />
-        <OpeningTable color="black" title="Чёрными" rows={black} />
+        <OpeningTable color="white" title={t.stats.openings.asWhite} rows={white} />
+        <OpeningTable color="black" title={t.stats.openings.asBlack} rows={black} />
       </div>
     </Panel>
   );
 }
 
 function OpeningTable({ color, title, rows }: { color: "white" | "black"; title: string; rows: OpeningStat[] }) {
+  const { t } = useI18n();
+  const labels = t.stats.openings;
   return (
     <div className="min-w-0">
       <h3 className="mb-2 flex items-center gap-2 font-bold">
@@ -363,15 +363,15 @@ function OpeningTable({ color, title, rows }: { color: "white" | "black"; title:
         {title}
       </h3>
       {rows.length === 0 ? (
-        <p className="text-sm text-muted">Партий нет.</p>
+        <p className="text-sm text-muted">{labels.noGames}</p>
       ) : (
         <table className="w-full table-fixed text-sm">
           <thead className="text-left text-xs text-muted">
             <tr>
-              <th className="py-1 font-semibold">Дебют</th>
-              <th className="w-12 py-1 text-right font-semibold">Партий</th>
-              <th className="w-24 py-1 pl-3 font-semibold sm:w-32">Результаты</th>
-              <th className="w-14 py-1 text-right font-semibold">Точн.</th>
+              <th className="py-1 font-semibold">{labels.opening}</th>
+              <th className="w-12 py-1 text-right font-semibold">{labels.games}</th>
+              <th className="w-24 py-1 pl-3 font-semibold sm:w-32">{labels.results}</th>
+              <th className="w-14 py-1 text-right font-semibold">{labels.accuracy}</th>
             </tr>
           </thead>
           <tbody>
@@ -387,7 +387,7 @@ function OpeningTable({ color, title, rows }: { color: "white" | "black"; title:
                 <td className="py-2 pl-3">
                   <ResultBar wins={row.wins} draws={row.draws} losses={row.losses} />
                   <p className="mt-1 text-xs text-soft">
-                    {percent(row.wins, row.wins + row.draws + row.losses)}% побед
+                    {labels.winRate(percent(row.wins, row.wins + row.draws + row.losses))}
                   </p>
                 </td>
                 <td className="py-2 text-right font-bold">{row.accuracy === null ? "—" : row.accuracy.toFixed(1)}</td>
@@ -401,18 +401,19 @@ function OpeningTable({ color, title, rows }: { color: "white" | "black"; title:
 }
 
 function Motifs({ stats }: { stats: Stats }) {
+  const { t } = useI18n();
   const max = Math.max(1, ...stats.motifs.map((motif) => motif.count));
   return (
-    <Panel title="Частые мотивы ошибок">
+    <Panel title={t.stats.motifs.title}>
       {stats.motifs.length === 0 ? (
-        <p className="text-soft">В ваших ошибках не нашлось тактических мотивов — отличный знак.</p>
+        <p className="text-soft">{t.stats.motifs.none}</p>
       ) : (
         <ul className="flex flex-col gap-5">
           {stats.motifs.map((motif) => (
             <li key={motif.type} className="flex flex-col gap-2">
               <div className="grid grid-cols-[minmax(0,15rem)_minmax(0,1fr)_2.5rem] items-center gap-3">
-                <span className="truncate font-bold">{motifName(motif.type)}</span>
-                <Meter value={(100 * motif.count) / max} color={CLASS_META.mistake.color} />
+                <span className="truncate font-bold">{motifName(t, motif.type)}</span>
+                <Meter value={(100 * motif.count) / max} color={CLASS_COLORS.mistake} />
                 <span className="text-right font-extrabold">{motif.count}</span>
               </div>
               <div className="flex flex-wrap gap-1.5">
@@ -429,7 +430,7 @@ function Motifs({ stats }: { stats: Stats }) {
                         {example.fullmove}
                         {example.color === "white" ? "." : "…"} {example.san}
                       </span>
-                      <span className="truncate">против {example.opponent}</span>
+                      <span className="truncate">{t.stats.versus(example.opponent)}</span>
                     </Link>
                   );
                 })}
@@ -438,9 +439,7 @@ function Motifs({ stats }: { stats: Stats }) {
           ))}
         </ul>
       )}
-      <p className="mt-4 text-xs text-muted">
-        Мотив считается, если он был в опровержении вашей ошибки или в упущенной лучшей линии; по одному разу на ход.
-      </p>
+      <p className="mt-4 text-xs text-muted">{t.stats.motifs.note}</p>
     </Panel>
   );
 }

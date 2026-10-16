@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, computed_field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, computed_field
 
 from app.db.accuracy import pick_accuracy
 from app.db.models import AnalysisStatus, Color, GameSource, ImportStatus
@@ -34,6 +34,57 @@ class ChessComImportIn(BaseModel):
     username: Username
     # Календарные месяцы, считая текущий.
     months: int = Field(default=3, ge=1, le=24)
+
+
+Lang = Literal["ru", "en"]
+# Пароль: длина ограничена и сверху — argon2 на мегабайтной строке это DoS.
+Password = Annotated[str, Field(min_length=8, max_length=128)]
+
+
+class RegisterIn(BaseModel):
+    email: EmailStr = Field(max_length=320)
+    password: Password
+    # Язык, выбранный гостем на странице входа; None — по умолчанию (ru).
+    lang: Lang | None = None
+
+
+class LoginIn(BaseModel):
+    email: str = Field(min_length=1, max_length=320)
+    password: str = Field(min_length=1, max_length=128)
+
+
+class ProfileIn(BaseModel):
+    """Изменяются только переданные поля; ник `null` или "" — удалить."""
+
+    lang: Lang | None = None
+    lichess_username: Username | Literal[""] | None = None
+    chesscom_username: Username | Literal[""] | None = None
+
+
+class UserOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    email: str
+    lang: Lang
+    lichess_username: str | None
+    chesscom_username: str | None
+    created_at: datetime
+
+
+class AuthOut(BaseModel):
+    access_token: str
+    token_type: Literal["bearer"] = "bearer"
+    # Секунд до истечения access-токена.
+    expires_in: int
+    user: UserOut
+
+
+class StreamTokenOut(BaseModel):
+    """Токен для `GET /analyses/{id}/events?token=` (EventSource не умеет заголовки)."""
+
+    token: str
+    expires_in: int
 
 
 class AnalyzeIn(BaseModel):
@@ -110,6 +161,7 @@ class AnalysisOut(AnalysisSummary):
     # {"white": {"opening": 91.2, "middlegame": …, "endgame": null}, "black": {…}}
     phase_accuracy: dict[str, Any] | None
     error: str | None
+    error_code: str | None = None
     started_at: datetime | None
     # Только у queued/running, если воркер уже сообщил прогресс.
     progress: Progress | None = None
@@ -186,6 +238,7 @@ class ImportJobOut(ORMModel):
     imported: int
     skipped: int
     error: str | None
+    error_code: str | None
     created_at: datetime
     started_at: datetime | None
     finished_at: datetime | None

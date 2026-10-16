@@ -5,9 +5,11 @@ import { useCallback, useEffect, useState } from "react";
 import { Chessboard } from "react-chessboard";
 import { api, ApiError } from "@/lib/api";
 import { pliesFromPgn, START_FEN } from "@/lib/chess";
-import { gameHref, opposite, outcome, OUTCOME_LABELS, playerName } from "@/lib/format";
+import { gameHref, opposite, outcome, playerName } from "@/lib/format";
+import { useI18n } from "@/lib/i18n/use-i18n";
 import type { Color, GameOut } from "@/lib/types";
 import { useBoardTheme } from "./board-theme";
+import { DocumentTitle } from "./document-title";
 import { EmptyGames } from "./games-list";
 import { GamesTable, GamesTableSkeleton } from "./games-table";
 import { ImportCard } from "./import-form";
@@ -18,8 +20,19 @@ import { ErrorText, Panel } from "./ui";
 const HISTORY_SIZE = 10;
 const RECENT_SIZE = 3;
 
+export function HomeTitle() {
+  const { t } = useI18n();
+  return (
+    <>
+      <DocumentTitle page="home" />
+      <h1 className="text-2xl font-extrabold sm:text-3xl">{t.home.title}</h1>
+    </>
+  );
+}
+
 /** Главная: загрузка партий, последние партии с позицией, история. */
 export function HomeDashboard() {
+  const { t } = useI18n();
   const [games, setGames] = useState<GameOut[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,8 +40,8 @@ export function HomeDashboard() {
     api
       .games({ limit: HISTORY_SIZE })
       .then((page) => setGames(page.items))
-      .catch((err) => setError(err instanceof ApiError ? err.message : "Не удалось загрузить партии"));
-  }, []);
+      .catch((err) => setError(err instanceof ApiError ? err.message : t.home.gamesLoadFailed));
+  }, [t]);
 
   useEffect(load, [load]);
 
@@ -51,10 +64,10 @@ export function HomeDashboard() {
       <PuzzlesCard />
 
       <Panel
-        title="История партий"
+        title={t.home.historyTitle}
         aside={
           <Link href="/games" className="text-sm font-bold text-green hover:underline">
-            Все партии
+            {t.home.allGames}
           </Link>
         }
         className="px-1 sm:px-2"
@@ -77,6 +90,7 @@ export function HomeDashboard() {
 function RecentGame({ game }: { game: GameOut }) {
   const [fen, setFen] = useState<string | null>(null);
   const boardTheme = useBoardTheme();
+  const { t } = useI18n();
   const me: Color = game.user_color ?? "white";
   const result = outcome(game);
 
@@ -117,15 +131,15 @@ function RecentGame({ game }: { game: GameOut }) {
         <div className="flex min-w-0 items-center gap-2.5">
           <PlayerAvatar name={playerName(game, opposite(me))} color={opposite(me)} size={36} />
           <div className="min-w-0">
-            <p className="truncate text-sm font-bold">против {playerName(game, opposite(me))}</p>
-            <p className="text-xs font-semibold text-muted">{result ? OUTCOME_LABELS[result] : game.result}</p>
+            <p className="truncate text-sm font-bold">{t.home.recent.against(playerName(game, opposite(me)))}</p>
+            <p className="text-xs font-semibold text-muted">{result ? t.common.outcome[result] : game.result}</p>
           </div>
         </div>
         <Link
           href={gameHref(game)}
           className="mt-auto flex min-h-11 items-center justify-center rounded-lg bg-raised text-[15px] font-bold text-soft shadow-[0_3px_0_0_rgba(0,0,0,0.35)] hover:bg-raised-hover hover:text-ink"
         >
-          {game.analysis?.status === "done" ? "Разбор" : "Разобрать"}
+          {game.analysis?.status === "done" ? t.home.recent.review : t.home.recent.analyze}
         </Link>
       </div>
     </article>

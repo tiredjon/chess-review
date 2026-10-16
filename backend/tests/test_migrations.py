@@ -23,6 +23,7 @@ EXPECTED_TABLES = {
     "puzzles",
     "import_jobs",
     "puzzle_attempts",
+    "refresh_tokens",
 }
 
 

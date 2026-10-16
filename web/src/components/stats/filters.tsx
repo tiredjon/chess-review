@@ -1,13 +1,11 @@
 import Link from "next/link";
 import { SOURCE_NAMES } from "@/lib/format";
+import { useI18n } from "@/lib/i18n/use-i18n";
 import type { GameSource, TimeClass } from "@/lib/types";
 
-export const TIME_CLASS_NAMES: Record<TimeClass, string> = {
-  bullet: "Пуля",
-  blitz: "Блиц",
-  rapid: "Рапид",
-  daily: "По переписке",
-};
+// Без "use client": страница (серверная) берёт отсюда список ключей, а подписи — словарь
+// `stats.timeClasses`; сами фильтры рисуются только внутри клиентского дашборда.
+export const TIME_CLASSES: TimeClass[] = ["bullet", "blitz", "rapid", "daily"];
 
 type Filters = { source: GameSource | null; timeClass: TimeClass | null };
 
@@ -21,26 +19,27 @@ function href({ source, timeClass }: Filters) {
 
 /** Фильтры одной строкой над всеми блоками: источник и контроль времени (в URL). */
 export function StatsFilters(current: Filters) {
+  const { t } = useI18n();
   const sources: [GameSource | null, string][] = [
-    [null, "Все площадки"],
+    [null, t.stats.filters.allSources],
     ...(Object.entries(SOURCE_NAMES) as [GameSource, string][]),
   ];
   const classes: [TimeClass | null, string][] = [
-    [null, "Любой контроль"],
-    ...(Object.entries(TIME_CLASS_NAMES) as [TimeClass, string][]),
+    [null, t.stats.filters.anyTimeControl],
+    ...TIME_CLASSES.map((timeClass): [TimeClass, string] => [timeClass, t.stats.timeClasses[timeClass]]),
   ];
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-x-5">
-      <ChipRow label="Источник">
+      <ChipRow label={t.stats.filters.source}>
         {sources.map(([source, label]) => (
-          <FilterChip key={label} href={href({ ...current, source })} active={current.source === source}>
+          <FilterChip key={source ?? "all"} href={href({ ...current, source })} active={current.source === source}>
             {label}
           </FilterChip>
         ))}
       </ChipRow>
-      <ChipRow label="Контроль времени">
+      <ChipRow label={t.stats.filters.timeControl}>
         {classes.map(([timeClass, label]) => (
-          <FilterChip key={label} href={href({ ...current, timeClass })} active={current.timeClass === timeClass}>
+          <FilterChip key={timeClass ?? "all"} href={href({ ...current, timeClass })} active={current.timeClass === timeClass}>
             {label}
           </FilterChip>
         ))}

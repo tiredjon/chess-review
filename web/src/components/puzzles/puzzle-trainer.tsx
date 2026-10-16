@@ -4,8 +4,10 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import { applyUci, boardMoveUci, pieceOn, sideToMove, uciSan, uciSquares } from "@/lib/chess";
-import { CLASS_META, type ClassKey } from "@/lib/classes";
+import { CLASS_COLORS, classLabel, type ClassKey } from "@/lib/classes";
 import { formatDate } from "@/lib/format";
+import type { Dict, Lang } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n/use-i18n";
 import { motifName } from "@/lib/motifs";
 import { playMove, playSound, preloadSounds, toggleMuted, useSoundMuted } from "@/lib/sounds";
 import type { Color, Puzzle, PuzzleAttempt, PuzzleCounts } from "@/lib/types";
@@ -49,6 +51,14 @@ type Game = {
   failedAt: number | null;
 };
 
+// Ошибка запроса: текст API (уже на языке интерфейса) или ключ запасного текста — его подставляет
+// `errorText` при рендере, чтобы колбэки загрузки не зависели от словаря.
+type ErrorState = { message: string | null; fallback: "loadError" | "checkError" } | null;
+
+const errorText = (error: ErrorState, t: Dict) => (error ? (error.message ?? t.puzzles[error.fallback]) : null);
+
+const apiMessage = (err: unknown) => (err instanceof ApiError ? err.message : null);
+
 const opposite = (color: Color): Color => (color === "white" ? "black" : "white");
 
 function startGame(puzzle: Puzzle): Game {
@@ -70,9 +80,21 @@ function startGame(puzzle: Puzzle): Game {
 
 /** Пазлы из своих ошибок: сначала пора повторить, затем новые. Ход проверяет сервер. */
 export function PuzzleTrainer() {
+  const { t } = useI18n();
+  // Заголовок страницы для скринридеров — здесь, а не в серверной page.tsx (язык известен в браузере).
+  return (
+    <>
+      <h1 className="sr-only">{t.puzzles.title}</h1>
+      <Trainer />
+    </>
+  );
+}
+
+function Trainer() {
+  const { t, lang } = useI18n();
   const [game, setGame] = useState<Game | null>(null);
   const [counts, setCounts] = useState<PuzzleCounts | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ErrorState>(null);
   const [loading, setLoading] = useState(true);
   const muted = useSoundMuted();
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -95,7 +117,7 @@ export function PuzzleTrainer() {
         setGame(next.puzzle ? startGame(next.puzzle) : null);
         setError(null);
       })
-      .catch((err) => setError(err instanceof ApiError ? err.message : "Не удалось загрузить пазл"))
+      .catch((err) => setError({ message: apiMessage(err), fallback: "loadError" }))
       .finally(() => setLoading(false));
   }, []);
 
@@ -225,7 +247,7 @@ export function PuzzleTrainer() {
           );
         })
         .catch((err) => {
-          setError(err instanceof ApiError ? err.message : "Не удалось проверить ход");
+          setError({ message: apiMessage(err), fallback: "checkError" });
           setGame((prev) => (prev ? startGame(prev.puzzle) : prev));
         });
     },
@@ -300,7 +322,7 @@ export function PuzzleTrainer() {
   if (!game) {
     return (
       <div className="flex flex-col gap-3">
-        <ErrorText>{error}</ErrorText>
+        <ErrorText>{errorText(error, t)}</ErrorText>
         {counts && <NoPuzzles counts={counts} />}
       </div>
     );
@@ -312,7 +334,7 @@ export function PuzzleTrainer() {
   if (game.lastMove) {
     const { from, to } = uciSquares(game.lastMove);
     const color =
-      game.badge?.value === "blunder" ? `${CLASS_META.blunder.color}aa` : game.badge ? `${CLASS_META.best.color}aa` : LAST_MOVE;
+      game.badge?.value === "blunder" ? `${CLASS_COLORS.blunder}aa` : game.badge ? `${CLASS_COLORS.best}aa` : LAST_MOVE;
     highlights[from] = color;
     highlights[to] = color;
   }
@@ -327,6 +349,7 @@ export function PuzzleTrainer() {
     badge: game.badge,
   };
   const finished = game.status === "solved" || game.status === "failed";
+  const soundLabel = muted ? t.puzzles.soundOn : t.puzzles.soundOff;
 
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-5 xl:grid-cols-[minmax(0,1fr)_400px]">
@@ -341,15 +364,16 @@ export function PuzzleTrainer() {
         />
       </div>
 
-      <section aria-label="Пазл" className="flex min-w-0 flex-col rounded-xl bg-panel">
+      <section aria-label={t.puzzles.section} className="flex min-w-0 flex-col rounded-xl bg-panel">
         <header className="flex items-center gap-3 rounded-t-xl border-b border-line bg-sunken/60 px-4 py-3">
           <div className="min-w-0 flex-1">
             <h2 className="text-lg font-extrabold">
-              Пазлы<span className="max-sm:hidden"> из ваших ошибок</span>
+              {t.puzzles.heading}
+              <span className="max-sm:hidden">{t.puzzles.headingSuffix}</span>
             </h2>
             {counts && (
               <p className="text-xs font-semibold text-muted">
-                повторить {counts.due} · новых {counts.new} · всего {counts.total}
+                {t.puzzles.counts(counts.due, counts.new, counts.total)}
               </p>
             )}
           </div>
@@ -358,8 +382,8 @@ export function PuzzleTrainer() {
             type="button"
             onClick={toggleMuted}
             aria-pressed={muted}
-            aria-label={muted ? "Включить звук (M)" : "Выключить звук (M)"}
-            title={muted ? "Включить звук (M)" : "Выключить звук (M)"}
+            aria-label={soundLabel}
+            title={soundLabel}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-soft hover:bg-raised hover:text-ink"
           >
             <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -372,13 +396,13 @@ export function PuzzleTrainer() {
         <div key={puzzle.id} className="cc-slide-in flex flex-1 flex-col gap-4 p-4">
           <TurnBanner color={puzzle.color} status={game.status} />
           <CoachBubble>
-            <StatusText game={game} />
+            <StatusText game={game} lang={lang} />
           </CoachBubble>
-          <ErrorText>{error}</ErrorText>
+          <ErrorText>{errorText(error, t)}</ErrorText>
 
           {finished && game.outcome?.solution_san && (
             <div className="flex flex-col gap-2">
-              <p className="text-sm font-semibold text-soft">Решение</p>
+              <p className="text-sm font-semibold text-soft">{t.puzzles.solution}</p>
               <p className="flex flex-wrap gap-x-2 gap-y-1 text-[15px] font-bold">
                 {game.outcome.solution_san.map((san, index) => (
                   <span key={index} className={index % 2 === 0 ? "text-ink" : "text-muted"}>
@@ -390,7 +414,7 @@ export function PuzzleTrainer() {
                 <div className="flex flex-wrap gap-1.5">
                   {puzzle.themes.map((theme) => (
                     <span key={theme} className="rounded-md bg-raised px-2 py-1 text-xs font-semibold text-soft">
-                      {motifName(theme)}
+                      {motifName(t, theme)}
                     </span>
                   ))}
                 </div>
@@ -398,14 +422,14 @@ export function PuzzleTrainer() {
             </div>
           )}
 
-          {puzzle.source && <SourceLink source={puzzle.source} color={puzzle.color} />}
+          {puzzle.source && <SourceLink source={puzzle.source} color={puzzle.color} lang={lang} />}
 
           {/* На телефоне действия липнут к низу экрана, как навигация в разборе. */}
           <div className="sticky bottom-0 -mx-4 -mb-4 mt-auto flex flex-col gap-2 rounded-b-xl border-t border-line bg-panel p-4 lg:static lg:mx-0 lg:mb-0 lg:border-0 lg:p-0 lg:pt-2">
             {finished ? (
               <>
                 <Button size="lg" onClick={load} disabled={loading}>
-                  {loading ? "Загружаю…" : "Следующий пазл"}
+                  {loading ? t.puzzles.loading : t.puzzles.next}
                 </Button>
                 {game.status === "failed" && game.outcome?.solution_uci && (
                   <Button
@@ -415,17 +439,17 @@ export function PuzzleTrainer() {
                       playSolution(game.outcome!.solution_uci!, 0);
                     }}
                   >
-                    Показать решение с начала
+                    {t.puzzles.replay}
                   </Button>
                 )}
               </>
             ) : (
               <div className="grid grid-cols-2 gap-2">
                 <Button variant="raised" onClick={showHint} disabled={game.status !== "playing" || game.hintShown}>
-                  Подсказка
+                  {t.puzzles.hint}
                 </Button>
                 <Button variant="raised" onClick={giveUp} disabled={game.status !== "playing"}>
-                  Решение
+                  {t.puzzles.giveUp}
                 </Button>
               </div>
             )}
@@ -437,8 +461,8 @@ export function PuzzleTrainer() {
 }
 
 function TurnBanner({ color, status }: { color: Color; status: Status }) {
-  const text =
-    status === "solved" ? "Решено" : status === "failed" ? "Не решено" : color === "white" ? "Ход белых" : "Ход чёрных";
+  const { banner } = useI18n().t.puzzles;
+  const text = status === "solved" ? banner.solved : status === "failed" ? banner.failed : banner[color];
   const tone =
     status === "solved" ? "bg-green text-white" : status === "failed" ? "bg-danger/90 text-white" : color === "white" ? "bg-white text-[#2c2925]" : "bg-sunken text-ink";
   return (
@@ -450,10 +474,12 @@ function TurnBanner({ color, status }: { color: Color; status: Status }) {
   );
 }
 
-const relative = new Intl.RelativeTimeFormat("ru", { numeric: "auto" });
+const relativeFormats: Partial<Record<Lang, Intl.RelativeTimeFormat>> = {};
 
-function whenText(iso: string | null): string {
+/** Когда снова: «через 3 дня» / «in 3 days», «завтра» / «tomorrow». */
+function whenText(iso: string | null, lang: Lang): string {
   if (!iso) return "";
+  const relative = (relativeFormats[lang] ??= new Intl.RelativeTimeFormat(lang, { numeric: "auto" }));
   const minutes = Math.round((new Date(iso).getTime() - Date.now()) / 60000);
   if (minutes < 60) return relative.format(Math.max(1, minutes), "minute");
   const hours = Math.round(minutes / 60);
@@ -461,14 +487,15 @@ function whenText(iso: string | null): string {
   return relative.format(Math.round(hours / 24), "day");
 }
 
-function StatusText({ game }: { game: Game }) {
+function StatusText({ game, lang }: { game: Game; lang: Lang }) {
+  const { status: text } = useI18n().t.puzzles;
   const { puzzle, outcome } = game;
-  if (game.status === "intro") return <>Соперник делает ход…</>;
+  if (game.status === "intro") return <>{text.intro}</>;
   if (game.status === "solved" && outcome) {
     return (
       <>
-        <span className="font-bold">Верно!</span>{" "}
-        {game.hintUsed ? "С подсказкой — интервал не растёт." : "Отличная работа."} Снова покажем {whenText(outcome.next_review_at)}.
+        <span className="font-bold">{text.correct}</span> {game.hintUsed ? text.withHint : text.wellDone}{" "}
+        {text.showAgain(whenText(outcome.next_review_at, lang))}
       </>
     );
   }
@@ -476,25 +503,30 @@ function StatusText({ game }: { game: Game }) {
     const san = game.failedAt !== null ? outcome.solution_san?.[game.failedAt] : null;
     return (
       <>
-        <span className="font-bold">Не то.</span> {san ? <>Верный ход — <span className="font-bold">{san}</span> (зелёная стрелка). </> : null}
-        Пазл вернётся {whenText(outcome.next_review_at)}.
+        <span className="font-bold">{text.incorrect}</span>{" "}
+        {san ? (
+          <>
+            {text.correctMove} <span className="font-bold">{san}</span> {text.correctMoveAfter}{" "}
+          </>
+        ) : null}
+        {text.returns(whenText(outcome.next_review_at, lang))}
       </>
     );
   }
-  if (game.status === "waiting") return <>Проверяю ход…</>;
+  if (game.status === "waiting") return <>{text.checking}</>;
   const total = puzzle.player_moves;
   const done = Math.floor(game.moves.length / 2);
-  if (done > 0) return <>Верно, продолжайте! Ход {done + 1} из {total}.</>;
+  if (done > 0) return <>{text.keepGoing(done + 1, total)}</>;
   return (
     <>
-      В партии здесь была ошибка. Найдите лучший ход
-      {total > 1 ? ` — решение в ${total} ${total < 5 ? "хода" : "ходов"}` : ""}.
-      {puzzle.box > 0 || puzzle.attempts > 0 ? " Это повторение." : ""}
+      {text.task(total)}
+      {puzzle.box > 0 || puzzle.attempts > 0 ? text.repeat : ""}
     </>
   );
 }
 
-function SourceLink({ source, color }: { source: NonNullable<Puzzle["source"]>; color: Color }) {
+function SourceLink({ source, color, lang }: { source: NonNullable<Puzzle["source"]>; color: Color; lang: Lang }) {
+  const { t } = useI18n();
   const value: ClassKey = source.is_miss && !["mistake", "blunder"].includes(source.class) ? "miss" : source.class;
   const number = `${source.fullmove}${color === "white" ? "." : "…"}`;
   return (
@@ -504,12 +536,12 @@ function SourceLink({ source, color }: { source: NonNullable<Puzzle["source"]>; 
     >
       <ClassBadge value={value} size={20} />
       <span className="min-w-0 flex-1">
-        Из партии против <span className="font-bold text-ink">{source.opponent}</span>
-        {source.played_at && <>, {formatDate(source.played_at)}</>}: в партии было{" "}
+        {t.puzzles.source.fromGame} <span className="font-bold text-ink">{source.opponent}</span>
+        {source.played_at && <>, {formatDate(source.played_at, lang)}</>}: {t.puzzles.source.played}{" "}
         <span className="font-bold text-ink">
           {number} {source.san}
         </span>{" "}
-        ({CLASS_META[value].label.toLowerCase()})
+        ({classLabel(t, value).toLowerCase()})
       </span>
       <span aria-hidden className="text-muted">
         →
@@ -519,10 +551,11 @@ function SourceLink({ source, color }: { source: NonNullable<Puzzle["source"]>; 
 }
 
 function Streak({ value }: { value: number }) {
+  const { t } = useI18n();
   return (
     <div
-      title="Решено подряд"
-      aria-label={`Решено подряд: ${value}`}
+      title={t.puzzles.streak}
+      aria-label={t.puzzles.streakLabel(value)}
       className="flex h-9 items-center gap-1 rounded-lg bg-raised px-2.5 text-sm font-extrabold"
     >
       <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4" fill={value > 0 ? "#f59a4c" : "var(--muted)"}>
@@ -534,14 +567,15 @@ function Streak({ value }: { value: number }) {
 }
 
 function NoPuzzles({ counts }: { counts: PuzzleCounts }) {
+  const { t, lang } = useI18n();
   if (counts.total === 0) {
     return (
       <div className="flex flex-col items-center gap-2 rounded-xl bg-panel px-6 py-12 text-center">
-        <p className="text-lg font-bold">Пазлов пока нет</p>
+        <p className="text-lg font-bold">{t.puzzles.empty.title}</p>
         <p className="max-w-md text-soft">
-          Пазлы появляются из ваших ошибок в разобранных партиях (нужен ваш цвет в партии).{" "}
+          {t.puzzles.empty.text}{" "}
           <Link href="/games" className="font-bold text-green hover:underline">
-            Разберите партии
+            {t.puzzles.empty.link}
           </Link>
           .
         </p>
@@ -551,10 +585,8 @@ function NoPuzzles({ counts }: { counts: PuzzleCounts }) {
   return (
     <div className="flex flex-col items-center gap-2 rounded-xl bg-panel px-6 py-12 text-center">
       <ClassBadge value="best" size={40} />
-      <p className="text-lg font-bold">На сейчас всё решено</p>
-      <p className="text-soft">
-        Следующее повторение — {whenText(counts.next_review_at)}. Решено подряд: {counts.streak}.
-      </p>
+      <p className="text-lg font-bold">{t.puzzles.done.title}</p>
+      <p className="text-soft">{t.puzzles.done.text(whenText(counts.next_review_at, lang), counts.streak)}</p>
     </div>
   );
 }

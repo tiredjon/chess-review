@@ -3,29 +3,26 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
-import { api, ApiError } from "@/lib/api";
+import { api, ApiError, codeText } from "@/lib/api";
+import type { Dict } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n/use-i18n";
 import type { GameOut, ImportJob } from "@/lib/types";
-import { Button, Chip, ErrorText } from "./ui";
+import { Button, Chip, ErrorText, fieldClass } from "./ui";
 
 type Source = "lichess" | "chesscom" | "pgn";
 
 const SOURCE_LABELS: Record<Source, string> = { lichess: "Lichess", chesscom: "Chess.com", pgn: "PGN" };
 const COUNTS = [20, 50, 100, 200];
-const PERIODS: [number, string][] = [
-  [1, "Месяц"],
-  [3, "3 мес."],
-  [6, "6 мес."],
-  [12, "Год"],
-];
+const PERIODS = [1, 3, 6, 12];
 const POLL_MS = 1000;
 
-const message = (error: unknown) => (error instanceof ApiError ? error.message : "Не удалось выполнить запрос");
-
-const field = "w-full rounded-lg border border-line bg-sunken px-3 py-2.5 text-base text-ink placeholder:text-muted";
+const message = (error: unknown, t: Dict) => (error instanceof ApiError ? error.message : t.errors.generic);
 
 /** Загрузка партий: по нику с площадки (фоновая задача) или вставкой PGN. */
 export function ImportCard({ onImported }: { onImported?: () => void }) {
   const router = useRouter();
+  const { t } = useI18n();
+  const copy = t.home.import;
   const [source, setSource] = useState<Source>("lichess");
   const [username, setUsername] = useState("");
   const [count, setCount] = useState(50);
@@ -50,14 +47,14 @@ export function ImportCard({ onImported }: { onImported?: () => void }) {
         setJob(next);
         if (next.status === "done") onImported?.();
       } catch (err) {
-        if (!cancelled) setError(message(err));
+        if (!cancelled) setError(message(err, t));
       }
     }, POLL_MS);
     return () => {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [active, jobId, job, onImported]);
+  }, [active, jobId, job, onImported, t]);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -80,7 +77,7 @@ export function ImportCard({ onImported }: { onImported?: () => void }) {
         setJob(source === "lichess" ? await api.importLichess(name, count) : await api.importChesscom(name, months));
       }
     } catch (err) {
-      setError(message(err));
+      setError(message(err, t));
     } finally {
       setBusy(false);
     }
@@ -90,8 +87,8 @@ export function ImportCard({ onImported }: { onImported?: () => void }) {
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-4">
-      <h2 className="text-lg font-bold">Загрузить партии</h2>
-      <div role="radiogroup" aria-label="Откуда" className="grid grid-cols-3 gap-2">
+      <h2 className="text-lg font-bold">{copy.title}</h2>
+      <div role="radiogroup" aria-label={copy.from} className="grid grid-cols-3 gap-2">
         {(Object.keys(SOURCE_LABELS) as Source[]).map((key) => (
           <Chip key={key} role="radio" aria-checked={source === key} active={source === key} onClick={() => setSource(key)}>
             {SOURCE_LABELS[key]}
@@ -101,7 +98,7 @@ export function ImportCard({ onImported }: { onImported?: () => void }) {
 
       {source === "pgn" ? (
         <label className="flex flex-col gap-1.5">
-          <span className="sr-only">PGN партии</span>
+          <span className="sr-only">{copy.pgnLabel}</span>
           <textarea
             value={pgn}
             onChange={(event) => setPgn(event.target.value)}
@@ -109,14 +106,14 @@ export function ImportCard({ onImported }: { onImported?: () => void }) {
             rows={7}
             spellCheck={false}
             placeholder={'[White "…"]\n[Black "…"]\n\n1. e4 e5 2. Nf3 …'}
-            className={`${field} min-h-40 resize-y font-mono text-[13px] leading-relaxed`}
+            className={`${fieldClass} min-h-40 resize-y font-mono text-[13px] leading-relaxed`}
           />
-          <span className="text-xs text-muted">Одна партия откроется сразу на разборе.</span>
+          <span className="text-xs text-muted">{copy.pgnHint}</span>
         </label>
       ) : (
         <>
           <label className="flex flex-col gap-1.5 text-sm font-semibold text-soft">
-            Ник на {SOURCE_LABELS[source]}
+            {copy.username(SOURCE_LABELS[source])}
             <input
               value={username}
               onChange={(event) => setUsername(event.target.value)}
@@ -124,13 +121,13 @@ export function ImportCard({ onImported }: { onImported?: () => void }) {
               pattern="[A-Za-z0-9_\-]{2,50}"
               autoComplete="off"
               spellCheck={false}
-              placeholder="ваш ник"
-              className={field}
+              placeholder={copy.usernamePlaceholder}
+              className={fieldClass}
             />
           </label>
           <fieldset className="flex flex-col gap-1.5">
             <legend className="mb-1.5 text-sm font-semibold text-soft">
-              {source === "lichess" ? "Последних партий" : "За период"}
+              {source === "lichess" ? copy.lastGames : copy.period}
             </legend>
             <div className="grid grid-cols-4 gap-2">
               {source === "lichess"
@@ -139,7 +136,7 @@ export function ImportCard({ onImported }: { onImported?: () => void }) {
                       {value}
                     </Chip>
                   ))
-                : PERIODS.map(([value, label]) => (
+                : PERIODS.map((value) => (
                     <Chip
                       key={value}
                       active={months === value}
@@ -147,7 +144,7 @@ export function ImportCard({ onImported }: { onImported?: () => void }) {
                       onClick={() => setMonths(value)}
                       className="px-1 text-[13px]"
                     >
-                      {label}
+                      {copy.periods[value]}
                     </Chip>
                   ))}
             </div>
@@ -157,14 +154,14 @@ export function ImportCard({ onImported }: { onImported?: () => void }) {
 
       <ErrorText>{error}</ErrorText>
       <Button type="submit" size="lg" disabled={busy || active || !ready}>
-        {busy || active ? "Загружаю…" : source === "pgn" ? "Разобрать" : "Загрузить"}
+        {busy || active ? copy.loading : source === "pgn" ? copy.analyze : copy.load}
       </Button>
       {job && <ImportStatus job={job} />}
       {pasted && (
         <p role="status" className="text-sm text-soft">
-          Загружено партий: {pasted.length}.{" "}
+          {copy.pasted(pasted.length)}{" "}
           <Link href="/games?source=pgn" className="font-bold text-green hover:underline">
-            Открыть список
+            {copy.openList}
           </Link>
         </p>
       )}
@@ -173,20 +170,25 @@ export function ImportCard({ onImported }: { onImported?: () => void }) {
 }
 
 function ImportStatus({ job }: { job: ImportJob }) {
-  if (job.status === "failed") return <ErrorText>{job.error ?? "Импорт не удался"}</ErrorText>;
-  const counts = `получено ${job.fetched}, новых ${job.imported}${job.skipped ? `, пропущено ${job.skipped}` : ""}`;
+  const { t } = useI18n();
+  const copy = t.home.import;
+  if (job.status === "failed") {
+    const params = { username: job.username, source: SOURCE_LABELS[job.source] };
+    return <ErrorText>{codeText(t, job.error_code, params, job.error ?? copy.failed)}</ErrorText>;
+  }
+  const counts = copy.counts(job.fetched, job.imported, job.skipped);
   if (job.status !== "done") {
     return (
       <p role="status" className="text-sm text-soft">
-        {job.status === "queued" ? "В очереди…" : `Загружаю: ${counts}`}
+        {job.status === "queued" ? copy.queued : copy.running(counts)}
       </p>
     );
   }
   return (
     <p role="status" className="text-sm text-soft">
-      Готово: {counts}.{" "}
+      {copy.done(counts)}{" "}
       <Link href={`/games?source=${job.source}`} className="font-bold text-green hover:underline">
-        Открыть партии
+        {copy.openGames}
       </Link>
     </p>
   );

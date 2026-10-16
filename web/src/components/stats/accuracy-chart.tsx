@@ -2,24 +2,19 @@
 
 import { useRouter } from "next/navigation";
 import { CartesianGrid, ComposedChart, Line, Tooltip, XAxis, YAxis, type TooltipContentProps } from "recharts";
-import { formatDate, OUTCOME_LABELS } from "@/lib/format";
-import type { AccuracyKind, AccuracyPoint } from "@/lib/types";
-import { TIME_CLASS_NAMES } from "./filters";
+import { formatDate } from "@/lib/format";
+import { useI18n } from "@/lib/i18n/use-i18n";
+import type { AccuracyPoint } from "@/lib/types";
 
 const GAME_DOT = "#d8d3cb";
 const TREND = "var(--green)";
-
-export const KIND_LABELS: Record<AccuracyKind, string> = {
-  official: "по данным Chess.com",
-  cc: "наша оценка, близкая к Chess.com",
-  lichess: "по формуле Lichess",
-};
 
 type Datum = AccuracyPoint & { index: number };
 
 /** Точность по партиям (точки) и скользящее среднее (линия); клик по точке — разбор партии. */
 export function AccuracyChart({ points, window }: { points: AccuracyPoint[]; window: number }) {
   const router = useRouter();
+  const { t } = useI18n();
   const data: Datum[] = points.map((point, index) => ({ ...point, index }));
   const low = Math.min(...points.map((p) => p.accuracy));
   const floor = Math.max(0, Math.floor((low - 5) / 10) * 10);
@@ -29,11 +24,11 @@ export function AccuracyChart({ points, window }: { points: AccuracyPoint[]; win
       <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold text-soft" aria-hidden>
         <span className="flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-full" style={{ background: GAME_DOT }} />
-          Точность партии
+          {t.stats.accuracy.legendGame}
         </span>
         <span className="flex items-center gap-1.5">
           <span className="h-0.5 w-4 rounded-full" style={{ background: TREND }} />
-          Среднее за {window} партий
+          {t.stats.accuracy.legendAverage(window)}
         </span>
       </div>
       <ComposedChart
@@ -72,6 +67,7 @@ export function AccuracyChart({ points, window }: { points: AccuracyPoint[]; win
           activeDot={{ r: 4, fill: TREND, stroke: "var(--panel)", strokeWidth: 2 }}
           isAnimationActive={false}
         />
+        {/* Recharts рисует content через createElement — внутри TooltipBox можно брать хук словаря. */}
         <Tooltip content={TooltipBox} cursor={{ stroke: "#8d877e", strokeWidth: 1 }} isAnimationActive={false} />
       </ComposedChart>
     </div>
@@ -79,22 +75,23 @@ export function AccuracyChart({ points, window }: { points: AccuracyPoint[]; win
 }
 
 function TooltipBox({ active, payload }: TooltipContentProps) {
+  const { t, lang } = useI18n();
   const point = payload?.[0]?.payload as Datum | undefined;
   if (!active || !point) return null;
   return (
     <div className="max-w-60 rounded-md bg-sunken px-3 py-2 text-xs shadow-lg">
       <p className="text-base font-extrabold text-ink">
         {point.accuracy.toFixed(1)}
-        <span className="ml-2 text-xs font-semibold text-muted">среднее {point.moving_avg.toFixed(1)}</span>
+        <span className="ml-2 text-xs font-semibold text-muted">{t.stats.accuracy.average(point.moving_avg.toFixed(1))}</span>
       </p>
       <p className="font-semibold text-soft">
-        против {point.opponent}
-        {point.outcome && `, ${OUTCOME_LABELS[point.outcome].toLowerCase()}`}
+        {t.stats.versus(point.opponent)}
+        {point.outcome && `, ${t.common.outcome[point.outcome].toLowerCase()}`}
       </p>
       <p className="text-muted">
-        {[formatDate(point.played_at), TIME_CLASS_NAMES[point.time_class]].filter(Boolean).join(" · ")}
+        {[formatDate(point.played_at, lang), t.stats.timeClasses[point.time_class]].filter(Boolean).join(" · ")}
       </p>
-      <p className="text-muted">{KIND_LABELS[point.kind]}</p>
+      <p className="text-muted">{t.stats.kinds[point.kind]}</p>
     </div>
   );
 }

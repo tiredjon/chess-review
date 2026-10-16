@@ -5,8 +5,8 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 import pytest
-from asgi_lifespan import LifespanManager
-from httpx import ASGITransport, AsyncClient
+from fastapi import FastAPI
+from httpx import AsyncClient
 from sqlalchemy import delete, select, update
 
 from app.core.config import Settings
@@ -21,8 +21,8 @@ from app.db.models import (
     User,
 )
 from app.db.session import Database
-from app.main import create_app
 from app.review.types import MoveClass, Phase
+from tests.conftest import api_client
 from tests.explain_data import REVIEW
 from tests.test_explain_service import FakeLLM
 
@@ -98,12 +98,12 @@ async def review(
 @asynccontextmanager
 async def llm_client(settings: Settings, llm: FakeLLM) -> AsyncIterator[AsyncClient]:
     """Клиент API, у которого провайдер LLM подменён фейком."""
-    app = create_app(settings)
-    async with LifespanManager(app) as manager:
+
+    def setup(app: FastAPI) -> None:
         app.state.llm = llm
-        transport = ASGITransport(app=manager.app)
-        async with AsyncClient(transport=transport, base_url="http://test") as client:
-            yield client
+
+    async with api_client(settings, setup=setup) as client:
+        yield client
 
 
 async def test_explain_move_with_templates(

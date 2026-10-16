@@ -135,6 +135,20 @@ body {
   outline-offset: 2px;
 }
 
+/* Заставка на время проверки входа: конь «дышит»; появляется с задержкой, чтобы быстрый
+   ответ API не давал мигания. */
+.cc-splash {
+  animation:
+    cc-fade 200ms ease-out 250ms both,
+    cc-breathe 1400ms ease-in-out 450ms infinite;
+}
+@keyframes cc-breathe {
+  50% {
+    opacity: 0.45;
+    transform: scale(0.94);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

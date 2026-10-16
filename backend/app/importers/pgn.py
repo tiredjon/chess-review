@@ -28,11 +28,16 @@ _RESULTS = frozenset({"1-0", "0-1", "1/2-1/2", "*"})
 
 
 class PgnError(ValueError):
-    """Текст не удалось разобрать как PGN; `game` — номер партии в тексте (с 1)."""
+    """Текст не удалось разобрать как PGN; `game` — номер партии в тексте (с 1).
 
-    def __init__(self, message: str, game: int | None = None) -> None:
+    `code` — код для интерфейса (`app/api/errors.py`: pgn_invalid, pgn_too_many, …),
+    `params` — его параметры (номер партии, причина, максимум)."""
+
+    def __init__(self, code: str, message: str, game: int | None = None, **params: object) -> None:
         super().__init__(message if game is None else f"Партия {game}: {message}")
+        self.code = code
         self.game = game
+        self.params: dict[str, object] = {**params, **({"game": game} if game else {})}
 
 
 def read_games(text: str, *, max_games: int = MAX_GAMES) -> list[chess.pgn.Game]:
@@ -42,22 +47,24 @@ def read_games(text: str, *, max_games: int = MAX_GAMES) -> list[chess.pgn.Game]
     while (game := chess.pgn.read_game(handle)) is not None:
         number = len(games) + 1
         if number > max_games:
-            raise PgnError(f"Слишком много партий, максимум {max_games}")
+            raise PgnError(
+                "pgn_too_many", f"Слишком много партий, максимум {max_games}", max=max_games
+            )
         check_game(game, number)
         games.append(game)
     if not games:
-        raise PgnError("В тексте нет партий")
+        raise PgnError("pgn_empty", "В тексте нет партий")
     return games
 
 
 def check_game(game: chess.pgn.Game, number: int | None = None) -> None:
     if game.errors:
-        raise PgnError(str(game.errors[0]), number)
+        raise PgnError("pgn_invalid", str(game.errors[0]), number, reason=str(game.errors[0]))
     board = game.board()
     if board.uci_variant != "chess" or board.chess960:
-        raise PgnError("поддерживаются только классические шахматы", number)
+        raise PgnError("pgn_variant", "поддерживаются только классические шахматы", number)
     if game.next() is None:
-        raise PgnError("в партии нет ходов", number)
+        raise PgnError("pgn_no_moves", "в партии нет ходов", number)
 
 
 def parse_game(pgn: str) -> chess.pgn.Game:
