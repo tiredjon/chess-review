@@ -34,6 +34,8 @@ from sqlalchemy.sql.expression import CTE
 from app.api.schemas import (
     AccuracyPoint,
     AccuracySeries,
+    BrilliantMove,
+    BrilliantStats,
     ClassesStats,
     ClassStat,
     MotifExample,
@@ -59,6 +61,8 @@ STATS_MAX_POINTS = 500
 TOP_OPENINGS = 8
 TOP_MOTIFS = 6
 MOTIF_EXAMPLES = 3
+# Блестящих ходов в ответе — последние N (счётчики — по всем).
+BRILLIANT_LIMIT = 100
 
 _EMPTY_JSON_ARRAY = literal_column("'[]'::jsonb", JSONB)
 
@@ -415,6 +419,53 @@ async def _motifs(session: AsyncSession, ug: CTE) -> list[MotifStat]:
     return [MotifStat(type=kind, count=counts[kind], examples=examples[kind]) for kind in top]
 
 
+async def _brilliant(session: AsyncSession, ug: CTE) -> BrilliantStats:
+    """Блестящие ходы пользователя (как раздел Brilliant moves у Chess.com)."""
+    brilliant = Move.move_class == MoveClass.BRILLIANT
+    totals = (
+        await session.execute(
+            _analyzed_moves(
+                select(
+                    func.count().label("count"),
+                    func.count(func.distinct(ug.c.id)).label("games"),
+                ).select_from(Move),
+                ug,
+            ).where(brilliant)
+        )
+    ).one()
+    rows = await session.execute(
+        _analyzed_moves(
+            select(
+                Move.id.label("move_id"),
+                Move.ply,
+                Move.san,
+                Move.uci,
+                Move.fen_before,
+                ug.c.id.label("game_id"),
+                ug.c.played_at,
+                ug.c.opponent,
+                ug.c.time_class,
+                ug.c.outcome,
+            ),
+            ug,
+        )
+        .where(brilliant)
+        .order_by(ug.c.ts.desc(), ug.c.id, Move.ply)
+        .limit(BRILLIANT_LIMIT)
+    )
+    moves = []
+    for row in rows:
+        _, side, *_, fullmove = row.fen_before.split()
+        moves.append(
+            BrilliantMove(
+                **row._asdict(),
+                fullmove=int(fullmove),
+                color=Color.WHITE if side == "w" else Color.BLACK,
+            )
+        )
+    return BrilliantStats(count=totals.count, games=totals.games, moves=moves)
+
+
 async def user_stats(
     session: AsyncSession,
     user_id: uuid.UUID,
@@ -432,5 +483,6 @@ async def user_stats(
         phases=await _phases(session, ug),
         classes=await _classes(session, ug, totals.analyzed),
         motifs=await _motifs(session, ug),
+        brilliant=await _brilliant(session, ug),
         rating_groups=await _rating_groups(session, ug),
     )

@@ -240,6 +240,71 @@ async def test_error_motifs(client: AsyncClient, games: dict[str, uuid.UUID]) ->
     assert examples[0]["game_id"] == str(games["A"])
 
 
+async def test_brilliant_moves(client: AsyncClient, db: Database, settings: Settings) -> None:
+    """Только свои ходы из готового последнего анализа, новые партии первыми; фильтры
+    действуют. Блестящий ход соперника, старого и незаконченного анализа — не в счёт."""
+    uid = settings.default_user_id
+    a = game(uid, "A", color=Color.WHITE, result="1-0", tc="600", day=1)
+    b = game(uid, "B", color=Color.BLACK, result="1-0", tc="180", day=2)
+    c = game(uid, "C", color=Color.WHITE, result="0-1", tc="600", day=3)
+    async with db.sessionmaker() as session:
+        session.add_all([a, b, c])
+        await session.flush()
+        brilliant = MoveClass.BRILLIANT
+        session.add_all(
+            [
+                Analysis(
+                    game_id=a.id,
+                    depth=10,
+                    status=AnalysisStatus.DONE,
+                    created_at=datetime(2026, 1, 1, tzinfo=UTC),
+                    moves=[move(3, brilliant), move(4, brilliant), move(7, brilliant)],
+                ),
+                Analysis(
+                    game_id=b.id,
+                    depth=10,
+                    status=AnalysisStatus.DONE,
+                    created_at=datetime(2026, 1, 1, tzinfo=UTC),
+                    moves=[move(1, brilliant)],
+                ),
+                Analysis(
+                    game_id=b.id,
+                    depth=10,
+                    status=AnalysisStatus.DONE,
+                    created_at=datetime(2026, 1, 2, tzinfo=UTC),
+                    moves=[move(6, brilliant), move(8, MoveClass.BEST)],
+                ),
+                Analysis(
+                    game_id=c.id,
+                    depth=10,
+                    status=AnalysisStatus.RUNNING,
+                    moves=[move(1, brilliant)],
+                ),
+            ]
+        )
+        await session.commit()
+
+    stats = await get_stats(client)
+
+    brilliant_stats = stats["brilliant"]
+    assert (brilliant_stats["count"], brilliant_stats["games"]) == (3, 2)
+    assert [
+        (m["game_id"], m["ply"], m["fullmove"], m["color"], m["time_class"], m["outcome"])
+        for m in brilliant_stats["moves"]
+    ] == [
+        (str(b.id), 6, 3, "black", "blitz", "loss"),
+        (str(a.id), 3, 2, "white", "rapid", "win"),
+        (str(a.id), 7, 4, "white", "rapid", "win"),
+    ]
+    first = brilliant_stats["moves"][0]
+    assert (first["san"], first["uci"], first["opponent"]) == ("m6", "e2e4", "B")
+    assert first["fen_before"] == BLACK_FEN.format(n=3)
+    assert next(i for i in stats["classes"]["items"] if i["class"] == "brilliant")["count"] == 3
+
+    blitz = (await get_stats(client, time_class="blitz"))["brilliant"]
+    assert (blitz["count"], blitz["games"], len(blitz["moves"])) == (1, 1, 1)
+
+
 async def test_filters(client: AsyncClient, games: dict[str, uuid.UUID]) -> None:
     lichess = await get_stats(client, source="lichess")
     rapid = await get_stats(client, time_class="rapid")
@@ -259,6 +324,7 @@ async def test_empty_stats(client: AsyncClient, db: Database) -> None:
     assert stats["totals"]["accuracy"] is None
     assert stats["phases"][0] == {"phase": "opening", "accuracy": None, "games": 0}
     assert stats["motifs"] == []
+    assert stats["brilliant"] == {"count": 0, "games": 0, "moves": []}
     assert stats["classes"]["items"][0]["per_game"] == 0.0
 
 

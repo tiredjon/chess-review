@@ -211,6 +211,21 @@ export type MotifExample = {
   opponent: string;
 };
 
+export type BrilliantMove = {
+  game_id: string;
+  move_id: number;
+  ply: number;
+  fullmove: number;
+  color: Color;
+  san: string;
+  uci: string;
+  fen_before: string;
+  played_at: string | null;
+  opponent: string;
+  time_class: TimeClass;
+  outcome: "win" | "draw" | "loss" | null;
+};
+
 export type Stats = {
   filters: { source: GameSource | null; time_class: TimeClass | null };
   totals: {
@@ -235,6 +250,8 @@ export type Stats = {
     items: { class: MoveClass | "miss"; count: number; per_game: number; share: number }[];
   };
   motifs: { type: string; count: number; examples: MotifExample[] }[];
+  /** Блестящие ходы пользователя: счётчики по всем, `moves` — последние (до 100). */
+  brilliant: { count: number; games: number; moves: BrilliantMove[] };
 };
 
 // --- Пазлы ---

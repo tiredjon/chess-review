@@ -101,4 +101,12 @@ export const stats: Dict["stats"] = {
     none: "No tactical motifs found in your mistakes — a great sign.",
     note: "A motif counts if it appeared in the refutation of your mistake or in the best line you missed; once per move.",
   },
+  brilliant: {
+    title: "Brilliant moves",
+    summary: (count, games) => `${count} ${enPlural(count, "move", "moves")} in ${games} ${enPlural(games, "game", "games")}`,
+    none: "None yet: a brilliant move is a best or near-best move that sacrifices material. It'll happen!",
+    more: (n) => `Show ${n} more`,
+    open: (move, name) => `Open review: ${move} vs ${name}`,
+    limited: (shown) => `Showing the latest ${shown}.`,
+  },
 };

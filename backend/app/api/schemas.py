@@ -405,6 +405,31 @@ class MotifStat(BaseModel):
     examples: list[MotifExample]
 
 
+class BrilliantMove(BaseModel):
+    """Блестящий ход пользователя: ссылка на ход в разборе и позиция для миниатюры."""
+
+    game_id: uuid.UUID
+    move_id: int
+    ply: int
+    fullmove: int
+    color: Color
+    san: str
+    uci: str
+    fen_before: str
+    played_at: datetime | None
+    opponent: str
+    time_class: TimeClass
+    outcome: GameOutcome | None
+
+
+class BrilliantStats(BaseModel):
+    # Всего блестящих ходов и в скольких партиях (после фильтров).
+    count: int
+    games: int
+    # Новые первыми; не больше BRILLIANT_LIMIT.
+    moves: list[BrilliantMove]
+
+
 class RatingGroupStat(BaseModel):
     """Точность пользователя против средней у игроков его рейтинга — по партиям Chess.com
     одного контроля, где известны и точность («как у Chess.com»), и рейтинг."""
@@ -425,6 +450,7 @@ class StatsOut(BaseModel):
     phases: list[PhaseStat]
     classes: ClassesStats
     motifs: list[MotifStat]
+    brilliant: BrilliantStats
     rating_groups: list[RatingGroupStat] = []
 
 

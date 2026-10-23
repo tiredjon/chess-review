@@ -12,6 +12,7 @@ import { ClassBadge } from "../review/class-badge";
 import { ColorSquare } from "../player-avatar";
 import { ErrorText, Panel } from "../ui";
 import { AccuracyChart } from "./accuracy-chart";
+import { BrilliantMoves } from "./brilliant-moves";
 import { StatsFilters } from "./filters";
 
 type Props = { source: GameSource | null; timeClass: TimeClass | null };
@@ -125,6 +126,7 @@ function StatsBody({ stats, filtered }: { stats: Stats; filtered: boolean }) {
         </div>
       )}
       <Openings stats={stats} />
+      {!noAnalysis && <BrilliantMoves stats={stats} />}
       {!noAnalysis && <Motifs stats={stats} />}
     </div>
   );
