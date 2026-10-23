@@ -4,7 +4,8 @@ x-backend: &backend
   build:
     context: ./backend
     target: dev
-  image: chess-review-backend:dev
+  # Без общего image: сервисы с одним тегом собираются параллельно и падают
+  # на экспорте («image already exists»). Слои всё равно общие, из кэша BuildKit.
   env_file:
     - path: .env
       required: false
