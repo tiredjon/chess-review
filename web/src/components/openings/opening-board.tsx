@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { Arrow } from "react-chessboard";
 import { boardMoveUci, pieceOn, uciSquares } from "@/lib/chess";
 import { useI18n } from "@/lib/i18n/use-i18n";
 import { playMove, preloadSounds } from "@/lib/sounds";
@@ -10,10 +11,8 @@ import { moverColor, type NodeIndex, type OpeningNode } from "./types";
 
 const LAST_MOVE = "rgba(247, 214, 92, 0.6)";
 const SELECTED = "rgba(127, 176, 74, 0.6)";
-// Цвета стрелок: ходы ученика — зелёные, ответы соперника — синие.
-const ARROW_COLORS = { learner: "#96bc4b", opponent: "#6f98c2", none: "#96bc4b" } as const;
-// Стрелки появляются, когда фигура доехала (как отметки на доске разбора).
-const ARROW_DELAY_MS = 200;
+// Цвета стрелок — палитра доски разбора: ходы ученика — зелёные, ответы соперника — синие.
+const ARROW_RGB = { learner: "150, 188, 75", opponent: "111, 152, 194", none: "150, 188, 75" } as const;
 
 /**
  * Доска позиции узла дерева дебютов (репертуар и курс).
@@ -109,12 +108,12 @@ export function OpeningBoard<N extends OpeningNode>({
       highlights[to] = LAST_MOVE;
     }
     if (selected) highlights[selected] = SELECTED;
-    return { ...NO_MARKS, key: `n${currentId}`, highlights };
-  }, [node, currentId, selected]);
+    return { ...NO_MARKS, key: `n${currentId}`, highlights, arrows: arrows ? childArrows(children, weights) : [] };
+  }, [node, currentId, selected, arrows, children, weights]);
 
   if (!node) return null;
   return (
-    <div className="relative" aria-label={t.repertoire.shared.board}>
+    <div aria-label={t.repertoire.shared.board}>
       <Board
         fen={fen}
         orientation={orientation}
@@ -123,89 +122,22 @@ export function OpeningBoard<N extends OpeningNode>({
         onMove={(from, to) => tryMove(from, to)}
         onSquareClick={interactive ? onSquareClick : undefined}
       />
-      {arrows && children.length > 0 && (
-        <Arrows key={currentId} orientation={orientation} nodes={children} weights={weights} />
-      )}
     </div>
   );
 }
 
-// ---------- стрелки на ходы-детей (свой SVG: у react-chessboard одна толщина на все) ----------
-
-const square = (name: string, orientation: Color) => {
-  const file = name.charCodeAt(0) - 97;
-  const rank = Number(name[1]) - 1;
-  return orientation === "white" ? { x: file + 0.5, y: 7 - rank + 0.5 } : { x: 7 - file + 0.5, y: rank + 0.5 };
-};
-
-function Arrows({
-  nodes,
-  orientation,
-  weights,
-}: {
-  nodes: OpeningNode[];
-  orientation: Color;
-  weights?: Record<number, number>;
-}) {
-  const [shown, setShown] = useState(false);
-  useEffect(() => {
-    const timer = setTimeout(() => setShown(true), ARROW_DELAY_MS);
-    return () => clearTimeout(timer);
-  }, []);
-  if (!shown) return null;
-  // Тонкие — позади, чтобы редкий ход не перекрывал частый.
-  const sorted = [...nodes].sort((a, b) => (weights?.[a.id] ?? 1) - (weights?.[b.id] ?? 1));
-  return (
-    <svg
-      aria-hidden
-      viewBox="0 0 8 8"
-      className="pointer-events-none absolute inset-0 z-20 h-full w-full"
-    >
-      {sorted.map((child) => {
-        if (!child.uci) return null;
-        const { from, to } = uciSquares(child.uci);
-        const weight = Math.min(1, Math.max(0, weights?.[child.id] ?? 1));
-        return (
-          <polygon
-            key={child.id}
-            points={arrowPoints(square(from, orientation), square(to, orientation), 0.1 + 0.14 * weight)}
-            fill={ARROW_COLORS[child.mover ?? "none"]}
-            opacity={0.5 + 0.4 * weight}
-          />
-        );
-      })}
-    </svg>
-  );
-}
-
-/** Стрелка-многоугольник от клетки к клетке: древко толщиной `width`, голова крупнее. */
-function arrowPoints(from: { x: number; y: number }, to: { x: number; y: number }, width: number): string {
-  const dx = to.x - from.x;
-  const dy = to.y - from.y;
-  const length = Math.hypot(dx, dy);
-  const ux = dx / length;
-  const uy = dy / length;
-  const px = -uy;
-  const py = ux;
-  const head = Math.min(0.45, length * 0.5);
-  const headHalf = width * 0.5 + 0.13;
-  // Начало — чуть дальше центра клетки, конец — чуть не доходит до центра цели.
-  const startX = from.x + ux * 0.2;
-  const startY = from.y + uy * 0.2;
-  const tipX = to.x - ux * 0.12;
-  const tipY = to.y - uy * 0.12;
-  const baseX = tipX - ux * head;
-  const baseY = tipY - uy * head;
-  const half = width / 2;
-  return [
-    [startX + px * half, startY + py * half],
-    [baseX + px * half, baseY + py * half],
-    [baseX + px * headHalf, baseY + py * headHalf],
-    [tipX, tipY],
-    [baseX - px * headHalf, baseY - py * headHalf],
-    [baseX - px * half, baseY - py * half],
-    [startX - px * half, startY - py * half],
-  ]
-    .map(([x, y]) => `${x.toFixed(3)},${y.toFixed(3)}`)
-    .join(" ");
+/**
+ * Стрелки на ходы-детей — стрелки самой доски (форма и анимация как в разборе). Вес хода
+ * задаёт плотность стрелки; редкие ходы идут первыми, чтобы не перекрывать частые.
+ */
+function childArrows(children: OpeningNode[], weights?: Record<number, number>): Arrow[] {
+  const weightOf = (child: OpeningNode) => Math.min(1, Math.max(0, weights?.[child.id] ?? 1));
+  return [...children]
+    .filter((child) => child.uci)
+    .sort((a, b) => weightOf(a) - weightOf(b))
+    .map((child) => {
+      const { from, to } = uciSquares(child.uci as string);
+      const alpha = (0.35 + 0.6 * weightOf(child)).toFixed(2);
+      return { startSquare: from, endSquare: to, color: `rgba(${ARROW_RGB[child.mover ?? "none"]}, ${alpha})` };
+    });
 }
