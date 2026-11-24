@@ -125,6 +125,27 @@ class Settings(BaseSettings):
     import_rate_limit_wait_s: float = Field(default=60.0, ge=0)
     import_job_timeout_s: int = Field(default=1800, ge=60)
 
+    # Сессия 13 — дебюты. Lichess Opening Explorer (`app/explorer/`): база мастеров и база
+    # Lichess, без токена. Lichess просит не больше одного запроса одновременно — между
+    # запросами пауза; ответы кэшируются в `explorer_cache`.
+    explorer_api_url: str = "https://explorer.lichess.ovh"
+    explorer_min_interval_s: float = Field(default=1.0, ge=0)
+    explorer_cache_days: int = Field(default=30, ge=1)
+    # Курс по линии (`app/courses/`): строится воркером до `course_target_plies` полуходов
+    # (30 — до 15-го хода), не больше `course_max_nodes` узлов; у соперника — до
+    # `course_opponent_branches` ответов с долей у мастеров не меньше `course_min_share`.
+    course_target_plies: int = Field(default=30, ge=10, le=60)
+    course_max_nodes: int = Field(default=80, ge=10, le=400)
+    course_opponent_branches: int = Field(default=3, ge=1, le=5)
+    course_min_share: float = Field(default=0.1, gt=0, lt=1)
+    course_engine_depth: int = Field(default=16, ge=8, le=30)
+    course_job_timeout_s: int = Field(default=1800, ge=60)
+    # Ход не из курса засчитывается в тренажёре, если теряет не больше стольких пунктов
+    # win% против лучшего (и этим же порогом движок проверяет ходы мастеров при сборке курса).
+    course_alt_threshold: float = Field(default=5.0, gt=0, le=20)
+    rate_limit_course: RateSetting = Rate(20, 3600)
+    rate_limit_trainer: RateSetting = Rate(600, 3600)
+
     llm_provider: LLMProviderName = LLMProviderName.NONE
     llm_model: str | None = None
     gemini_api_key: SecretStr | None = None

@@ -11,6 +11,7 @@ export const common = {
     games: "Партии",
     stats: "Статистика",
     puzzles: "Пазлы",
+    openings: "Дебюты",
     profile: "Профиль",
     logout: "Выйти",
   },
@@ -25,6 +26,11 @@ export const common = {
     login: "Вход",
     shared: "Разбор партии",
     register: "Регистрация",
+    // Сессия 13: дебюты.
+    repertoire: "Мой репертуар",
+    courses: "Курсы дебютов",
+    course: "Курс",
+    trainer: "Тренажёр дебютов",
   },
   actions: {
     retry: "Повторить",

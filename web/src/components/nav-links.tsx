@@ -8,7 +8,7 @@ import { LogoutIcon } from "@/components/auth/profile-form";
 import type { Dict } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n/use-i18n";
 
-type NavKey = keyof Pick<Dict["common"]["nav"], "home" | "games" | "stats" | "puzzles">;
+type NavKey = keyof Pick<Dict["common"]["nav"], "home" | "games" | "stats" | "puzzles" | "openings">;
 
 const NAV: { href: string; key: NavKey; icon: ReactNode }[] = [
   {
@@ -37,6 +37,14 @@ const NAV: { href: string; key: NavKey; icon: ReactNode }[] = [
     // Кусочек пазла.
     icon: (
       <path d="M10 3.5a2 2 0 0 1 4 0V5h4a1 1 0 0 1 1 1v4h-1.5a2 2 0 0 0 0 4H19v4a1 1 0 0 1-1 1h-4v-1.5a2 2 0 0 0-4 0V19H6a1 1 0 0 1-1-1v-4h1.5a2 2 0 0 0 0-4H5V6a1 1 0 0 1 1-1h4z" />
+    ),
+  },
+  {
+    href: "/openings",
+    key: "openings",
+    // Раскрытая книга (сессия 13: репертуар, курсы, тренажёр).
+    icon: (
+      <path d="M3 5.5C5.5 4.3 8.5 4.3 11 5.8V20c-2.5-1.4-5.5-1.4-8-.3zM13 5.8c2.5-1.5 5.5-1.5 8-.3v14.2c-2.5-1.1-5.5-1.1-8 .3z" />
     ),
   },
 ];

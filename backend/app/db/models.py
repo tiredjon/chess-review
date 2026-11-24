@@ -43,6 +43,13 @@ class AnalysisRunner(StrEnum):
     BROWSER = "browser"
 
 
+class CourseStatus(StrEnum):
+    QUEUED = "queued"
+    BUILDING = "building"
+    READY = "ready"
+    FAILED = "failed"
+
+
 class ImportStatus(StrEnum):
     QUEUED = "queued"
     RUNNING = "running"
@@ -313,3 +320,124 @@ class TelegramChat(Base):
     lang: Mapped[str] = mapped_column(String(8), default="ru", server_default="ru")
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
     last_request_at: Mapped[datetime | None]
+
+
+# --- Сессия 13: дебюты (SPEC «Сессия 13») ---
+
+
+class ExplorerCacheEntry(Base):
+    """Ответ Lichess Opening Explorer по позиции (`app/explorer/`). `source` — `masters` или
+    `lichess`; `params` — нормализованные параметры запроса (рейтинги, контроль) или ''."""
+
+    __tablename__ = "explorer_cache"
+
+    source: Mapped[str] = mapped_column(String(16), primary_key=True)
+    epd: Mapped[str] = mapped_column(String(100), primary_key=True)
+    params: Mapped[str] = mapped_column(String(64), primary_key=True, server_default="")
+    data: Mapped[dict[str, Any]]
+    fetched_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
+class MasterGame(Base):
+    """Партия из базы мастеров Lichess (`/masters/pgn/{id}`) — образцовая партия курса."""
+
+    __tablename__ = "master_games"
+
+    id: Mapped[str] = mapped_column(String(16), primary_key=True)
+    pgn: Mapped[str] = mapped_column(Text)
+    white: Mapped[str] = mapped_column(String(100))
+    black: Mapped[str] = mapped_column(String(100))
+    white_rating: Mapped[int | None]
+    black_rating: Mapped[int | None]
+    year: Mapped[int | None] = mapped_column(sa.SmallInteger)
+    result: Mapped[str] = mapped_column(String(8))
+    fetched_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
+class Course(Base):
+    """Курс по дебютной линии за выбранный цвет (`app/courses/`): дерево ходов дальше теории
+    по партиям мастеров, проверенное движком, с планами по структуре и образцовыми партиями.
+    Содержание общее для всех пользователей и после готовности не меняется: `key` — хеш
+    цвета, линии и `builder_version`, новая версия сборщика даёт новый курс."""
+
+    __tablename__ = "courses"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    key: Mapped[str] = mapped_column(String(64), unique=True)
+    color: Mapped[Color] = mapped_column(str_enum(Color, "color"))
+    name: Mapped[str] = mapped_column(String(255))
+    eco: Mapped[str | None] = mapped_column(String(8))
+    # Исходная линия от начальной позиции (из каталога или репертуара пользователя).
+    line_uci: Mapped[list[str]] = mapped_column(ARRAY(String(8)))
+    status: Mapped[CourseStatus] = mapped_column(
+        str_enum(CourseStatus, "course_status"), default=CourseStatus.QUEUED
+    )
+    # 0…100 — для индикатора сборки.
+    progress: Mapped[int] = mapped_column(sa.SmallInteger, default=0, server_default="0")
+    error_code: Mapped[str | None] = mapped_column(String(32))
+    # `app.courses.types.CourseTree` (JSON), есть при status = ready.
+    tree: Mapped[dict[str, Any] | None]
+    builder_version: Mapped[int] = mapped_column(sa.SmallInteger)
+    created_by: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL")
+    )
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    built_at: Mapped[datetime | None]
+
+
+class UserCourse(Base):
+    """Курс в списке пользователя («Мои курсы»): откуда добавлен и когда изучался."""
+
+    __tablename__ = "user_courses"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    course_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("courses.id", ondelete="CASCADE"), primary_key=True
+    )
+    # "catalog" — выбран в каталоге дебютов, "repertoire" — из своего репертуара.
+    source: Mapped[str] = mapped_column(String(16))
+    added_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    last_studied_at: Mapped[datetime | None]
+
+
+class TrainerCard(Base):
+    """Карточка тренажёра: позиция курса, где ход за учеником (`node_id` — узел дерева
+    курса перед его ходом). Повторение — коробки Лейтнера, как у пазлов (`puzzles/srs.py`)."""
+
+    __tablename__ = "trainer_cards"
+    __table_args__ = (
+        UniqueConstraint("user_id", "course_id", "node_id"),
+        Index("ix_trainer_cards_user_id_next_review_at", "user_id", "next_review_at"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    course_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("courses.id", ondelete="CASCADE"))
+    node_id: Mapped[int]
+    epd: Mapped[str] = mapped_column(String(100))
+    box: Mapped[int] = mapped_column(sa.SmallInteger, default=0, server_default="0")
+    attempts: Mapped[int] = mapped_column(default=0, server_default="0")
+    # Результат последней попытки; None — карточка ещё не проверялась.
+    last_correct: Mapped[bool | None]
+    next_review_at: Mapped[datetime | None]
+    last_attempt_at: Mapped[datetime | None]
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
+class TrainerAttempt(Base):
+    """Ответ в тренажёре: `verdict` — main (ход курса), alternative (не из курса, но движок
+    считает его не хуже порога), wrong."""
+
+    __tablename__ = "trainer_attempts"
+    __table_args__ = (Index("ix_trainer_attempts_user_id_created_at", "user_id", "created_at"),)
+
+    id: Mapped[int] = mapped_column(sa.BigInteger, sa.Identity(), primary_key=True)
+    card_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("trainer_cards.id", ondelete="CASCADE"), index=True
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    uci: Mapped[str] = mapped_column(String(8))
+    verdict: Mapped[str] = mapped_column(String(16))
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())

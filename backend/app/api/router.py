@@ -4,13 +4,18 @@ from app.api import (
     analyses,
     auth,
     browser,
+    courses,
     engine,
     explain,
+    explorer,
     games,
     imports,
+    plans,
     puzzles,
+    repertoire,
     shared,
     stats,
+    trainer,
 )
 
 # Роуты §8.
@@ -26,3 +31,9 @@ api_router.include_router(puzzles.router)
 api_router.include_router(shared.router)
 api_router.include_router(browser.router)
 api_router.include_router(engine.router)
+# Сессия 13: дебюты — репертуар, курсы по линиям, тренажёр, explorer и идеи позиции.
+api_router.include_router(repertoire.router)
+api_router.include_router(courses.router)
+api_router.include_router(trainer.router)
+api_router.include_router(explorer.router)
+api_router.include_router(plans.router)

@@ -25,6 +25,13 @@ EXPECTED_TABLES = {
     "puzzle_attempts",
     "refresh_tokens",
     "telegram_chats",
+    # Сессия 13: дебюты.
+    "explorer_cache",
+    "master_games",
+    "courses",
+    "user_courses",
+    "trainer_cards",
+    "trainer_attempts",
 }
 
 
