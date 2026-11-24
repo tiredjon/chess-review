@@ -1,4 +1,57 @@
-// Сессия 13: тексты раздела «Дебюты» — repertoire (заполняет сессия, делающая эту часть).
+import { ruPlural } from "../plural";
+
+// Сессия 13.5: «Мой репертуар» — дерево дебютов из своих партий. Блок `shared` — подписи
+// общих компонентов доски и дерева (components/openings/), их же использует страница курса.
 export const repertoire = {
-  placeholder: "Скоро",
+  shared: {
+    board: "Доска дебюта",
+    start: "Начало",
+    toStart: "В начало",
+    back: "Назад",
+    forward: "Вперёд",
+    offBook: "Вне теории",
+  },
+  title: "Мой репертуар",
+  color: { label: "Цвет", white: "Белые", black: "Чёрные" },
+  tabs: { label: "Что показать", openings: "Мои дебюты", tree: "Дерево ходов" },
+  search: { label: "Поиск дебюта", placeholder: "Найти дебют…", none: "Ничего не найдено" },
+  loading: "Загружаем репертуар…",
+  loadError: "Не удалось загрузить репертуар",
+  retry: "Повторить",
+  empty: {
+    title: (color: string) => `Нет партий ${color}`,
+    white: "за белых",
+    black: "за чёрных",
+    importLink: "Импортируйте партии",
+    importText: "и ник на Lichess в профиле — по ним определится ваш цвет и соберётся репертуар.",
+  },
+  list: {
+    games: (n: number) => `${n} ${ruPlural(n, "партия", "партии", "партий")}`,
+    score: (percent: number) => `${percent}% очков`,
+    exit: (move: number) => `выход из теории на ${move}-м ходу`,
+    inTheory: "вся партия в теории",
+    resultBar: (w: number, d: number, l: number) => `Побед ${w}, ничьих ${d}, поражений ${l}`,
+  },
+  node: {
+    title: "Позиция",
+    start: "Начальная позиция",
+    games: (n: number) => `${n} ${ruPlural(n, "партия", "партии", "партий")}`,
+    score: (percent: number) => `${percent}% очков`,
+    wdl: (w: number, d: number, l: number) => `${w} побед · ${d} ничьих · ${l} поражений`,
+    youPlay: "Вы играете",
+    theyPlay: "Соперники отвечают",
+    noGames: "Дальше партий в репертуаре нет",
+    inTheory: "В теории",
+    offTheory: (move: number) => `Вне теории с ${move}-го хода`,
+    theoryEnds: (move: number) => `Теория кончается на ${move}-м ходу`,
+    opening: "Дебют",
+    share: (percent: number) => `${percent}%`,
+  },
+  learn: {
+    button: "Учить эту линию",
+    busy: "Создаём курс…",
+    hint: "Курс по линии до этой позиции: идеи, ответы мастеров, тренировка.",
+    needMove: "Сначала выберите линию — сделайте хотя бы один ход.",
+    error: "Не удалось создать курс",
+  },
 };
