@@ -77,7 +77,7 @@ export const stats: Dict["stats"] = {
   },
   phases: {
     title: "Accuracy by phase",
-    note: "Phase accuracy uses the Lichess formula, as in the game review. It isn't directly comparable to the overall Chess.com-style accuracy: compare phases with each other.",
+    note: "Phase accuracy uses the Chess.com-style formula, as in the game review. Official Chess.com accuracy may differ: Chess.com doesn't publish it per phase.",
   },
   classes: {
     title: "Move classes",

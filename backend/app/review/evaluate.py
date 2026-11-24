@@ -45,7 +45,6 @@ class MoveEval:
 class GameEval:
     moves: list[MoveEval]
     accuracy: dict[chess.Color, float | None]
-    phase_accuracy: dict[chess.Color, dict[Phase, float | None]]
 
 
 def replay(start: chess.Board, moves: Sequence[chess.Move]) -> list[chess.Board]:
@@ -116,15 +115,6 @@ def evaluate_game(
         moves=result,
         accuracy={
             color: aggregate_accuracy((m.accuracy, m.weight) for m in result if m.color == color)
-            for color in chess.COLORS
-        },
-        phase_accuracy={
-            color: {
-                phase: aggregate_accuracy(
-                    (m.accuracy, m.weight) for m in result if m.color == color and m.phase == phase
-                )
-                for phase in Phase
-            }
             for color in chess.COLORS
         },
     )

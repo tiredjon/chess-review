@@ -20,15 +20,15 @@ export const review = {
   startFailed: "Не удалось запустить анализ",
   // Где считать анализ (сессия 11).
   runnerLabel: "Где считать",
-  runnerServer: "На сервере",
+  runnerServer: "В Docker",
   runnerBrowser: "В браузере",
-  runnerServerHint: "Полный Stockfish 19 на сервере, обычно до минуты.",
+  runnerServerHint: "Полный Stockfish 19 в Docker на этом компьютере, обычно до минуты.",
   runnerBrowserHint: "Бесплатно: Stockfish 19 lite считает на вашем компьютере. Вкладку не закрывайте.",
   runningBrowser: "Stockfish считает в вашем браузере. Не закрывайте вкладку.",
   cancel: "Остановить",
-  browserEngineFailed: "Не удалось запустить движок в браузере — попробуйте на сервере.",
+  browserEngineFailed: "Не удалось запустить движок в браузере — попробуйте в Docker.",
   engineNote: (engine: string, runner: "server" | "browser", depth: number) =>
-    `${engine} · ${runner === "browser" ? "в браузере" : "на сервере"} · глубина ${depth}`,
+    `${engine} · ${runner === "browser" ? "в браузере" : "в Docker"} · глубина ${depth}`,
   // Обзор партии.
   players: "Игроки",
   accuracy: "Точность",
@@ -103,7 +103,7 @@ export const review = {
   exploreLines: "Лучшие линии",
   exploreEngine: "Движок",
   engineBrowser: "Браузер",
-  engineServer: "Сервер",
+  engineServer: "Docker",
   playBest: "Сделать лучший ход",
   // Шапка панели и навигация.
   toOverview: "К обзору партии",

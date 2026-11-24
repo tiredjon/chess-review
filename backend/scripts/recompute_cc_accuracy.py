@@ -1,6 +1,6 @@
-"""Пересчитывает точность «как у Chess.com» (`analyses.cc_*_accuracy`) у готовых анализов по
-сохранённым ходам — после первого внедрения и после смены параметров `cc_accuracy.PARAMS`.
-Движок не нужен.
+"""Пересчитывает точность «как у Chess.com» у готовых анализов по сохранённым ходам: общую
+(`analyses.cc_*_accuracy`) и по фазам (`analyses.phase_accuracy`) — после смены формулы или
+параметров `cc_accuracy.PARAMS`. Движок не нужен.
 
     PYTHONPATH=. uv run python scripts/recompute_cc_accuracy.py
 """
@@ -13,6 +13,7 @@ from app.core.config import Settings
 from app.db.models import Analysis, AnalysisStatus, Move
 from app.db.session import Database
 from app.review.cc_accuracy import color_accuracy
+from app.review.types import Phase
 
 
 async def main() -> None:
@@ -38,12 +39,24 @@ async def main() -> None:
                 )
                 for m in moves
             ]
+            by_phase = {
+                phase: [row for row, m in zip(rows, moves, strict=True) if m.phase == phase]
+                for phase in Phase
+            }
+            phase_accuracy = {
+                color: {
+                    phase.value: color_accuracy(phase_rows, white=color == "white")
+                    for phase, phase_rows in by_phase.items()
+                }
+                for color in ("white", "black")
+            }
             await session.execute(
                 update(Analysis)
                 .where(Analysis.id == analysis_id)
                 .values(
                     cc_white_accuracy=color_accuracy(rows, white=True),
                     cc_black_accuracy=color_accuracy(rows, white=False),
+                    phase_accuracy=phase_accuracy,
                 )
             )
         await session.commit()

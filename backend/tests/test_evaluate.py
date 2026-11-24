@@ -109,12 +109,6 @@ def test_game_and_phase_accuracy() -> None:
     assert black is not None
     assert black < 100.0
     assert [m.phase for m in result.moves] == [Phase.OPENING] * 3 + [Phase.MIDDLEGAME]
-    assert result.phase_accuracy[chess.WHITE] == {
-        Phase.OPENING: 100.0,
-        Phase.MIDDLEGAME: None,
-        Phase.ENDGAME: None,
-    }
-    assert result.phase_accuracy[chess.BLACK][Phase.MIDDLEGAME] == 100.0
 
 
 def test_evaluate_game_requires_eval_per_position() -> None:

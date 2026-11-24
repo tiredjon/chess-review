@@ -53,3 +53,6 @@ class WorkerSettings:
     on_shutdown = shutdown
     redis_settings = RedisSettings.from_dsn(settings.redis_url)
     max_jobs = settings.worker_max_jobs
+    job_completion_wait = settings.worker_shutdown_wait_s
+    # Ключ состояния для `arq … --check` (healthcheck контейнера); по умолчанию — раз в час.
+    health_check_interval = 60

@@ -7,6 +7,7 @@ import pytest
 from chess.engine import Cp, Mate, Score
 
 from app.engine.analyzer import Analyzer
+from app.review.cc_accuracy import side_accuracy
 from app.review.evaluate import replay, terminal_eval
 from app.review.motifs.base import Motif, MotifType
 from app.review.pipeline import analyse_game, review_game
@@ -63,7 +64,18 @@ def test_review_game_combines_classes_motifs_and_opening(scholar: list[chess.Mov
     assert white is not None
     assert black is not None
     assert white > black
-    assert set(review.phase_accuracy[chess.WHITE]) == set(Phase)
+    # Фазы — по формуле «как у Chess.com», как и cc_accuracy: одна шкала на плашках.
+    white_phases = review.phase_accuracy[chess.WHITE]
+    assert set(white_phases) == set(Phase)
+    assert white_phases[Phase.ENDGAME] is None
+    opening = [m.eval for m in review.moves if m.eval.phase == Phase.OPENING]
+    assert white_phases[Phase.OPENING] == side_accuracy(
+        [(m.eval_before, m.eval_after) for m in opening if m.color == chess.WHITE]
+    )
+    phases = [p for p in review.phase_accuracy[chess.BLACK].values() if p is not None]
+    black_cc = review.cc_accuracy[chess.BLACK]
+    assert black_cc is not None
+    assert min(phases) <= black_cc <= max(phases)
 
 
 async def test_analyse_game_uses_analyser_and_reports_progress() -> None:

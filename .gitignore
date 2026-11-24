@@ -14,3 +14,6 @@ htmlcov/
 
 # Тема Chess.com (фигуры, доска) — только локально, для личного использования, в git не идёт
 web/public/chesscom/
+
+# Бэкапы БД (`make backup`)
+backups/

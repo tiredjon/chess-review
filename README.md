@@ -28,25 +28,58 @@
 | LLM | Gemini / OpenAI / Anthropic через официальные SDK или без LLM (шаблоны) |
 | Frontend | Next.js 16 (App Router, Cache Components), React 19, TypeScript, Tailwind 4, react-chessboard, chess.js, Recharts |
 | Тесты | pytest + pytest-asyncio, Playwright (сквозные сценарии) |
-| Инфра | Docker Compose: postgres, redis, migrate, api, worker, web; bot — по профилю |
+| Инфра | Docker Compose: postgres, redis (AOF), migrate, api, worker, web; bot — по профилю; CI — GitHub Actions |
 
-## Запуск
+## Быстрый старт
 
-Нужны Docker (Compose v2) и `make`.
+Приложение запускается на своём компьютере; у каждого — свои пользователи и партии.
+
+Нужны: Docker Desktop или OrbStack (Docker Compose 2.24+; дайте ему не меньше 4 ГБ памяти), `git`, `make`. На Windows — всё внутри WSL 2 (Ubuntu): Docker Desktop с интеграцией WSL, репозиторий клонировать в домашнюю папку WSL.
 
 ```bash
-cp .env.example .env && make up
+git clone https://github.com/tiredjon/chess-review.git && cd chess-review
+cp .env.example .env
 ```
+
+В `.env` впишите `JWT_SECRET=` — вывод `openssl rand -base64 32` (иначе после каждого перезапуска API придётся входить заново) и при желании `ENGINE_POOL_SIZE` — процессов Stockfish для анализа (по умолчанию 4; число ядер минус 1–2, на 4-ядерной машине — 2). Затем:
+
+```bash
+make app
+```
+
+Первая сборка — несколько минут. Откройте http://localhost:3000, зарегистрируйтесь (email и пароль хранятся только у вас) и загрузите партии по нику Lichess / Chess.com или вставкой PGN. Остановить — `make down`, данные остаются в томах Docker; запустить снова — `make app`. Обновиться — `git pull && make app` (миграции применяются сами).
+
+Анализ партии на сервере (воркер со Stockfish, глубина 18) — 40–60 с на 4 ядрах; «В браузере» считает сам браузер.
+
+## Режимы запуска
+
+| Команда | Что поднимает | Когда |
+|---|---|---|
+| `make app` | прод-сборки: `next build` + `next start`, uvicorn и воркер без перезагрузок, код внутри образов; сервисы поднимаются сами после перезапуска Docker | пользоваться |
+| `make up` | dev-серверы: hot reload web и API, воркер перезапускается при правке кода, код — из папок репозитория | разрабатывать |
+
+Оба режима — одни и те же порты, `.env`, БД и Redis (тома Docker); переключаться можно в любую сторону, `make down` останавливает любой. В `make app` правки кода подхватываются только пересборкой (`make app`). Остановка воркера в `make app` ждёт идущий анализ до 2 минут, недоделанный продолжается после запуска; очередь задач в Redis сохраняется на диск (AOF).
 
 После старта: интерфейс — http://localhost:3000, API — http://localhost:8000 (`/docs` — OpenAPI). Порты меняются в `.env` (`WEB_PORT`, `API_PORT`, …); при смене `WEB_PORT` добавьте новый origin в `CORS_ORIGINS`.
 
-Первый зарегистрированный пользователь получает запись dev-пользователя из начальной миграции — вместе с партиями, анализами и пазлами, которые были загружены до появления входа (отключается `AUTH_CLAIM_DEV_USER=false`).
+Первый зарегистрированный пользователь получает запись dev-пользователя из начальной миграции — вместе с партиями, анализами и пазлами, которые были загружены до появления входа (отключается `AUTH_CLAIM_DEV_USER=false`). На новой установке эта запись пустая.
+
+## Бэкапы
+
+```bash
+make backup          # backups/chess_review-<дата>.dump + .counts (число строк в таблицах)
+make restore-check   # восстановить последний бэкап в отдельную БД, сверить, удалить её
+make restore FILE=backups/chess_review-<дата>.dump   # вернуть рабочую БД к бэкапу
+```
+
+Хранятся последние 14 бэкапов (`BACKUP_KEEP`). `make restore` сначала снимает бэкап текущего состояния, на время восстановления останавливает api / worker / web / bot и восстанавливает в одной транзакции: при ошибке БД остаётся как была. Папка `backups/` в git не идёт; храните копии ещё где-нибудь (облако, другой диск). Ежедневно — например, через `crontab -e`: `0 21 * * * cd /путь/к/chess-review && PATH=/usr/local/bin:/opt/homebrew/bin:$PATH make backup >> backups/cron.log 2>&1` (Docker должен быть запущен).
 
 Полезные команды (`make help` — все):
 
 | Команда | Что делает |
 |---|---|
-| `make up` / `make down` | поднять / остановить весь стек |
+| `make app` | поднять весь стек в быстром режиме (прод-сборки) |
+| `make up` / `make down` | поднять весь стек в dev-режиме / остановить любой |
 | `make logs` | логи всех сервисов |
 | `make services` | только postgres и redis (для локальной разработки и тестов) |
 | `make install` | зависимости backend (`uv sync`) и web (`npm ci`) |
@@ -55,6 +88,7 @@ cp .env.example .env && make up
 | `make test-docker` | тесты backend в Docker-образе (там есть Stockfish) |
 | `make e2e` | Playwright по поднятому стеку: smoke и движок в браузере |
 | `make bot` | Telegram-бот (см. ниже) |
+| `make backup` / `make restore-check` / `make restore FILE=…` | бэкап БД, проверка восстановления, восстановление |
 
 Локально без Docker: `make services`, затем `cd backend && uv run alembic upgrade head && uv run uvicorn app.main:create_app --factory --reload`, воркер — `uv run arq app.workers.settings.WorkerSettings`, web — `cd web && NEXT_PUBLIC_API_URL=http://localhost:8000 npm run dev`. Для анализа нужен Stockfish в `PATH` (`brew install stockfish`).
 
@@ -121,7 +155,7 @@ curl и скрипты упираются в проверку Cloudflare, поэ
 make test
 ```
 
-Линтеры (ruff, mypy strict, eslint, tsc) и все тесты backend: доменная логика на фиксированных позициях, API на тестовой БД `chess_review_test` (пересоздаётся на каждый прогон) и Redis-базе 15, воркер — на фейковом движке. Тесты с настоящим Stockfish пропускаются, если его нет локально; в Docker-образе — обязательны (`make test-docker`). Сетевые тесты против живых Lichess / Chess.com: `cd backend && NETWORK_TESTS=1 uv run pytest tests/test_import_live.py`.
+То же запускает CI (GitHub Actions, `.github/workflows/ci.yml`) на каждый push и pull request — со Stockfish 19, поэтому тесты движка там не пропускаются. Линтеры (ruff, mypy strict, eslint, tsc) и все тесты backend: доменная логика на фиксированных позициях, API на тестовой БД `chess_review_test` (пересоздаётся на каждый прогон) и Redis-базе 15, воркер — на фейковом движке. Тесты с настоящим Stockfish пропускаются, если его нет локально; в Docker-образе — обязательны (`make test-docker`). Сетевые тесты против живых Lichess / Chess.com: `cd backend && NETWORK_TESTS=1 uv run pytest tests/test_import_live.py`.
 
 Сквозные сценарии в браузере — по уже поднятому стеку, в `make test` не входят: smoke (регистрация → вход → вставка PGN → анализ по SSE → разбор → статистика → пазл → выход) и движок в браузере (анализ в браузере → пазл → исследование движком браузера и сервера → публичная ссылка без входа и её отзыв):
 
@@ -167,5 +201,7 @@ web/
   src/lib/      клиент API и сессии, i18n (словари RU/EN), движок в браузере (engine/), шахматные утилиты, тема доски, звуки
   public/engine/ Stockfish.js (WASM), scripts/fetch-engine.mjs
   e2e/          Playwright: smoke и движок в браузере
-docker-compose.yml, Makefile, .env.example, SPEC.md
+scripts/         бэкап и восстановление БД
+.github/         CI
+docker-compose.yml (+ docker-compose.app.yml для make app), Makefile, .env.example, SPEC.md
 ```

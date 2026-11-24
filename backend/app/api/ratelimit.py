@@ -67,10 +67,12 @@ async def hit(
 
 
 def client_ip(request: Request, settings: Settings) -> str:
+    """IP клиента. За своим прокси — последний адрес `X-Forwarded-For`: его дописал прокси,
+    а всё левее мог прислать сам клиент (подделка обходила бы лимиты по IP)."""
     if settings.trust_forwarded_for:
         forwarded = request.headers.get("x-forwarded-for", "")
-        if first := forwarded.split(",")[0].strip():
-            return first
+        if last := forwarded.split(",")[-1].strip():
+            return last
     return request.client.host if request.client else "unknown"
 
 

@@ -8,6 +8,7 @@ from uuid import UUID
 
 from pydantic import BeforeValidator, Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
+from sqlalchemy.engine import make_url
 
 from app.core.rates import Rate
 
@@ -89,6 +90,9 @@ class Settings(BaseSettings):
     worker_max_jobs: int = Field(default=2, ge=1)
     # Анализ дольше этого считается зависшим и помечается failed.
     analysis_job_timeout_s: int = Field(default=1800, ge=60)
+    # Остановка воркера (деплой): новые задачи не берутся, идущие доделываются до этого
+    # срока, потом прерываются и повторяются после запуска. 0 — прерывать сразу (dev).
+    worker_shutdown_wait_s: int = Field(default=0, ge=0)
     # Режим исследования позиции через API: свой небольшой пул движка в процессе API
     # (запускается при первом запросе), чтобы не ждать в очереди за анализами партий.
     explore_depth: int = Field(default=18, ge=1, le=40)
@@ -136,6 +140,32 @@ class Settings(BaseSettings):
             if self.app_env == "prod":
                 raise ValueError("JWT_SECRET обязателен при APP_ENV=prod")
             self.jwt_secret = SecretStr(secrets.token_urlsafe(32))
+        return self
+
+    @model_validator(mode="after")
+    def _prod_safety(self) -> "Settings":
+        """В prod API не стартует со значениями, безопасными только на localhost."""
+        if self.app_env != "prod":
+            return self
+        problems = []
+        if len(self.jwt_key) < 32:
+            problems.append("JWT_SECRET короче 32 символов (openssl rand -base64 32)")
+        if not self.cookie_secure:
+            problems.append("COOKIE_SECURE=false: refresh-cookie уйдёт по HTTP")
+        if not self.cors_origins or any(
+            not o.startswith("https://") or "localhost" in o for o in self.cors_origins
+        ):
+            problems.append("CORS_ORIGINS — только https-origin прод-домена")
+        if not self.public_web_url.startswith("https://") or "localhost" in self.public_web_url:
+            problems.append("PUBLIC_WEB_URL — https-адрес прод-домена")
+        if self.auth_claim_dev_user:
+            problems.append("AUTH_CLAIM_DEV_USER=true: данные dev-пользователя получит первый")
+        if not self.rate_limit_enabled:
+            problems.append("RATE_LIMIT_ENABLED=false")
+        if make_url(self.database_url).password in (None, "", "chess"):
+            problems.append("пароль PostgreSQL по умолчанию (POSTGRES_PASSWORD)")
+        if problems:
+            raise ValueError("Небезопасная конфигурация для APP_ENV=prod: " + "; ".join(problems))
         return self
 
     @property

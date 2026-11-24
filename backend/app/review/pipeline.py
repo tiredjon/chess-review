@@ -48,6 +48,7 @@ class MoveReview:
 class GameReview:
     moves: list[MoveReview]
     accuracy: dict[chess.Color, float | None]
+    # Точность фаз — «как у Chess.com», на одной шкале с общей точностью на плашках.
     phase_accuracy: dict[chess.Color, dict[Phase, float | None]]
     opening: Opening | None
     # Точность «как у Chess.com» (`cc_accuracy.py`).
@@ -76,14 +77,24 @@ def review_game(
             for move, classification, move_motifs in zip(game.moves, classes, motifs, strict=True)
         ],
         accuracy=game.accuracy,
-        phase_accuracy=game.phase_accuracy,
-        opening=book.identify(positions),
-        cc_accuracy={
-            color: side_accuracy(
-                [(m.eval_before, m.eval_after) for m in game.moves if m.color == color]
-            )
+        phase_accuracy={
+            color: {phase: _cc_accuracy(game.moves, color, phase) for phase in Phase}
             for color in chess.COLORS
         },
+        opening=book.identify(positions),
+        cc_accuracy={color: _cc_accuracy(game.moves, color) for color in chess.COLORS},
+    )
+
+
+def _cc_accuracy(
+    moves: Sequence[MoveEval], color: chess.Color, phase: Phase | None = None
+) -> float | None:
+    return side_accuracy(
+        [
+            (m.eval_before, m.eval_after)
+            for m in moves
+            if m.color == color and (phase is None or m.phase == phase)
+        ]
     )
 
 

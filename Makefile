@@ -2,6 +2,7 @@
 SHELL := /bin/bash
 
 COMPOSE := docker compose
+APP := $(COMPOSE) -f docker-compose.yml -f docker-compose.app.yml
 BACKEND := cd backend && uv run
 WEB := cd web &&
 
@@ -15,8 +16,12 @@ help: ## Список команд
 up: ## Поднять весь стек (postgres, redis, migrate, api, worker, web)
 	$(COMPOSE) up -d --build --wait
 
+.PHONY: app
+app: ## Быстрый режим: прод-сборки (без hot reload) на тех же портах и данных
+	$(APP) up -d --build --wait
+
 .PHONY: down
-down: ## Остановить стек
+down: ## Остановить стек (оба режима)
 	$(COMPOSE) down
 
 .PHONY: logs
@@ -26,6 +31,20 @@ logs: ## Логи всех сервисов
 .PHONY: bot
 bot: ## Поднять Telegram-бота (нужен TELEGRAM_BOT_TOKEN в .env и запущенный стек)
 	$(COMPOSE) --profile bot up -d --build bot
+
+# --- Данные ---
+
+.PHONY: backup
+backup: ## Бэкап БД в backups/ (хранятся последние BACKUP_KEEP=14)
+	scripts/db-backup.sh
+
+.PHONY: restore-check
+restore-check: ## Проверить восстановление бэкапа в отдельную БД (FILE=…, по умолчанию последний)
+	scripts/db-restore.sh --check $(FILE)
+
+.PHONY: restore
+restore: ## Восстановить рабочую БД: make restore FILE=backups/….dump (сначала бэкап текущей)
+	scripts/db-restore.sh --yes $(FILE)
 
 .PHONY: services
 services: ## Поднять только postgres и redis (для локальной разработки и тестов)

@@ -1,0 +1,55 @@
+# Быстрый режим (`make app`): поверх docker-compose.yml — прод-сборки вместо
+# dev-серверов. Next — `next build` + `next start`, API — uvicorn без --reload, воркер —
+# без --watch; код в образах, а не в bind-mount. Порты, .env и данные (тома) — те же,
+# что у `make up`, переключаться между режимами можно в любую сторону.
+
+x-backend-app: &backend-app
+  build:
+    context: ./backend
+    target: prod
+
+services:
+  migrate:
+    <<: *backend-app
+    image: chess-review-migrate:app
+    # !reset не переживает слияние якоря — у каждого сервиса свой.
+    volumes: !reset []
+
+  postgres:
+    restart: unless-stopped
+
+  redis:
+    restart: unless-stopped
+
+  api:
+    <<: *backend-app
+    image: chess-review-api:app
+    volumes: !reset []
+    restart: unless-stopped
+
+  worker:
+    <<: *backend-app
+    image: chess-review-worker:app
+    volumes: !reset []
+    command: ["arq", "app.workers.settings.WorkerSettings"]
+    environment:
+      # Остановка (make down, пересборка): идущий анализ доделывается до 2 минут,
+      # недоделанный повторяется после запуска.
+      WORKER_SHUTDOWN_WAIT_S: "120"
+    stop_grace_period: 150s
+    restart: unless-stopped
+
+  bot:
+    <<: *backend-app
+    image: chess-review-bot:app
+    volumes: !reset []
+
+  web:
+    build:
+      context: ./web
+      target: prod
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:${API_PORT:-8000}
+    image: chess-review-web:app
+    volumes: !reset []
+    restart: unless-stopped

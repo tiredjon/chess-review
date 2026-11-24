@@ -180,12 +180,23 @@ async def test_login_and_register_are_limited_by_ip(redis: Redis, settings: Sett
         other_ip = await proxied.post(
             "/api/v1/auth/login", json=credentials, headers={"X-Forwarded-For": "203.0.113.7"}
         )
+        # Левые адреса присылает клиент: подмена первого адреса лимит не обходит.
+        spoofed = [
+            await proxied.post(
+                "/api/v1/auth/login",
+                json=credentials,
+                headers={"X-Forwarded-For": f"198.51.100.{i}, 203.0.113.7"},
+            )
+            for i in range(2)
+        ]
 
     assert [r.status_code for r in attempts[:2]] == [401, 401]
     assert_limited(attempts[2], "login")
     assert registered.status_code == 201
     assert_limited(second, "register")
     assert other_ip.status_code == 401
+    assert spoofed[0].status_code == 401
+    assert_limited(spoofed[1], "login")
 
 
 @integration

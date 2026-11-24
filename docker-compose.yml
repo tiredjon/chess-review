@@ -36,8 +36,12 @@ services:
 
   redis:
     image: redis:7-alpine
+    # AOF в томе: очередь ARQ (анализы, импорт) переживает перезапуск Docker.
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec"]
     ports:
       - "127.0.0.1:${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redisdata:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 2s
@@ -113,3 +117,4 @@ services:
 
 volumes:
   pgdata:
+  redisdata:

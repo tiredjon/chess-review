@@ -57,8 +57,8 @@ test("анализ в браузере, пазл, исследование, пу
   const evaluation = page.getByTestId("explore-eval");
   await expect(evaluation).toHaveText(EVAL, { timeout: 30_000 });
   await expect(page.getByText(/^глубина \d+/)).toBeVisible();
-  // Тот же расчёт движком сервера.
-  await page.getByRole("radio", { name: "Сервер" }).click();
+  // Тот же расчёт движком в Docker (воркер API).
+  await page.getByRole("radio", { name: "Docker" }).click();
   await expect(evaluation).toHaveText(EVAL, { timeout: 30_000 });
   await page.getByRole("button", { name: "Сделать лучший ход" }).click();
   await expect(page.getByRole("button", { name: /^2\./ })).toBeVisible();
