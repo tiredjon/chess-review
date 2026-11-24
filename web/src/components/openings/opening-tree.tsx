@@ -154,6 +154,7 @@ function Move<N extends OpeningNode>({ ctx, node, showNumber }: { ctx: Ctx<N>; n
   const color = moverColor(node);
   return (
     <>
+      <span className="inline-flex items-center whitespace-nowrap">
       {showNumber && (
         <span className="pr-0.5 pl-1.5 text-sm font-semibold text-muted">
           {moveNo(node.ply)}
@@ -174,6 +175,7 @@ function Move<N extends OpeningNode>({ ctx, node, showNumber }: { ctx: Ctx<N>; n
         {!node.book && <span className="sr-only">{ctx.labels.offBook}</span>}
         {ctx.renderMeta?.(node)}
       </button>
+      </span>
       {node.name && <span className="px-1 text-[12px] font-medium text-muted">{node.name}</span>}
     </>
   );
