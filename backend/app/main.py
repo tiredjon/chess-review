@@ -17,6 +17,8 @@ from app.core.logging import configure_logging
 from app.db.session import Database
 from app.engine.pool import EnginePool, LazyEnginePool
 from app.explain.llm import make_provider
+from app.explorer.cache import make_explorer
+from app.importers.http import make_http_client
 
 log = structlog.get_logger(__name__)
 
@@ -44,11 +46,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             )
         )
         app.state.explore_engine = explore_engine
+        # Lichess Opening Explorer с кэшем в БД (`app/api/explorer.py`).
+        explorer_http = make_http_client(settings)
+        app.state.explorer = make_explorer(settings, explorer_http, app.state.db)
         log.info("api.startup", env=settings.app_env)
         try:
             yield
         finally:
             await explore_engine.close()
+            await explorer_http.aclose()
             await app.state.redis.aclose()
             if app.state.llm is not None:
                 await app.state.llm.close()
