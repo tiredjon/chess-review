@@ -81,7 +81,7 @@ async function send(path: string, init: RequestInit | undefined, token: string |
 
 const AUTH_RETRY_CODES = new Set(["token_expired", "token_invalid", "not_authenticated"]);
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let response = await send(path, init, await accessToken());
   let body = (await response.json().catch(() => null)) as ErrorBody;
   if (response.status === 401 && AUTH_RETRY_CODES.has(body?.code ?? "")) {
