@@ -269,12 +269,13 @@ def half_open(board: chess.Board, color: chess.Color) -> list[int]:
 
 
 def holes(board: chess.Board, color: chess.Color) -> list[chess.Square]:
+    """Дыры `color` на 3–4-й горизонталях (от себя), линии c–f: своей пешкой поле уже не
+    защитить. Поле с пешкой (своей или соперника) — не дыра: фигуре туда не встать."""
     result = []
     for rel in HOLE_RANKS:
         for file in HOLE_FILES:
             square = square_at(color, file, rel)
-            piece = board.piece_at(square)
-            if piece is not None and piece.piece_type == chess.PAWN and piece.color == color:
+            if board.piece_type_at(square) == chess.PAWN:
                 continue
             if not pawn_can_attack(board, color, square):
                 result.append(square)

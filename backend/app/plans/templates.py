@@ -62,12 +62,13 @@ STRUCTURES: dict[str, StructureText] = {
         {"ru": "Ёж", "en": "Hedgehog"},
         {
             "ru": "{Owner} держат компактную расстановку на своей третьей горизонтали, "
-            "у {opponent_gen} больше пространства. Всё решают прорывы {b} и {d}: если "
+            "у {opponent_gen} больше пространства. Всё решают прорывы {b_break} и {d_break}: если "
             "один из них пройдёт, игра {owner_gen} оживает, если нет — {opponent} "
             "постепенно теснят.",
             "en": "{Owner} keeps a compact set-up on the third rank while {Opponent} has "
-            "more space. Everything revolves around the breaks {b} and {d}: if one of them "
-            "comes through, {Owner}'s game comes alive; if not, {Opponent} slowly squeezes.",
+            "more space. Everything revolves around the breaks {b_break} and {d_break}: "
+            "if one of them comes through, {Owner}'s game comes alive; if not, "
+            "{Opponent} slowly squeezes.",
         },
     ),
     "sicilian_d6_e5": StructureText(
@@ -368,8 +369,9 @@ IDEAS: dict[str, T] = {
     },
     # Ёж.
     "hedgehog.breaks": {
-        "ru": "Не спешите: держите фигуры за пешками и готовьте прорывы {b} и {d}.",
-        "en": "Be patient: keep the pieces behind the pawns and prepare the breaks {b} and {d}.",
+        "ru": "Не спешите: держите фигуры за пешками и готовьте прорывы {b_break} и {d_break}.",
+        "en": "Be patient: keep the pieces behind the pawns and prepare the breaks "
+        "{b_break} and {d_break}.",
     },
     "hedgehog.squeeze": {
         "ru": "Контролируйте поля {squares}: без прорывов у соперника нет активной игры.",
@@ -683,10 +685,10 @@ def _values(params: Mapping[str, str], side: Side, lang: Lang) -> dict[str, str]
             )
         elif name == "wing":
             values.update(_WINGS[lang][raw])
-        if name == "support":
-            values["support_pawns"] = _pawns(raw.split(","), lang)
-        elif name not in values:
-            values[name] = _join(raw.split(","), lang) if "," in raw else raw
+        else:
+            values[name] = _join(raw.split(","), lang)
+            if name == "support":
+                values["support_pawns"] = _pawns(raw.split(","), lang)
     return values
 
 

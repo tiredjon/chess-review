@@ -184,7 +184,7 @@ def _hedgehog(s: _Plan) -> None:
     s.add(
         "breaks",
         True,
-        {"b": f"{s.p['b']}–{_sq(b_to)}", "d": f"{s.p['d']}–{_sq(d_to)}"},
+        {"b_break": f"{s.p['b']}–{_sq(b_to)}", "d_break": f"{s.p['d']}–{_sq(d_to)}"},
         covers={s.p["b"], s.p["d"]},
     )
     s.add("squeeze", False, {"squares": _join((b_to, d_to))}, step=1)
