@@ -262,6 +262,37 @@ Auth, rate limits, i18n RU/EN, мобильная вёрстка, Playwright smo
 - README: быстрый старт для нового человека (требования, `.env`, первый запуск, обновление), режимы запуска, бэкапы.
 Готово, когда: `make test` и CI зелёные; `make app` поднимается, приложение на данных пользователя работает (вход, страницы, анализ на сервере и в браузере, исследование, публичная ссылка, 375 px), Playwright проходит против `make app`; бэкап снят и восстановление проверено; README и SPEC обновлены.
 
+**Сессия 13 — Дебюты: репертуар, курсы по линиям, тренажёр**
+Цель пользователя: учиться дебютам **дальше первых 5–6 ходов** — понимать идеи и как играть миттельшпиль, который из дебюта получается. Две двери в одно и то же:
+- **Мой репертуар** — дерево дебютов из своих партий (за белых / чёрных): что играю, что отвечают, где выхожу из теории, результат → «Учить эту линию».
+- **Курсы («обучение партиям»)** — выбрать дебют и линию из каталога (например, сицилианская: Найдорф, Россолимо) и цвет, за который учить → курс.
+
+**Курс** — дерево от начальной позиции: исходная линия, дальше теории — популярные продолжения мастеров (Lichess Masters), проверенные движком: за ученика — главный ход, за соперника — до 3 частых ответов (ветки). В ключевых узлах (выход из теории, смена пешечной структуры, конец линии) — **идеи позиции**: распознанная структура, пешечные прорывы, форпосты, слабости и типовые планы обеих сторон (детерминированно, шаблоны RU/EN, без LLM — §ключевой принцип). Плюс **образцовые партии мастеров** через эти позиции — проиграть и увидеть, как ведут миттельшпиль. **Тренажёр** — играешь свою сторону курса; засчитывается ход курса или любой, который движок считает не хуже порога (`course_alt_threshold`, Δwin% ≤ 5): учишь идеи, а не зубришь; на ошибке — карточка идей. Позиции, где ошибаешься, возвращаются чаще (коробки Лейтнера, как у пазлов).
+
+Фундамент (сделан до подсессий, в main): таблицы `explorer_cache`, `master_games`, `courses`, `user_courses`, `trainer_cards`, `trainer_attempts` (миграция `520dc51dba80`), настройки `explorer_*` / `course_*` и лимиты `course`, `trainer` (`core/config.py`), коды ошибок `course_not_found`, `course_not_ready`, `line_invalid`, `trainer_card_not_found`, `explorer_unavailable` (+ тексты RU/EN), контракты `app/explorer/types.py`, `app/plans/types.py`, `app/courses/types.py` (дерево курса), пустые роутеры `app/api/{repertoire,courses,trainer,explorer,plans}.py` (подключены), пункт меню «Дебюты» (`/openings`), вкладки и заглушки страниц, пространства словарей `openings`, `repertoire`, `courses`, `trainer`.
+
+Карта подсессий (каждая — своя ветка; волна стартует, когда влиты зависимости):
+
+| # | Что | Файлы (только свои) | Зависит от | Волна |
+|---|---|---|---|---|
+| 13.1 | Explorer: клиент Lichess (masters / lichess), кэш в БД, партии мастеров, API | `app/explorer/`, `app/api/explorer.py`, тесты | — | 1 |
+| 13.2 | Идеи позиции: структуры, прорывы, форпосты, слабости, планы, шаблоны RU/EN, API | `app/plans/`, `app/api/plans.py`, тесты | — | 1 |
+| 13.3 | Репертуар: дерево из партий пользователя, список дебютов, API | `app/repertoire/`, `app/api/repertoire.py`, тесты | — | 1 |
+| 13.4 | Курсы: каталог из `openings.tsv`, сборщик дерева (explorer + движок + идеи + партии мастеров), ARQ-задача, API | `app/courses/`, `app/api/courses.py`, `app/workers/courses.py`, тесты | 13.1, 13.2 | 2 |
+| 13.5 | Web: «Мой репертуар» (дерево на доске, статистика узлов, «Учить эту линию») + общий компонент «доска + дерево ходов» | `web/src/components/openings/` (свои файлы), `app/(app)/openings/page.tsx`, `lib/repertoire-api.ts`, словари `repertoire` | 13.3 | 2 |
+| 13.6 | Тренажёр: карточки, очередь, проверка ответа (дерево + движок), SRS, API | `app/trainer/`, `app/api/trainer.py`, тесты | контракт дерева | 2 |
+| 13.7 | Web: каталог курсов, страница курса (дерево, идеи, мастера, партии), тренировка, очередь `/openings/train` | `app/(app)/openings/courses/**`, `…/train/`, `lib/courses-api.ts`, `lib/trainer-api.ts`, словари `courses`, `trainer` | 13.4, 13.5, 13.6 | 3 |
+| 13.8 | Интеграция: кнопка «Тренировать эту линию» в разборе, Playwright-сценарий, проверка на данных пользователя, SPEC | — | всё | 4 |
+
+Контракты API (все — за входом, `/api/v1`):
+- **13.1** `GET /explorer?fen=&source=masters|lichess` → `ExplorerPosition` (лимит `explore`; база `lichess` с 2026-11 требует токен Lichess — без `LICHESS_TOKEN` курсы опираются только на `masters`); `GET /explorer/games/{id}` → `MasterGamePgn`. Ошибка Lichess → 503 `explorer_unavailable`.
+- **13.2** `GET /plans?fen=&lang=` → `{ideas: PositionIdeas, rendered: RenderedIdeas}`.
+- **13.3** `GET /repertoire/openings?color=` → список `{name, eco, games, wins, draws, losses, line_uci, book_exit_ply, last_played_at}` (результат — с точки зрения пользователя; по убыванию партий); `GET /repertoire/tree?color=&max_ply=&min_games=` → `{color, total_games, nodes: RepertoireNode[]}`. Узел репертуара повторяет поля `CourseNode` (`id, parent, children, ply, uci, san, mover, fen, book, name`) + `games, wins, draws, losses, last_played_at`; `mover` = `learner` — ход пользователя.
+- **13.4** `GET /courses/catalog` → семейства → варианты → линии (`{name, eco, uci[], pgn}`), поиск на клиенте; `POST /courses {line_uci, color, source: catalog|repertoire, name?}` → курс (идемпотентно по ключу; новый — в очередь, лимит `course` только на новый); `GET /courses` → «Мои курсы»; `GET /courses/{id}?lang=` → курс + `tree` (`CourseTree`) + `ideas_text: {node_id: RenderedIdeas}` на языке; `DELETE /courses/{id}` — убрать из «Моих курсов».
+- **13.6** `POST /trainer/courses/{course_id}/start` → создать карточки всех узлов «ход за учеником»; `GET /trainer/next?course_id=` → ближайшая карточка `{course_id, node_id, fen, path_uci, color, box, due}` или `null`; `POST /trainer/courses/{course_id}/nodes/{node_id}/answer {uci, hint_used}` → `{verdict: main|alternative|wrong, expected: [{uci, san}], win_loss, box, next_review_at, ideas_node_id}` (`ideas_node_id` — ближайший узел пути с `ideas`; текст идей фронт берёт из `ideas_text` курса) (лимит `trainer`); `GET /trainer/summary` → по курсам `{course_id, total, due, learned}`. SRS: main — как «решён», alternative — как «решён с подсказкой» (коробка не растёт), wrong — коробка 0.
+
+Правила для подсессий: только свои файлы (общие — фундамент; нужна правка общего — описать в отчёте, не делать); стиль кода, тестов и комментариев — как в проекте (русский, ruff + mypy strict, eslint + tsc); доменная логика — чистая и покрыта юнит-тестами на фиксированных позициях; сеть и движок в тестах — фейки (живые тесты Lichess — под `NETWORK_TESTS=1`); вежливость к Lichess (User-Agent `IMPORT_USER_AGENT`, один запрос за раз, пауза `explorer_min_interval_s`, 429 → ждать минуту); 375 px без горизонтального скролла; RU и EN. Готово, когда: `make test` зелёный, части работают сквозь на `make app` на данных пользователя, решения записаны ниже.
+
 ## 12. Опционально после MVP
 Перенесено в сессию 11.
 

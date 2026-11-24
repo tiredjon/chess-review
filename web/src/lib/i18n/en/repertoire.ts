@@ -1,0 +1,56 @@
+import { enPlural } from "../plural";
+import type { Dict } from "..";
+
+export const repertoire: Dict["repertoire"] = {
+  shared: {
+    board: "Opening board",
+    start: "Start",
+    toStart: "To start",
+    back: "Back",
+    forward: "Forward",
+    offBook: "Out of theory",
+  },
+  title: "My repertoire",
+  color: { label: "Color", white: "White", black: "Black" },
+  tabs: { label: "What to show", openings: "My openings", tree: "Move tree" },
+  search: { label: "Search openings", placeholder: "Find an opening…", none: "Nothing found" },
+  loading: "Loading your repertoire…",
+  loadError: "Could not load the repertoire",
+  retry: "Retry",
+  empty: {
+    title: (color: string) => `No games as ${color}`,
+    white: "White",
+    black: "Black",
+    importLink: "Import your games",
+    importText: "and set your Lichess username in the profile — your color is detected from it and the repertoire is built.",
+  },
+  list: {
+    games: (n: number) => `${n} ${enPlural(n, "game", "games")}`,
+    score: (percent: number) => `${percent}% score`,
+    exit: (move: number) => `out of theory at move ${move}`,
+    inTheory: "whole game in theory",
+    resultBar: (w: number, d: number, l: number) => `Wins ${w}, draws ${d}, losses ${l}`,
+  },
+  node: {
+    title: "Position",
+    start: "Starting position",
+    games: (n: number) => `${n} ${enPlural(n, "game", "games")}`,
+    score: (percent: number) => `${percent}% score`,
+    wdl: (w: number, d: number, l: number) => `${w} wins · ${d} draws · ${l} losses`,
+    youPlay: "You play",
+    theyPlay: "Opponents reply",
+    noGames: "No more games in your repertoire past this point",
+    inTheory: "In theory",
+    offTheory: (move: number) => `Out of theory from move ${move}`,
+    theoryEnds: (move: number) => `Theory ends at move ${move}`,
+    opening: "Opening",
+    share: (percent: number) => `${percent}%`,
+  },
+  learn: {
+    button: "Learn this line",
+    busy: "Creating the course…",
+    hint: "A course for the line up to this position: ideas, master replies, training.",
+    needMove: "Pick a line first — make at least one move.",
+    error: "Could not create the course",
+  },
+};

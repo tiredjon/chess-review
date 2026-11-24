@@ -21,7 +21,20 @@ from app.core.rates import Rate
 
 log = structlog.get_logger(__name__)
 
-Scope = Literal["import", "analyze", "llm", "login", "register", "browser", "explore", "bot"]
+Scope = Literal[
+    "import",
+    "analyze",
+    "llm",
+    "login",
+    "register",
+    "browser",
+    "explore",
+    "bot",
+    # Сессия 13: сборка курса по линии (дорого: десятки запросов к Lichess и движок)
+    # и ответы в тренажёре дебютов (ход не из курса проверяет движок).
+    "course",
+    "trainer",
+]
 
 
 def rate_for(settings: Settings, scope: Scope) -> Rate:

@@ -50,6 +50,12 @@ class ErrorCode(StrEnum):
     DEPTH_TOO_LOW = "depth_too_low"
     INVALID_FEN = "invalid_fen"
     ENGINE_UNAVAILABLE = "engine_unavailable"
+    # Дебюты (сессия 13): курсы по линиям, тренажёр, Lichess Opening Explorer
+    COURSE_NOT_FOUND = "course_not_found"
+    COURSE_NOT_READY = "course_not_ready"
+    LINE_INVALID = "line_invalid"
+    TRAINER_CARD_NOT_FOUND = "trainer_card_not_found"
+    EXPLORER_UNAVAILABLE = "explorer_unavailable"
     # Общие
     VALIDATION_ERROR = "validation_error"
     HTTP_ERROR = "http_error"

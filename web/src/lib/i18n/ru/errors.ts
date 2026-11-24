@@ -57,6 +57,11 @@ export const errors = {
     // Клиентский код: ошибка валидации поля email.
     invalid_email: () => "Некорректный email",
     share_not_found: () => "Ссылка недействительна",
+    course_not_found: () => "Курс не найден",
+    course_not_ready: () => "Курс ещё собирается — подождите",
+    line_invalid: () => "Некорректная линия ходов",
+    trainer_card_not_found: () => "Позиция тренажёра не найдена",
+    explorer_unavailable: () => "База партий Lichess не отвечает — попробуйте позже",
     source_no_games: (p: ErrorParams) => `У ${p.username ?? "игрока"} нет партий в классические шахматы`,
     engine_data_invalid: () => "Браузерный движок прислал некорректные оценки — попробуйте ещё раз",
     depth_too_low: (p: ErrorParams) => `Глубина анализа должна быть не меньше ${p.min}`,

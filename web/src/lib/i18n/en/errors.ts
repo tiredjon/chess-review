@@ -55,6 +55,11 @@ export const errors: Dict["errors"] = {
     // Клиентский код: ошибка валидации поля email.
     invalid_email: () => "Invalid email address",
     share_not_found: () => "Link is no longer valid",
+    course_not_found: () => "Course not found",
+    course_not_ready: () => "The course is still being built — please wait",
+    line_invalid: () => "Invalid move line",
+    trainer_card_not_found: () => "Trainer position not found",
+    explorer_unavailable: () => "The Lichess games database isn't responding — try again later",
     source_no_games: (p) => `${p.username ?? "The player"} has no standard chess games`,
     engine_data_invalid: () => "The in-browser engine sent invalid evaluations — try again",
     depth_too_low: (p) => `Analysis depth must be at least ${p.min}`,
