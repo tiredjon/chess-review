@@ -1,8 +1,10 @@
 """Пешечные прорывы (сессия 13): ход пешкой, который бьёт пешку соперника или встаёт
 на поле, откуда её атакует.
 
-`legal_now` — ход легален и не теряет пешку на месте (SEE ≥ 0); для стороны не на ходу —
-в той же позиции с передачей очереди (так у обеих сторон видно, что уже можно сыграть).
+`legal_now` — ход легален, не теряет пешку на месте (SEE ≥ 0) и атакованная пешка не уходит
+вперёд с темпом: Найдорф 5…a6 …d5? — e4–e5, конь f6 бежит, а прорыв ничего не вскрыл. Для
+стороны не на ходу — в той же позиции с передачей очереди (так у обеих сторон видно, что уже
+можно сыграть).
 Иначе прорыв — цель подготовки: до поля один ход пешкой, но сейчас мешает фигура на пути
 или пешку на этом поле просто заберут. Прорывы дальше одного хода (b2–b4–b5 в атаке
 меньшинства) разбирают планы структур: общий поиск на два хода даёт в основном шум.
@@ -12,7 +14,7 @@ from dataclasses import dataclass
 
 import chess
 
-from app.plans.pawns import PawnFacts, rel_rank, square_at
+from app.plans.pawns import PawnFacts, ahead, rel_rank, square_at
 from app.plans.types import PawnBreak, Side
 from app.review.material import see
 
@@ -33,6 +35,27 @@ def as_mover(board: chess.Board, color: chess.Color) -> chess.Board | None:
     work.turn = color
     work.ep_square = None
     return work if work.is_valid() else None
+
+
+def _kicked_by_target(mover: chess.Board, move: chess.Move, target: chess.Square) -> bool:
+    """После прорыва `move` атакованная пешка `target` может пойти вперёд и ударить фигуру
+    прорывающей стороны, не теряя себя (SEE ≥ 0). Тогда соперник отвечает темпом, а не
+    разменом: напряжение не возникло, вертикаль не вскрылась."""
+    if move.to_square == target:
+        return False  # взятие: пешки на месте уже нет
+    color = mover.turn
+    push_to = ahead(not color, target)
+    if push_to is None:
+        return False
+    work = mover.copy(stack=False)
+    work.push(move)
+    push = chess.Move(target, push_to)
+    if work.piece_type_at(target) != chess.PAWN or not work.is_legal(push):
+        return False
+    hit = chess.SquareSet(chess.BB_PAWN_ATTACKS[not color][push_to]) & work.occupied_co[color]
+    if not any(work.piece_type_at(square) != chess.PAWN for square in hit):
+        return False
+    return see(work, push) >= 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -82,7 +105,13 @@ def _side_breaks(board: chess.Board, facts: PawnFacts, color: chess.Color) -> li
 
     def add(square: chess.Square, dest: chess.Square, target: chess.Square, moves: int) -> None:
         move = chess.Move(square, dest)
-        ready = moves == 1 and mover is not None and mover.is_legal(move) and see(mover, move) >= 0
+        ready = (
+            moves == 1
+            and mover is not None
+            and mover.is_legal(move)
+            and see(mover, move) >= 0
+            and not _kicked_by_target(mover, move, target)
+        )
         brk = PawnBreak(
             side=side_name(color),
             uci=move.uci(),
