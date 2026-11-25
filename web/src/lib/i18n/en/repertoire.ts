@@ -51,6 +51,7 @@ export const repertoire: Dict["repertoire"] = {
     busy: "Creating the course…",
     hint: "A course for the line up to this position: ideas, master replies, training.",
     needMove: "Pick a line first — make at least one move.",
+    rare: (name: string) => `${name}: a rare line — the tree only shows moves from 2+ games. The course follows the full opening line.`,
     error: "Could not create the course",
   },
 };

@@ -97,9 +97,13 @@ function Loaded({ color, data }: { color: Color; data: Data }) {
   const [query, setQuery] = useState("");
   const [learning, setLearning] = useState(false);
   const [learnError, setLearnError] = useState<string | null>(null);
+  // Дебют из списка, чья линия глубже дерева: дерево режет узлы реже `min_games` (2) партий,
+  // поэтому редкий дебют (часто — из одной партии) в нём не дойти. Учим тогда линию дебюта.
+  const [picked, setPicked] = useState<RepertoireOpening | null>(null);
 
   const select = useCallback((id: number) => {
     setCurrentId(id);
+    setPicked(null);
     setLearnError(null);
   }, []);
   const nav = useOpeningNav(index, currentId, select);
@@ -122,17 +126,23 @@ function Loaded({ color, data }: { color: Color; data: Data }) {
   const openOpening = (opening: RepertoireOpening) => {
     const target = nodeAtLine(index, opening.line_uci);
     if (target) select(target.id);
-    setTab("tree");
+    if (target && target.ply >= opening.line_uci.length) {
+      setTab("tree");
+    } else {
+      setPicked(opening);
+    }
   };
+  const canLearn = picked !== null || currentId !== rootId;
 
   const learn = async () => {
     setLearning(true);
     setLearnError(null);
     try {
+      const courseName = picked ? picked.name : name;
       const course = await repertoireApi.createCourse({
-        line_uci: lineUciTo(index, currentId),
+        line_uci: picked ? picked.line_uci : lineUciTo(index, currentId),
         color,
-        ...(name ? { name } : {}),
+        ...(courseName ? { name: courseName } : {}),
       });
       router.push(`/openings/courses/${course.id}`);
     } catch (err) {
@@ -155,11 +165,11 @@ function Loaded({ color, data }: { color: Color; data: Data }) {
         </div>
         <NodeStats index={index} currentId={currentId} onSelect={select} />
         <div>
-          <Button onClick={learn} disabled={learning || currentId === rootId} className="w-full">
+          <Button onClick={learn} disabled={learning || !canLearn} className="w-full">
             {learning ? t.repertoire.learn.busy : t.repertoire.learn.button}
           </Button>
           <p className="mt-1.5 text-xs text-muted">
-            {currentId === rootId ? t.repertoire.learn.needMove : t.repertoire.learn.hint}
+            {picked ? t.repertoire.learn.rare(picked.name) : canLearn ? t.repertoire.learn.hint : t.repertoire.learn.needMove}
           </p>
           <div className="mt-1">
             <ErrorText>{learnError}</ErrorText>
@@ -196,7 +206,7 @@ function Loaded({ color, data }: { color: Color; data: Data }) {
               {filtered.length === 0 ? (
                 <p className="p-2 text-sm text-muted">{t.repertoire.search.none}</p>
               ) : (
-                <OpeningList openings={filtered} selectedName={name} onSelect={openOpening} />
+                <OpeningList openings={filtered} selectedName={picked?.name ?? name} onSelect={openOpening} />
               )}
             </div>
           </>
