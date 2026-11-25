@@ -6,7 +6,7 @@ import pytest
 from app.plans.breaks import MAX_BREAKS_PER_SIDE, as_mover, pawn_breaks, side_name
 from app.plans.pawns import pawn_facts
 from app.plans.types import PawnBreak
-from tests.plans_lines import LINES, board_of
+from tests.plans_lines import LINES, board_of, play
 
 
 def breaks_of(board: chess.Board) -> list[PawnBreak]:
@@ -24,6 +24,23 @@ def test_najdorf_breaks() -> None:
         PawnBreak(side="black", uci="d6d5", san="d5", target="e4", legal_now=True),
         PawnBreak(side="black", uci="f7f5", san=None, target="e4", legal_now=False),
     ]
+
+
+NAJDORF = "1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 a6"
+
+
+@pytest.mark.parametrize("pgn", [NAJDORF, f"{NAJDORF} 6. Be3", f"{NAJDORF} 6. Bg5"])
+def test_najdorf_d5_refuted_by_e5(pgn: str) -> None:
+    """Найдорф до …e5: на …d5 следует e4–e5 с темпом по коню f6 (Stockfish: −1…−2.5),
+    значит …d5 — цель подготовки, а не «можно сейчас»."""
+    found = by_uci(play(pgn))
+    assert found["d6d5"].legal_now is False
+    assert found["d6d5"].san is None
+
+
+def test_najdorf_english_d5_refuted_by_e5() -> None:
+    found = by_uci(board_of("najdorf_english"))
+    assert found["d6d5"].legal_now is False
 
 
 def test_pianissimo_d4_needs_preparation() -> None:
