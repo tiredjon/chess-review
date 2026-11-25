@@ -11,7 +11,7 @@ from app.core.logging import configure_logging
 from app.db.session import Database
 from app.engine.pool import EnginePool
 from app.importers.http import make_http_client
-from app.workers import imports
+from app.workers import courses, imports
 from app.workers.analysis import TASK_NAME, analyze_game
 
 log = structlog.get_logger(__name__)
@@ -46,6 +46,13 @@ class WorkerSettings:
             imports.import_games,
             name=imports.TASK_NAME,
             timeout=settings.import_job_timeout_s,
+            max_tries=3,
+        ),
+        # Внутри задачи — свой таймаут `course_job_timeout_s` с кодом ошибки; этот — запасной.
+        func(
+            courses.build_course,
+            name=courses.TASK_NAME,
+            timeout=settings.course_job_timeout_s + 60,
             max_tries=3,
         ),
     ]
