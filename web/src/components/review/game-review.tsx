@@ -24,6 +24,7 @@ import { EngineSourceSwitch } from "./move-panel";
 import { Overview } from "./overview";
 import { ShareButton } from "./share-button";
 import { Review } from "./review";
+import { TrainLine } from "./train-line";
 import { CoachBubble, GameSummary } from "./summary";
 import { useAnalysis, type AnalysisState } from "./use-analysis";
 
@@ -130,6 +131,7 @@ function LoadedGame({
             <>
               <GameSummary analysisId={analysis.id} />
               <Overview game={game} analysis={analysis} />
+              <TrainLine game={game} analysis={analysis} />
             </>
           )
         }

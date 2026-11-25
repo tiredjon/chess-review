@@ -95,7 +95,7 @@ PSQL := $(COMPOSE) exec -T postgres psql -U chess -d chess_review -tAc
 DEV_USER_ID ?= 00000000-0000-0000-0000-000000000001
 
 .PHONY: e2e
-e2e: ## Playwright сквозь стек (smoke + движок в браузере) (нужен `make up`; E2E_BASE_URL, по умолчанию localhost:$$WEB_PORT)
+e2e: ## Playwright сквозь стек (smoke, движок в браузере, дебюты) (нужен `make up`; E2E_BASE_URL, по умолчанию localhost:$$WEB_PORT)
 	@# Первый зарегистрированный получает данные dev-пользователя — это не должен быть тест.
 	@if [ "$$($(PSQL) "SELECT count(*) FROM users WHERE id = '$(DEV_USER_ID)' AND password_hash IS NULL" 2>/dev/null)" = "1" ]; then \
 		echo "Сначала зарегистрируйтесь в приложении: иначе тестовый пользователь получит данные dev-пользователя."; exit 1; fi

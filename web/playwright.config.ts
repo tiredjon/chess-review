@@ -1,6 +1,6 @@
 import { defineConfig } from "@playwright/test";
 
-// Сквозные тесты по всему стеку (e2e/smoke.spec.ts, e2e/engine.spec.ts): нужен поднятый `make up` — web, API,
+// Сквозные тесты по всему стеку (e2e/smoke.spec.ts, engine.spec.ts, openings.spec.ts): нужен поднятый `make up` — web, API,
 // воркер со Stockfish. Тест не поднимает серверы сам. Браузер — установленный Google Chrome
 // (E2E_CHANNEL=chrome); пустой E2E_CHANNEL — Chromium Playwright (`npx playwright install chromium`).
 export default defineConfig({

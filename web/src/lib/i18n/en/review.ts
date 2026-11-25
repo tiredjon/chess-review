@@ -83,6 +83,17 @@ export const review: Dict["review"] = {
   retrySolved: "Correct:",
   showLine: "Show line",
   showAnswer: "Show answer",
+  train: {
+    title: "Game opening",
+    button: "Train this line",
+    busy: "Creating course…",
+    forColor: { white: "Learn as White", black: "Learn as Black" },
+    exit: (fullmove: number, by: "you" | "opponent" | null) =>
+      `Left theory on move ${fullmove}${by === "you" ? " — your move" : by === "opponent" ? " — your opponent's move" : ""}.`,
+    allBook: "The whole game stayed in theory.",
+    hint: "A course on this line: position ideas, master replies, trainer.",
+    error: "Could not create the course",
+  },
   share: {
     button: "Share",
     title: "Link to this review",
