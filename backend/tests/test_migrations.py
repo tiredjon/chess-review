@@ -32,6 +32,10 @@ EXPECTED_TABLES = {
     "user_courses",
     "trainer_cards",
     "trainer_attempts",
+    # Сессия 16: тренировка.
+    "puzzle_rush_runs",
+    "endgame_attempts",
+    "tablebase_cache",
 }
 
 

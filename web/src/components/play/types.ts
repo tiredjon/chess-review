@@ -30,6 +30,11 @@ export type GameResult = {
 };
 
 export type BotGameProps = {
+  /**
+   * Начальная позиция (FEN) вместо стартовой — тренажёр эндшпиля (сессия 16.3). Партия идёт
+   * с неё; в PGN — заголовки SetUp / FEN. Реализует 16.3.
+   */
+  startFen?: string;
   /** Рейтинг бота (один из BOT_ELOS). */
   elo: number;
   /** Цвет человека. */

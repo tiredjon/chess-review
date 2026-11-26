@@ -56,6 +56,9 @@ class ErrorCode(StrEnum):
     LINE_INVALID = "line_invalid"
     TRAINER_CARD_NOT_FOUND = "trainer_card_not_found"
     EXPLORER_UNAVAILABLE = "explorer_unavailable"
+    # Сессия 16: тренировка.
+    TABLEBASE_UNAVAILABLE = "tablebase_unavailable"
+    ENDGAME_NOT_FOUND = "endgame_not_found"
     # Общие
     VALIDATION_ERROR = "validation_error"
     HTTP_ERROR = "http_error"
