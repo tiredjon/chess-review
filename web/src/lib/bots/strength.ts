@@ -16,15 +16,16 @@
 // почти полная сила lite-сети на глубине 18 (за пределом времени), а ниже сила снимается той же
 // моделью: меньше глубина, больше разброс и зевков.
 //
-// Проверка матчами бот против бота (`node scripts/bots-match.mjs`, 24 партии, Apple M1,
-// 2026-11-26), очки сильного и разница рейтингов по ним:
-//   400 vs 600    23/24   (+22 =2 −0)   ≈ +545
-//   1000 vs 1200  20.5/24 (+20 =1 −3)   ≈ +307
-//   1500 vs 1700  18.5/24 (+15 =7 −2)   ≈ +211
-//   2400 vs 2800  15.5/24 (+7 =17 −0)   ≈ +104
-// Внизу шкала круче номинала (бот против бота разрыв преувеличивает: слабый зевает, сильный
-// почти всегда наказывает), с 1500 — близко к номиналу.
-import { Chess, type Move } from "chess.js";
+// Проверка матчами бот против бота (`node scripts/bots-match.mjs`, 24 партии, Apple M1),
+// очки сильного и разница рейтингов по ним:
+//   400 vs 600    17.5/24 (+14 =7 −3)   ≈ +172   (2026-11-26, после сглаживания низа)
+//   1000 vs 1200  17.5/24 (+17 =1 −6)   ≈ +172   (то же)
+//   1500 vs 1700  18.5/24 (+15 =7 −2)   ≈ +211   (до дебютных множителей `OPENING_PRIOR`)
+//   2400 vs 2800  15.5/24 (+7 =17 −0)   ≈ +104   (то же)
+// До сглаживания низ был круче номинала: 400 vs 600 — 23/24 (≈ +545), 1000 vs 1200 — 20.5/24.
+// Дебютный вкус проверяет `node scripts/bots-openings.mjs` (частоты ходов по уровням).
+
+import { Chess, type Move, type Square } from "chess.js";
 
 /** Параметры силы одного уровня. */
 export type Strength = {
@@ -48,9 +49,9 @@ export type Strength = {
 // тактику видит на 2–3 полухода; 1500 — крепкий клубный, крупно зевает редко; 2000+ — точная
 // игра с редкими неточностями; 2800 — без намеренных ошибок.
 const ANCHORS: readonly Strength[] = [
-  { elo: 400, depth: 1, multipv: 500, temperature: 120, window: 350, blunderChance: 0.3, blunderMax: 1000 },
-  { elo: 600, depth: 2, multipv: 500, temperature: 90, window: 260, blunderChance: 0.2, blunderMax: 900 },
-  { elo: 800, depth: 3, multipv: 500, temperature: 65, window: 200, blunderChance: 0.13, blunderMax: 650 },
+  { elo: 400, depth: 1, multipv: 500, temperature: 110, window: 300, blunderChance: 0.24, blunderMax: 900 },
+  { elo: 600, depth: 1, multipv: 500, temperature: 90, window: 250, blunderChance: 0.19, blunderMax: 800 },
+  { elo: 800, depth: 2, multipv: 500, temperature: 70, window: 200, blunderChance: 0.14, blunderMax: 650 },
   { elo: 1000, depth: 4, multipv: 500, temperature: 45, window: 150, blunderChance: 0.08, blunderMax: 450 },
   { elo: 1200, depth: 5, multipv: 500, temperature: 32, window: 110, blunderChance: 0.05, blunderMax: 350 },
   { elo: 1500, depth: 7, multipv: 24, temperature: 20, window: 70, blunderChance: 0.025, blunderMax: 250 },
@@ -114,21 +115,68 @@ export type Candidate = {
 };
 
 /** Ход, который удобно оценивать без доски: что ходит, что берёт. */
-type MoveInfo = Pick<Move, "piece" | "from" | "to" | "captured" | "san" | "flags">;
+type MoveInfo = Pick<Move, "color" | "piece" | "from" | "to" | "captured" | "promotion" | "san" | "flags">;
 
-/** Человеческие предпочтения: король в миттельшпиле без нужды не ходит (иначе слабый бот
- *  шагает королём «на равных» с другими ходами), взятия и шахи заметнее, в дебюте — развитие. */
-export function movePrior(move: MoveInfo, ctx: { fullmove: number; heavyMaterial: boolean }): number {
+/** Сколько полных ходов считается дебютом для `movePrior`. */
+const OPENING_MOVES = 12;
+
+/** Множители «дебютного вкуса»: на малой глубине движок оценивает многие ходы почти поровну
+ *  (после 1.e4 c5 2.Nf3 на глубине 8 …h5 хуже лучшего всего на ~40 cp), и без них клубный
+ *  бот играл 4.h4 в сицилианской. Человек в дебюте развивает фигуры, борется за центр, берёт
+ *  и рокируется; выпады крайними пешками, конь на край, ранние ходы ладьёй, королём и ферзём,
+ *  отступления на исходное — редкость. */
+const OPENING_PRIOR = {
+  develop: 1.5, // конь или слон с исходного поля
+  castle: 2,
+  centerPawn: 1.4, // пешки c–f
+  fianchetto: 0.6, // b3/g3/b6/g6 на одно поле
+  luft: 0.35, // a3/h3/a6/h6 на одно поле
+  flankPawn: 0.05, // остальные ходы пешками a, b, g, h
+  rimKnight: 0.25, // конь на вертикаль a или h
+  rook: 0.25,
+  earlyQueen: 0.35, // ферзь до 7-го хода
+  king: 0.05,
+  backToHome: 0.1, // лёгкая фигура назад на первую линию
+  sameMinorAgain: 0.6, // лёгкая фигура ходит второй раз, пока другие не развиты
+};
+
+/** Человеческие предпочтения (множитель веса хода; взятия, шахи, превращения от дебютных
+ *  штрафов освобождены): король в миттельшпиле без нужды не ходит (иначе слабый бот шагает
+ *  королём «на равных» с другими ходами), взятия и шахи заметнее, в дебюте — `OPENING_PRIOR`. */
+export function movePrior(move: MoveInfo, ctx: { fullmove: number; heavyMaterial: boolean; undeveloped?: number }): number {
   let prior = 1;
   const castle = move.flags.includes("k") || move.flags.includes("q");
-  if (move.piece === "k" && !castle && ctx.heavyMaterial && !move.captured) prior *= 0.12;
+  const forcing = Boolean(move.captured || move.promotion || move.san.includes("+"));
   if (move.captured) prior *= 1.6;
   if (move.san.includes("+")) prior *= 1.3;
-  if (ctx.fullmove <= 10) {
-    if ((move.piece === "n" || move.piece === "b") && (move.from[1] === "1" || move.from[1] === "8")) prior *= 1.4;
-    if (castle) prior *= 1.5;
-    if (move.piece === "p" && (move.from[0] === "a" || move.from[0] === "h")) prior *= 0.5;
-    if (move.piece === "r" && !move.captured) prior *= 0.5;
+  if (castle) return prior * (ctx.fullmove <= OPENING_MOVES ? OPENING_PRIOR.castle : 1);
+  if (move.piece === "k" && ctx.heavyMaterial && !move.captured) prior *= ctx.fullmove <= OPENING_MOVES ? OPENING_PRIOR.king : 0.12;
+  if (ctx.fullmove > OPENING_MOVES || forcing) return prior;
+
+  const home = move.color === "w" ? "1" : "8";
+  const file = move.from[0];
+  const step = Math.abs(Number(move.to[1]) - Number(move.from[1]));
+  const P = OPENING_PRIOR;
+  switch (move.piece) {
+    case "p":
+      if ("cdef".includes(file)) prior *= P.centerPawn;
+      else if (step === 1 && "bg".includes(file)) prior *= P.fianchetto;
+      else if (step === 1 && "ah".includes(file)) prior *= P.luft;
+      else prior *= P.flankPawn;
+      break;
+    case "n":
+    case "b":
+      if (move.from[1] === home) prior *= P.develop;
+      else if (move.to[1] === home) prior *= P.backToHome;
+      else if ((ctx.undeveloped ?? 0) >= 2) prior *= P.sameMinorAgain;
+      if (move.piece === "n" && "ah".includes(move.to[0])) prior *= P.rimKnight;
+      break;
+    case "r":
+      prior *= P.rook;
+      break;
+    case "q":
+      if (ctx.fullmove < 7) prior *= P.earlyQueen;
+      break;
   }
   return prior;
 }
@@ -266,6 +314,12 @@ export async function decideMove(
   const pieces = board.board().flat().filter((sq) => sq && sq.type !== "p" && sq.type !== "k");
   // Король прячется, пока на доске ферзи или много фигур.
   const heavyMaterial = pieces.some((sq) => sq!.type === "q") || pieces.length > 6;
+  // Сколько своих коней и слонов ещё на исходных полях.
+  const homeSquares = board.turn() === "w" ? ["b1", "c1", "f1", "g1"] : ["b8", "c8", "f8", "g8"];
+  const undeveloped = homeSquares.filter((sq) => {
+    const p = board.get(sq as Square);
+    return p && p.color === board.turn() && (p.type === "n" || p.type === "b");
+  }).length;
 
   const result = await engine.search({
     fen: request.fen,
@@ -276,7 +330,7 @@ export async function decideMove(
   });
   let candidates = candidatesFrom(
     result.lines.filter((l) => byUci.has(l.pv[0])),
-    (uci) => movePrior(byUci.get(uci)!, { fullmove, heavyMaterial }),
+    (uci) => movePrior(byUci.get(uci)!, { fullmove, heavyMaterial, undeveloped }),
   );
   if (candidates.length === 0) {
     // Движок не дал линий (отменён предел?) — любой легальный ход лучше зависания партии.

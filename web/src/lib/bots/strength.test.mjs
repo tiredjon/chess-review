@@ -113,15 +113,39 @@ test("выбор: единственный ход и T=0 — лучший", () =
   assert.equal(pickCandidate(one, strengthFor(400), seeded(1)).uci, "e1f1");
 });
 
+/** Ход белых для `movePrior` (SAN условный). */
+const mv = (piece, from, to, extra = {}) => ({ color: "w", piece, from, to, san: piece.toUpperCase() + to, flags: "n", ...extra });
+
 test("предпочтения: король в миттельшпиле — редкость, рокировка и развитие — охотно", () => {
-  const ctx = { fullmove: 8, heavyMaterial: true };
-  const king = movePrior({ piece: "k", from: "e1", to: "e2", san: "Ke2", flags: "n" }, ctx);
-  const castle = movePrior({ piece: "k", from: "e1", to: "g1", san: "O-O", flags: "k" }, ctx);
-  const knight = movePrior({ piece: "n", from: "g1", to: "f3", san: "Nf3", flags: "n" }, ctx);
-  assert.ok(king < 0.2);
+  const ctx = { fullmove: 8, heavyMaterial: true, undeveloped: 2 };
+  const king = movePrior(mv("k", "e1", "e2"), ctx);
+  const castle = movePrior(mv("k", "e1", "g1", { san: "O-O", flags: "k" }), ctx);
+  const knight = movePrior(mv("n", "g1", "f3"), ctx);
+  assert.ok(king < 0.1);
   assert.ok(castle > 1 && knight > 1);
-  // В эндшпиле король ходит свободно.
-  assert.equal(movePrior({ piece: "k", from: "e1", to: "e2", san: "Ke2", flags: "n" }, { fullmove: 50, heavyMaterial: false }), 1);
+  // В миттельшпиле король — реже, в эндшпиле — свободно.
+  assert.equal(movePrior(mv("k", "e1", "e2"), { fullmove: 20, heavyMaterial: true }), 0.12);
+  assert.equal(movePrior(mv("k", "e1", "e2"), { fullmove: 50, heavyMaterial: false }), 1);
+});
+
+test("предпочтения: в дебюте центр и развитие, а не выпады крайними пешками (4.h4 в сицилианской)", () => {
+  const ctx = { fullmove: 4, heavyMaterial: true, undeveloped: 3 };
+  const h4 = movePrior(mv("p", "h2", "h4", { san: "h4" }), ctx);
+  const nc3 = movePrior(mv("n", "b1", "c3"), ctx);
+  const e5 = movePrior(mv("p", "e4", "e5", { san: "e5" }), ctx);
+  const dxc5 = movePrior(mv("p", "d4", "c5", { san: "dxc5", captured: "p", flags: "c" }), ctx);
+  assert.ok(h4 <= 0.05);
+  assert.ok(nc3 / h4 >= 10 && e5 / h4 >= 10 && dxc5 / h4 >= 10);
+  // Фианкетто и «форточка» — мягче, чем выпад.
+  assert.ok(movePrior(mv("p", "g2", "g3", { san: "g3" }), ctx) > movePrior(mv("p", "h2", "h3", { san: "h3" }), ctx));
+  assert.ok(movePrior(mv("p", "h2", "h3", { san: "h3" }), ctx) > h4);
+  // Конь на край, ладья, отступление на исходное — редкость; шах и взятие от штрафов свободны.
+  assert.ok(movePrior(mv("n", "f3", "h4"), ctx) < 0.3);
+  assert.ok(movePrior(mv("r", "h1", "h3"), ctx) < 0.3);
+  assert.ok(movePrior(mv("b", "e2", "f1"), ctx) < 0.2);
+  assert.ok(movePrior(mv("q", "d1", "a4", { san: "Qa4+" }), ctx) > 1);
+  // После дебюта — без дебютных множителей.
+  assert.equal(movePrior(mv("p", "h2", "h4", { san: "h4" }), { fullmove: 25, heavyMaterial: true }), 1);
 });
 
 test("время: единственный ход и взятие назад — быстро, сложная позиция — дольше, ≤ 3 с", () => {
