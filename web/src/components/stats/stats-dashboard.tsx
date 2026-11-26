@@ -14,6 +14,7 @@ import { ErrorText, Panel } from "../ui";
 import { AccuracyChart } from "./accuracy-chart";
 import { BrilliantMoves } from "./brilliant-moves";
 import { StatsFilters } from "./filters";
+import { TimePanel } from "./time-stats";
 
 type Props = { source: GameSource | null; timeClass: TimeClass | null };
 
@@ -125,6 +126,7 @@ function StatsBody({ stats, filtered }: { stats: Stats; filtered: boolean }) {
           <Classes stats={stats} />
         </div>
       )}
+      {stats.time && <TimePanel time={stats.time} />}
       <Openings stats={stats} />
       {!noAnalysis && <BrilliantMoves stats={stats} />}
       {!noAnalysis && <Motifs stats={stats} />}

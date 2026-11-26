@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { shownAccuracy } from "@/lib/accuracy";
 import { CLASS_COLORS, CLASS_ORDER, classPlural, displayClass, phaseClass, type ClassKey } from "@/lib/classes";
+import { formatSpent } from "@/lib/clock";
 import { useI18n } from "@/lib/i18n/use-i18n";
-import type { AnalysisOut, Color, GameDetail, Phase } from "@/lib/types";
+import type { AnalysisOut, Color, GameDetail, Phase, PlayerClock } from "@/lib/types";
 import { PlayerAvatar } from "../player-avatar";
 import { ClassBadge } from "./class-badge";
 
@@ -142,12 +143,60 @@ export function Overview({ game, analysis }: { game: GameDetail; analysis: Analy
           </div>
         ))}
       </dl>
+      {game.clock && <TimeRows clock={game.clock} analysis={analysis} />}
       {analysis.engine_version && (
         <p className="pt-2 text-xs font-semibold text-muted">
           {t.review.engineNote(analysis.engine_version, analysis.runner, analysis.depth)}
         </p>
       )}
     </div>
+  );
+}
+
+/** Номер хода полухода `ply` (с 1) — по FEN перед ним. */
+function fullmoveOf(analysis: AnalysisOut, ply: number): number {
+  const move = analysis.moves.find((item) => item.ply === ply);
+  return move ? Number(move.fen_before.split(" ")[5]) || Math.ceil(ply / 2) : Math.ceil(ply / 2);
+}
+
+/** Время: в среднем на ход, самое долгое раздумье, с какого хода цейтнот. */
+function TimeRows({ clock, analysis }: { clock: NonNullable<GameDetail["clock"]>; analysis: AnalysisOut }) {
+  const { t } = useI18n();
+  const rows: { label: string; hint?: string; value: (player: PlayerClock) => string }[] = [
+    {
+      label: t.review.time.average,
+      value: (player) => (player.avg_spent_cs == null ? "—" : formatSpent(player.avg_spent_cs, t)),
+    },
+    {
+      label: t.review.time.longest,
+      value: (player) =>
+        player.longest_ply == null || player.longest_spent_cs == null
+          ? "—"
+          : `${formatSpent(player.longest_spent_cs, t)} · ${t.review.time.moveNo(fullmoveOf(analysis, player.longest_ply))}`,
+    },
+    {
+      label: t.review.time.troubleFrom,
+      hint: t.review.time.troubleHint,
+      value: (player) =>
+        player.first_trouble_ply == null ? t.review.time.noTrouble : t.review.time.moveNo(fullmoveOf(analysis, player.first_trouble_ply)),
+    },
+  ];
+  return (
+    <>
+      <hr className="my-2 border-line" />
+      <dl aria-label={t.review.time.title}>
+        {rows.map((row) => (
+          <div key={row.label} className={`${ROW} py-1.5`} title={row.hint}>
+            <dt className="text-soft">{row.label}</dt>
+            {COLORS.map((color) => (
+              <dd key={color} className={`text-center text-sm text-soft ${color === "black" ? "col-start-4" : ""}`}>
+                {row.value(clock[color])}
+              </dd>
+            ))}
+          </div>
+        ))}
+      </dl>
+    </>
   );
 }
 

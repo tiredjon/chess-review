@@ -130,6 +130,10 @@ class Game(Base):
     # Точность по версии площадки (Chess.com — у партий, разобранных там).
     source_white_accuracy: Mapped[float | None]
     source_black_accuracy: Mapped[float | None]
+    # Часы по полуходам из `%clk` (сотые секунды, `app/review/clock.py`): остаток после хода и
+    # потрачено на него; None — в PGN нет часов или контроль без базы (переписка).
+    clocks: Mapped[list[int | None] | None] = mapped_column(ARRAY(sa.Integer))
+    move_times: Mapped[list[int | None] | None] = mapped_column(ARRAY(sa.Integer))
     # Публичная ссылка на разбор (`/share/{token}`, бот); None — партия не опубликована.
     share_token: Mapped[str | None] = mapped_column(String(32), unique=True)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())

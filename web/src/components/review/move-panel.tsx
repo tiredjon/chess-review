@@ -6,7 +6,8 @@ import { lineLabels, moveNumber, sideToMove, type Ply } from "@/lib/chess";
 import type { EngineSource } from "@/lib/engine/preference";
 import { evalAfter, formatEval, leader, type WhiteEval } from "@/lib/eval";
 import { useI18n } from "@/lib/i18n/use-i18n";
-import type { ClassifyOut, LineMove } from "@/lib/types";
+import { formatClock, formatSpent } from "@/lib/clock";
+import type { ClassifyOut, LineMove, PlyClock } from "@/lib/types";
 import { Button } from "../ui";
 import { ClassBadge } from "./class-badge";
 import { Figurine } from "./move-list";
@@ -23,11 +24,14 @@ export function MovePanel({
   explanation,
   onShowLine,
   onRetry,
+  time,
 }: {
   ply: Ply | null;
   explanation: Explanation;
   onShowLine: (kind: LineKind) => void;
   onRetry: () => void;
+  /** Часы на этом ходе, если в партии есть `%clk`. */
+  time?: PlyClock;
 }) {
   const { t } = useI18n();
   if (!ply) {
@@ -75,6 +79,8 @@ export function MovePanel({
         </p>
       )}
 
+      {time && time.spent_cs != null && <TimeLine time={time} error={move.class === "mistake" || move.class === "blunder"} />}
+
       <CoachBubble busy={explanation === undefined}>
         {explanation === undefined ? <BubbleSkeleton /> : "error" in explanation ? explanation.error : explanation.text}
       </CoachBubble>
@@ -97,6 +103,34 @@ export function MovePanel({
         )}
       </div>
     </div>
+  );
+}
+
+/** «Потрачено 12 с · осталось 1:02» и пометки: цейтнот, поспешно, долгое раздумье. */
+function TimeLine({ time, error }: { time: PlyClock; error: boolean }) {
+  const { t } = useI18n();
+  const tags: { text: string; hint: string; warn: boolean }[] = [];
+  if (time.trouble) tags.push({ text: t.review.time.trouble, hint: t.review.time.troubleHint, warn: true });
+  else if (time.fast && error) tags.push({ text: t.review.time.hasty, hint: t.review.time.hastyHint, warn: true });
+  if (time.long) tags.push({ text: t.review.time.long, hint: t.review.time.longHint, warn: false });
+  return (
+    <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-bold text-soft">
+      <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+        <circle cx="12" cy="13" r="8" />
+        <path d="M12 9v4l2.5 2M10 2.5h4" />
+      </svg>
+      <span>{t.review.time.spent(formatSpent(time.spent_cs!, t))}</span>
+      {time.clock_cs != null && <span className="text-muted">· {t.review.time.left(formatClock(time.clock_cs))}</span>}
+      {tags.map((tag) => (
+        <span
+          key={tag.text}
+          title={tag.hint}
+          className={`rounded-md px-1.5 py-0.5 text-xs font-extrabold ${tag.warn ? "bg-[#e06c5a]/20 text-[#f08a78]" : "bg-sunken text-soft"}`}
+        >
+          {tag.text}
+        </span>
+      ))}
+    </p>
   );
 }
 

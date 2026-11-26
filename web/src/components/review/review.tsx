@@ -9,10 +9,12 @@ import { lineEval, positionEvals, type WhiteEval } from "@/lib/eval";
 import { useI18n } from "@/lib/i18n/use-i18n";
 import { threats } from "@/lib/threats";
 import { playMove, playSound, preloadSounds, toggleMuted, useSoundMuted } from "@/lib/sounds";
-import type { Color, LineMove, MoveClass } from "@/lib/types";
+import { clockAt, formatClock } from "@/lib/clock";
+import type { Color, GameClock, LineMove, MoveClass } from "@/lib/types";
 import { Board, NO_MARKS, type BoardMarks } from "./board";
 import { EvalBar } from "./eval-bar";
 import { EvalGraph } from "./eval-graph";
+import { TimeGraph } from "./time-graph";
 import { Button } from "../ui";
 import { ClassBadge } from "./class-badge";
 import { MoveList } from "./move-list";
@@ -111,6 +113,7 @@ export function Review({
   status,
   overview,
   actions,
+  clock = null,
 }: {
   plies: Ply[];
   startFen: string;
@@ -127,6 +130,8 @@ export function Review({
   overview: ReactNode;
   /** Кнопки в шапке панели рядом со звуком (например, «Поделиться»). */
   actions?: ReactNode;
+  /** Часы партии (`%clk`): время на ход, остаток у игроков. */
+  clock?: GameClock | null;
 }) {
   const { t, lang } = useI18n();
   const [cursor, setCursor] = useState(initialCursor);
@@ -577,6 +582,7 @@ export function Review({
         explanation={current?.move ? explanations[`${lang}:${current.move.id}`] : undefined}
         onShowLine={showLine}
         onRetry={startRetry}
+        time={current ? clock?.plies[current.index] : undefined}
       />
     );
   }
@@ -594,7 +600,9 @@ export function Review({
         className="z-20 mx-auto flex w-full flex-col gap-2 max-lg:sticky max-lg:top-14 max-lg:-mx-3 max-lg:w-auto max-lg:bg-page max-lg:px-3 max-lg:pb-2"
         style={BOARD_WIDTH}
       >
-        {player(orientation === "white" ? "black" : "white")}
+        <PlayerRow clock={clock} plies={plies} cursor={cursor} color={orientation === "white" ? "black" : "white"}>
+          {player(orientation === "white" ? "black" : "white")}
+        </PlayerRow>
         <div className="flex gap-1.5 sm:gap-2">
           <div className="w-4 shrink-0 sm:w-7">
             <EvalBar evaluation={evaluation} orientation={orientation} />
@@ -610,7 +618,9 @@ export function Review({
             />
           </div>
         </div>
-        {player(orientation)}
+        <PlayerRow clock={clock} plies={plies} cursor={cursor} color={orientation}>
+          {player(orientation)}
+        </PlayerRow>
       </div>
 
       <section
@@ -663,6 +673,7 @@ export function Review({
             <div key="overview" className="cc-slide-in flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
               {overview}
               <EvalGraph evals={evals} plies={plies} cursor={cursor} onSelect={goTo} draw />
+              {clock && <TimeGraph clock={clock} plies={plies} cursor={cursor} onSelect={goTo} />}
             </div>
             {/* На телефоне главная кнопка и навигация липнут к низу экрана. */}
             <div className="sticky bottom-0 rounded-b-xl border-t border-line bg-panel p-4 lg:static">
@@ -678,6 +689,7 @@ export function Review({
               <div className="flex flex-col gap-3 p-4 pb-3 lg:min-h-0 lg:shrink lg:overflow-y-auto">
                 {analysed || mode.kind !== "game" ? panel : status}
                 {analysed && <EvalGraph evals={evals} plies={plies} cursor={cursor} onSelect={goTo} compact />}
+                {clock && <TimeGraph clock={clock} plies={plies} cursor={cursor} onSelect={goTo} compact />}
               </div>
               <MoveList
                 plies={plies}
@@ -706,6 +718,42 @@ export function Review({
           </>
         )}
       </section>
+    </div>
+  );
+}
+
+/** Плашка игрока и его часы в текущей позиции (как на Chess.com); у ходящего — подсвечены. */
+function PlayerRow({
+  clock,
+  plies,
+  cursor,
+  color,
+  children,
+}: {
+  clock: GameClock | null;
+  plies: Ply[];
+  cursor: number;
+  color: Color;
+  children: ReactNode;
+}) {
+  const { t } = useI18n();
+  if (!clock) return <>{children}</>;
+  const left = clockAt(clock, plies, cursor, color);
+  // Подсвечены часы ходящего; в конце партии — оба.
+  const active = cursor >= plies.length || plies[cursor].color === color;
+  return (
+    <div className="flex items-center gap-2">
+      <div className="min-w-0 flex-1">{children}</div>
+      {left != null && (
+        <span
+          aria-label={t.review.time.clockLabel}
+          className={`shrink-0 rounded-md px-2.5 py-1 font-mono text-base font-extrabold tabular-nums ${
+            color === "white" ? "bg-white text-[#2c2925]" : "bg-sunken text-ink"
+          } ${active ? "" : "opacity-60"}`}
+        >
+          {formatClock(left)}
+        </span>
+      )}
     </div>
   );
 }

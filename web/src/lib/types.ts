@@ -121,9 +121,38 @@ export type GameOut = {
   analysis: AnalysisSummary | null;
 };
 
+/** Часы на полуходе (сотые секунды): остаток после хода и потрачено на него (backend
+ * `app/review/clock.py`): цейтнот перед ходом, быстрый ход, долгое раздумье. */
+export type PlyClock = {
+  clock_cs: number | null;
+  spent_cs: number | null;
+  trouble: boolean;
+  fast: boolean;
+  long: boolean;
+};
+
+export type PlayerClock = {
+  moves: number;
+  avg_spent_cs: number | null;
+  longest_ply: number | null;
+  longest_spent_cs: number | null;
+  trouble_moves: number;
+  first_trouble_ply: number | null;
+};
+
+export type GameClock = {
+  base_cs: number;
+  increment_cs: number;
+  plies: PlyClock[];
+  white: PlayerClock;
+  black: PlayerClock;
+};
+
 export type GameDetail = Omit<GameOut, "analysis"> & {
   pgn: string;
   analysis: AnalysisOut | null;
+  /** Время на ход по `%clk`; null — в партии нет часов. */
+  clock?: GameClock | null;
 };
 
 export type GamePage = { items: GameOut[]; next_cursor: string | null };
@@ -252,6 +281,23 @@ export type Stats = {
   motifs: { type: string; count: number; examples: MotifExample[] }[];
   /** Блестящие ходы пользователя: счётчики по всем, `moves` — последние (до 100). */
   brilliant: { count: number; games: number; moves: BrilliantMove[] };
+  /** Время на ход — только разобранные партии с часами; null — таких нет. */
+  time?: TimeStats | null;
+};
+
+export type ClockBucket = "over_half" | "quarter_half" | "tenth_quarter" | "under_tenth";
+
+export type TimeStats = {
+  games: number;
+  moves: number;
+  trouble_games: number;
+  /** По остатку на часах перед ходом (доля базы); последнее — цейтнот. */
+  buckets: { bucket: ClockBucket; moves: number; accuracy: number | null; errors_per_100: number | null }[];
+  phases: { phase: Phase; moves: number; avg_spent_cs: number | null }[];
+  /** Ошибки (mistake + blunder): всего, в цейтноте, «поспешные» — быстрый ход вне цейтнота. */
+  errors: number;
+  trouble_errors: number;
+  hasty_errors: number;
 };
 
 // --- Пазлы ---

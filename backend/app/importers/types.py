@@ -24,3 +24,6 @@ class ImportedGame:
     # Точность по версии площадки (Chess.com отдаёт её у партий, разобранных там).
     source_white_accuracy: float | None = None
     source_black_accuracy: float | None = None
+    # Часы по полуходам (`app/review/clock.py`); None — нет `%clk` или контроль без базы.
+    clocks: list[int | None] | None = None
+    move_times: list[int | None] | None = None

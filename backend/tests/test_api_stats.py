@@ -326,6 +326,53 @@ async def test_empty_stats(client: AsyncClient, db: Database) -> None:
     assert stats["motifs"] == []
     assert stats["brilliant"] == {"count": 0, "games": 0, "moves": []}
     assert stats["classes"]["items"][0]["per_game"] == 0.0
+    assert stats["time"] is None
+
+
+async def test_time_stats(
+    client: AsyncClient, db: Database, settings: Settings, games: dict[str, uuid.UUID]
+) -> None:
+    """Партия 3+0 с часами (у фикстурных партий часов нет — не считаются). Ходы белых:
+    1 — 2 с при полных часах, зевок («поспешно»); 3 — 130 с; 5 — при 48 с (27 % базы);
+    7 — при 16 с (цейтнот), ошибка."""
+    f = game(settings.default_user_id, "F", color=Color.WHITE, result="0-1", tc="180", day=6)
+    f.clocks = [17800, 17000, 4800, 16000, 1600, 15000, 100, 14000]
+    f.move_times = [200, 1000, 13000, 1000, 3200, 1000, 1500, 1000]
+    async with db.sessionmaker() as session:
+        session.add(f)
+        await session.flush()
+        classes = [MoveClass.BLUNDER, MoveClass.BEST, MoveClass.BEST, MoveClass.MISTAKE]
+        session.add(
+            Analysis(
+                game_id=f.id,
+                depth=10,
+                status=AnalysisStatus.DONE,
+                moves=[
+                    move(ply, classes[(ply - 1) // 2] if ply % 2 else MoveClass.BEST)
+                    for ply in range(1, 9)
+                ],
+            )
+        )
+        await session.commit()
+
+    time = (await get_stats(client))["time"]
+
+    assert {key: time[key] for key in ("games", "moves", "trouble_games")} == {
+        "games": 1,
+        "moves": 4,
+        "trouble_games": 1,
+    }
+    assert (time["errors"], time["trouble_errors"], time["hasty_errors"]) == (2, 1, 1)
+    assert time["buckets"] == [
+        {"bucket": "over_half", "moves": 2, "accuracy": 80.0, "errors_per_100": 50.0},
+        {"bucket": "quarter_half", "moves": 1, "accuracy": 80.0, "errors_per_100": 0.0},
+        {"bucket": "tenth_quarter", "moves": 0, "accuracy": None, "errors_per_100": None},
+        {"bucket": "under_tenth", "moves": 1, "accuracy": 80.0, "errors_per_100": 100.0},
+    ]
+    assert time["phases"][1] == {"phase": "middlegame", "moves": 4, "avg_spent_cs": 4475}
+    assert time["phases"][0] == {"phase": "opening", "moves": 0, "avg_spent_cs": None}
+    # Фильтр по контролю: пуля — партии F нет.
+    assert (await get_stats(client, time_class="bullet"))["time"] is None
 
 
 async def test_invalid_filter(client: AsyncClient, db: Database) -> None:
