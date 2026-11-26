@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import { applyUci, boardMoveUci, pieceOn, sideToMove, uciSan, uciSquares } from "@/lib/chess";
 import { CLASS_COLORS, classLabel, displayClass, type ClassKey } from "@/lib/classes";
@@ -10,11 +10,12 @@ import type { Dict, Lang } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n/use-i18n";
 import { motifName } from "@/lib/motifs";
 import { playMove, playSound, preloadSounds, toggleMuted, useSoundMuted } from "@/lib/sounds";
-import type { Color, Puzzle, PuzzleAttempt, PuzzleCounts } from "@/lib/types";
+import type { Color, Puzzle, PuzzleAttempt, PuzzleCounts, PuzzleFilters, PuzzleMode } from "@/lib/types";
 import { Board, type BoardMarks } from "../review/board";
 import { ClassBadge } from "../review/class-badge";
 import { CoachBubble } from "../review/summary";
 import { Button, ErrorText } from "../ui";
+import { hasFilters } from "./puzzle-view";
 
 // Ход соперника (перед пазлом и ответы в решении) — с паузой, как у Chess.com.
 const REPLY_DELAY_MS = 450;
@@ -22,7 +23,14 @@ const INTRO_DELAY_MS = 600;
 const SOLUTION_STEP_MS = 800;
 // Неверный ход виден на доске, потом откатывается.
 const WRONG_SHOW_MS = 700;
-const BOARD_WIDTH = { maxWidth: "min(100%, calc(100dvh - 6rem))" };
+// Забег: следующий пазл идёт сам — после верного сразу, после ошибки — дав рассмотреть верный ход.
+const RUSH_NEXT_SOLVED_MS = 450;
+const RUSH_NEXT_FAILED_MS = 1700;
+// Сервер принимает в `exclude` не больше 100 id.
+const MAX_EXCLUDE = 100;
+// Высоту над доской (вкладки, фильтры экрана `/puzzles`) родитель задаёт переменной `--puzzle-chrome`,
+// чтобы доска с панелью по-прежнему помещалась на экране; не уже 22rem (больше ширины телефона: там решает 100%).
+const BOARD_WIDTH = { maxWidth: "min(100%, max(22rem, calc(100dvh - var(--puzzle-chrome, 6rem))))" };
 
 const LAST_MOVE = "rgba(247, 214, 92, 0.6)";
 const SELECTED = "rgba(127, 176, 74, 0.6)";
@@ -78,24 +86,52 @@ function startGame(puzzle: Puzzle): Game {
   };
 }
 
-/** Пазлы из своих ошибок: сначала пора повторить, затем новые. Ход проверяет сервер. */
-export function PuzzleTrainer() {
+/** Забег (16.2): сессия сообщает о каждом решённом / проваленном пазле и сама идёт к
+ * следующему; шапку панели заменяет `hud`. Колбэки читаются из ref — менять их между
+ * рендерами можно, перезагрузки пазла это не вызовет. */
+export type RushHooks = {
+  onResult: (solved: boolean) => void;
+  onExhausted: () => void;
+};
+
+export type PuzzleSessionProps = {
+  mode: PuzzleMode;
+  filters: PuzzleFilters;
+  rush?: RushHooks;
+  /** Вместо заголовка, счётчиков и серии в шапке панели (забег: таймер, счёт, ошибки). */
+  hud?: ReactNode;
+};
+
+/** Пазлы из своих ошибок. Режимы: `srs` — сначала пора повторить, затем новые; `practice` —
+ * любые по фильтрам без повторов в сессии; `rush` — на время, от коротких к длинным. Ход
+ * проверяет сервер. Смена режима или фильтров — новый экземпляр (`key` у родителя). */
+export function PuzzleSession(props: PuzzleSessionProps) {
   const { t } = useI18n();
   // Заголовок страницы для скринридеров — здесь, а не в серверной page.tsx (язык известен в браузере).
   return (
     <>
       <h1 className="sr-only">{t.puzzles.title}</h1>
-      <Trainer />
+      <Trainer {...props} />
     </>
   );
 }
 
-function Trainer() {
+function Trainer({ mode, filters, rush, hud }: PuzzleSessionProps) {
   const { t, lang } = useI18n();
+  const isRush = mode === "rush";
+  const rushRef = useRef(rush);
+  useEffect(() => {
+    rushRef.current = rush;
+  });
   const [game, setGame] = useState<Game | null>(null);
   const [counts, setCounts] = useState<PuzzleCounts | null>(null);
   const [error, setError] = useState<ErrorState>(null);
   const [loading, setLoading] = useState(true);
+  // Показанные в этой сессии пазлы (practice / rush без повторов); `shown` — для «Пазл N из M».
+  const seen = useRef<string[]>([]);
+  // Номер последнего запроса: устаревший ответ (смена пазла, двойной эффект) игнорируется.
+  const requestId = useRef(0);
+  const [shown, setShown] = useState(0);
   const muted = useSoundMuted();
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
@@ -110,18 +146,37 @@ function Trainer() {
   useEffect(preloadSounds, []);
 
   const fetchNext = useCallback(() => {
+    const id = ++requestId.current;
     api
-      .nextPuzzle()
+      .nextPuzzle({ ...filters, mode, exclude: mode === "srs" ? [] : seen.current.slice(-MAX_EXCLUDE) })
       .then((next) => {
+        if (id !== requestId.current) return;
         setCounts(next.counts);
-        setGame(next.puzzle ? startGame(next.puzzle) : null);
+        if (next.puzzle) {
+          if (mode !== "srs") {
+            seen.current.push(next.puzzle.id);
+            setShown(seen.current.length);
+          }
+          setGame(startGame(next.puzzle));
+        } else {
+          setGame(null);
+          if (isRush && seen.current.length > 0) rushRef.current?.onExhausted();
+        }
         setError(null);
       })
-      .catch((err) => setError({ message: apiMessage(err), fallback: "loadError" }))
-      .finally(() => setLoading(false));
-  }, []);
+      .catch((err) => id === requestId.current && setError({ message: apiMessage(err), fallback: "loadError" }))
+      .finally(() => id === requestId.current && setLoading(false));
+  }, [filters, mode, isRush]);
 
   useEffect(fetchNext, [fetchNext]);
+
+  /** Практика: пройти список заново. */
+  const restart = useCallback(() => {
+    seen.current = [];
+    setShown(0);
+    setLoading(true);
+    fetchNext();
+  }, [fetchNext]);
 
   const load = useCallback(() => {
     clearTimers();
@@ -186,7 +241,7 @@ function Trainer() {
   const submit = useCallback(
     (current: Game, moves: string[], extra: { gave_up?: boolean } = {}) => {
       api
-        .attemptPuzzle(current.puzzle.id, { moves_uci: moves, hint_used: current.hintUsed, ...extra })
+        .attemptPuzzle(current.puzzle.id, { moves_uci: moves, hint_used: current.hintUsed, mode, ...extra })
         .then((result) => {
           if (result.result === "continue" && result.reply_uci) {
             const reply = result.reply_uci;
@@ -208,6 +263,10 @@ function Trainer() {
             return;
           }
           finish(result);
+          if (isRush) {
+            rushRef.current?.onResult(result.result === "solved");
+            later(result.result === "solved" ? RUSH_NEXT_SOLVED_MS : RUSH_NEXT_FAILED_MS, load);
+          }
           const last = moves.at(-1);
           if (result.result === "solved") {
             later(200, () => playSound("correct"));
@@ -251,7 +310,7 @@ function Trainer() {
           setGame((prev) => (prev ? startGame(prev.puzzle) : prev));
         });
     },
-    [finish, later, playSolution],
+    [finish, isRush, later, load, mode, playSolution],
   );
 
   const tryMove = useCallback(
@@ -312,18 +371,20 @@ function Trainer() {
     function onKey(event: KeyboardEvent) {
       if (event.metaKey || event.ctrlKey || event.altKey) return;
       if (event.key === "m" || event.key === "M" || event.key === "ь" || event.key === "Ь") toggleMuted();
-      if ((event.key === "n" || event.key === "ArrowRight") && (game?.status === "solved" || game?.status === "failed")) load();
+      if (!isRush && (event.key === "n" || event.key === "ArrowRight") && (game?.status === "solved" || game?.status === "failed")) load();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [game?.status, load]);
+  }, [game?.status, isRush, load]);
 
   if (loading && !game) return <PuzzleSkeleton />;
   if (!game) {
     return (
       <div className="flex flex-col gap-3">
         <ErrorText>{errorText(error, t)}</ErrorText>
-        {counts && <NoPuzzles counts={counts} />}
+        {counts && (
+          <NoPuzzles counts={counts} mode={mode} filtered={hasFilters(filters)} seen={shown} onRestart={restart} />
+        )}
       </div>
     );
   }
@@ -366,18 +427,24 @@ function Trainer() {
 
       <section aria-label={t.puzzles.section} className="flex min-w-0 flex-col rounded-xl bg-panel">
         <header className="flex items-center gap-3 rounded-t-xl border-b border-line bg-sunken/60 px-4 py-3">
-          <div className="min-w-0 flex-1">
-            <h2 className="text-lg font-extrabold">
-              {t.puzzles.heading}
-              <span className="max-sm:hidden">{t.puzzles.headingSuffix}</span>
-            </h2>
-            {counts && (
-              <p className="text-xs font-semibold text-muted">
-                {t.puzzles.counts(counts.due, counts.new, counts.total)}
-              </p>
-            )}
-          </div>
-          <Streak value={counts?.streak ?? 0} />
+          {hud ? (
+            <div className="min-w-0 flex-1">{hud}</div>
+          ) : (
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg font-extrabold">
+                {t.puzzles.heading}
+                <span className="max-sm:hidden">{t.puzzles.headingSuffix}</span>
+              </h2>
+              {counts && (
+                <p className="text-xs font-semibold text-muted">
+                  {mode === "practice"
+                    ? t.puzzles.practice.progress(shown, counts.total)
+                    : t.puzzles.counts(counts.due, counts.new, counts.total)}
+                </p>
+              )}
+            </div>
+          )}
+          {mode === "srs" && <Streak value={counts?.streak ?? 0} />}
           <button
             type="button"
             onClick={toggleMuted}
@@ -396,11 +463,11 @@ function Trainer() {
         <div key={puzzle.id} className="cc-slide-in flex flex-1 flex-col gap-4 p-4">
           <TurnBanner color={puzzle.color} status={game.status} />
           <CoachBubble>
-            <StatusText game={game} lang={lang} />
+            <StatusText game={game} lang={lang} mode={mode} />
           </CoachBubble>
           <ErrorText>{errorText(error, t)}</ErrorText>
 
-          {finished && game.outcome?.solution_san && (
+          {finished && !isRush && game.outcome?.solution_san && (
             <div className="flex flex-col gap-2">
               <p className="text-sm font-semibold text-soft">{t.puzzles.solution}</p>
               <p className="flex flex-wrap gap-x-2 gap-y-1 text-[15px] font-bold">
@@ -422,11 +489,15 @@ function Trainer() {
             </div>
           )}
 
-          {puzzle.source && <SourceLink source={puzzle.source} color={puzzle.color} lang={lang} />}
+          {puzzle.source && !isRush && <SourceLink source={puzzle.source} color={puzzle.color} lang={lang} />}
 
           {/* На телефоне действия липнут к низу экрана, как навигация в разборе. */}
           <div className="sticky bottom-0 -mx-4 -mb-4 mt-auto flex flex-col gap-2 rounded-b-xl border-t border-line bg-panel p-4 lg:static lg:mx-0 lg:mb-0 lg:border-0 lg:p-0 lg:pt-2">
-            {finished ? (
+            {isRush ? (
+              <Button variant="raised" onClick={giveUp} disabled={game.status !== "playing"}>
+                {t.puzzles.rush.skip}
+              </Button>
+            ) : finished ? (
               <>
                 <Button size="lg" onClick={load} disabled={loading}>
                   {loading ? t.puzzles.loading : t.puzzles.next}
@@ -487,15 +558,22 @@ function whenText(iso: string | null, lang: Lang): string {
   return relative.format(Math.round(hours / 24), "day");
 }
 
-function StatusText({ game, lang }: { game: Game; lang: Lang }) {
-  const { status: text } = useI18n().t.puzzles;
+function StatusText({ game, lang, mode }: { game: Game; lang: Lang; mode: PuzzleMode }) {
+  const { t: dict } = useI18n();
+  const t = dict.puzzles;
+  const text = t.status;
   const { puzzle, outcome } = game;
   if (game.status === "intro") return <>{text.intro}</>;
   if (game.status === "solved" && outcome) {
     return (
       <>
-        <span className="font-bold">{text.correct}</span> {game.hintUsed ? text.withHint : text.wellDone}{" "}
-        {text.showAgain(whenText(outcome.next_review_at, lang))}
+        <span className="font-bold">{text.correct}</span>
+        {mode === "rush" ? null : (
+          <>
+            {" "}
+            {mode === "practice" ? t.practice.note : `${game.hintUsed ? text.withHint : text.wellDone} ${text.showAgain(whenText(outcome.next_review_at, lang))}`}
+          </>
+        )}
       </>
     );
   }
@@ -509,7 +587,7 @@ function StatusText({ game, lang }: { game: Game; lang: Lang }) {
             {text.correctMove} <span className="font-bold">{san}</span> {text.correctMoveAfter}{" "}
           </>
         ) : null}
-        {text.returns(whenText(outcome.next_review_at, lang))}
+        {mode === "srs" ? text.returns(whenText(outcome.next_review_at, lang)) : mode === "practice" ? t.practice.note : null}
       </>
     );
   }
@@ -520,7 +598,7 @@ function StatusText({ game, lang }: { game: Game; lang: Lang }) {
   return (
     <>
       {text.task(total)}
-      {puzzle.box > 0 || puzzle.attempts > 0 ? text.repeat : ""}
+      {mode === "srs" && (puzzle.box > 0 || puzzle.attempts > 0) ? text.repeat : ""}
     </>
   );
 }
@@ -566,11 +644,32 @@ function Streak({ value }: { value: number }) {
   );
 }
 
-function NoPuzzles({ counts }: { counts: PuzzleCounts }) {
+function NoPuzzles({
+  counts,
+  mode,
+  filtered,
+  seen,
+  onRestart,
+}: {
+  counts: PuzzleCounts;
+  mode: PuzzleMode;
+  filtered: boolean;
+  seen: number;
+  onRestart: () => void;
+}) {
   const { t, lang } = useI18n();
+  const box = "flex flex-col items-center gap-2 rounded-xl bg-panel px-6 py-12 text-center";
+  if (counts.total === 0 && filtered) {
+    return (
+      <div className={box}>
+        <p className="text-lg font-bold">{t.puzzles.practice.noMatchTitle}</p>
+        <p className="max-w-md text-soft">{t.puzzles.practice.noMatchText}</p>
+      </div>
+    );
+  }
   if (counts.total === 0) {
     return (
-      <div className="flex flex-col items-center gap-2 rounded-xl bg-panel px-6 py-12 text-center">
+      <div className={box}>
         <p className="text-lg font-bold">{t.puzzles.empty.title}</p>
         <p className="max-w-md text-soft">
           {t.puzzles.empty.text}{" "}
@@ -582,8 +681,20 @@ function NoPuzzles({ counts }: { counts: PuzzleCounts }) {
       </div>
     );
   }
+  if (mode !== "srs") {
+    return (
+      <div className={box}>
+        <ClassBadge value="best" size={40} />
+        <p className="text-lg font-bold">{t.puzzles.practice.doneTitle}</p>
+        <p className="text-soft">{t.puzzles.practice.doneText(seen)}</p>
+        <Button className="mt-2" onClick={onRestart}>
+          {t.puzzles.practice.again}
+        </Button>
+      </div>
+    );
+  }
   return (
-    <div className="flex flex-col items-center gap-2 rounded-xl bg-panel px-6 py-12 text-center">
+    <div className={box}>
       <ClassBadge value="best" size={40} />
       <p className="text-lg font-bold">{t.puzzles.done.title}</p>
       <p className="text-soft">{t.puzzles.done.text(whenText(counts.next_review_at, lang), counts.streak)}</p>

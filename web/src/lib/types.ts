@@ -336,6 +336,42 @@ export type PuzzleCounts = {
 
 export type PuzzleNext = { puzzle: Puzzle | null; counts: PuzzleCounts };
 
+/** `srs` — повторение, `practice` — по темам, `rush` — на время. */
+export type PuzzleMode = "srs" | "practice" | "rush";
+
+/** Фильтры тренировки (в URL `/puzzles?theme=&phase=&eco=`): тема — тип мотива, фаза — хода-источника, eco — дебют партии. */
+export type PuzzleFilters = { theme: string | null; phase: Phase | null; eco: string | null };
+
+export type PuzzleThemes = {
+  themes: { theme: string; total: number; due: number; solved: number }[];
+  phases: { phase: Phase; total: number; solved: number }[];
+  openings: { eco: string; name: string | null; total: number }[];
+};
+
+export type RushVariant = "3min" | "5min" | "survival";
+
+export type RushRunBody = {
+  variant: RushVariant;
+  score: number;
+  mistakes: number;
+  duration_s: number;
+  filters: Partial<{ theme: string; phase: Phase; eco: string }>;
+};
+
+export type RushRunResult = { id: number; best: number; is_best: boolean };
+
+export type RushRuns = {
+  best: number | null;
+  recent: {
+    id: number;
+    score: number;
+    mistakes: number;
+    duration_s: number;
+    filters: PuzzleFilters;
+    created_at: string;
+  }[];
+};
+
 export type PuzzleAttempt = {
   result: "continue" | "solved" | "failed";
   reply_uci: string | null;

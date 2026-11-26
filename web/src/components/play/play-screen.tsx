@@ -2,6 +2,7 @@
 
 // Страница /play: выбор бота и цвета → партия; «Новая партия» и «Другой бот».
 // Последний выбор — в localStorage, идущая партия — в sessionStorage (переживает перезагрузку).
+import Link from "next/link";
 import { useState } from "react";
 import { BOT_ELOS } from "@/lib/bots/types";
 import { START_FEN } from "@/lib/chess";
@@ -121,6 +122,7 @@ export function PlayScreen() {
         </div>
 
         <div className="flex flex-col gap-3 p-4 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
+          <EndgamesLink />
           <h2 className="text-sm font-bold text-soft">{t.play.setup.bot}</h2>
           <BotPicker value={setup.elo} onChange={(elo) => updateSetup({ ...setup, elo })} />
         </div>
@@ -187,5 +189,27 @@ function ColorButton({
       </span>
       {label}
     </button>
+  );
+}
+
+/** Ссылка на тренажёр эндшпиля (сессия 16.3): доигрывание типовых позиций и своих ошибок. */
+function EndgamesLink() {
+  const { t } = useI18n();
+  return (
+    <Link
+      href="/play/endgames"
+      className="group flex items-center gap-3 rounded-lg bg-raised/60 px-3 py-2.5 hover:bg-raised focus-visible:ring-2 focus-visible:ring-green focus-visible:outline-none"
+    >
+      <span className="relative h-9 w-9 shrink-0">
+        <PieceImage code="wR" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-extrabold text-ink">{t.endgames.playLink.title}</span>
+        <span className="block text-xs text-muted">{t.endgames.playLink.text}</span>
+      </span>
+      <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-muted group-hover:text-ink" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+        <path d="m9 6 6 6-6 6" />
+      </svg>
+    </Link>
   );
 }

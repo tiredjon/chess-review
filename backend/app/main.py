@@ -15,6 +15,7 @@ from app.api.router import api_router
 from app.core.config import Settings, get_settings
 from app.core.logging import configure_logging
 from app.db.session import Database
+from app.endgames.tablebase import make_tablebase
 from app.engine.pool import EnginePool, LazyEnginePool
 from app.explain.llm import make_provider
 from app.explorer.cache import make_explorer
@@ -49,12 +50,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         # Lichess Opening Explorer с кэшем в БД (`app/api/explorer.py`).
         explorer_http = make_http_client(settings)
         app.state.explorer = make_explorer(settings, explorer_http, app.state.db)
+        # Lichess tablebase с кэшем в БД (`app/api/endgames.py`, сессия 16.3).
+        tablebase_http = make_http_client(settings)
+        app.state.tablebase = make_tablebase(settings, tablebase_http, app.state.db)
         log.info("api.startup", env=settings.app_env)
         try:
             yield
         finally:
             await explore_engine.close()
             await explorer_http.aclose()
+            await tablebase_http.aclose()
             await app.state.redis.aclose()
             if app.state.llm is not None:
                 await app.state.llm.close()

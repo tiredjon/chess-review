@@ -11,5 +11,7 @@ import { review } from "./review";
 import { stats } from "./stats";
 import { trainer } from "./trainer";
 import { play } from "./play";
+import { insights } from "./insights";
+import { endgames } from "./endgames";
 
-export const ru = { common, errors, auth, home, review, puzzles, stats, openings, repertoire, courses, trainer, play };
+export const ru = { common, errors, auth, home, review, puzzles, stats, openings, repertoire, courses, trainer, play, insights, endgames };

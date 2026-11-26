@@ -32,6 +32,8 @@ export const common: Dict["common"] = {
     trainer: "Opening trainer",
     play: "Play vs bot",
     coursePlay: "Course game",
+    weaknesses: "Weak spots",
+    endgames: "Endgame trainer",
   },
   actions: {
     retry: "Retry",

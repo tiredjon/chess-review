@@ -9,6 +9,7 @@ const rateLimited: Record<string, (wait: string) => string> = {
   register: (wait) => `Too many sign-ups from this address. Try again in ${wait}.`,
   browser: (wait) => `Too many in-browser analyses saved. Try again in ${wait}.`,
   explore: (wait) => `Too many Docker engine requests. Switch to the browser or wait ${wait}.`,
+  tablebase: (wait) => `Too many endgame tablebase requests. Try again in ${wait}.`,
 };
 
 const wait = (seconds: number) => {
@@ -60,6 +61,8 @@ export const errors: Dict["errors"] = {
     line_invalid: () => "Invalid move line",
     trainer_card_not_found: () => "Trainer position not found",
     explorer_unavailable: () => "The Lichess games database isn't responding — try again later",
+    tablebase_unavailable: () => "The Lichess endgame tablebase isn't responding — try again later",
+    endgame_not_found: () => "Endgame position not found",
     source_no_games: (p) => `${p.username ?? "The player"} has no standard chess games`,
     engine_data_invalid: () => "The in-browser engine sent invalid evaluations — try again",
     depth_too_low: (p) => `Analysis depth must be at least ${p.min}`,

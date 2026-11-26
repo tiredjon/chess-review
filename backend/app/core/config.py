@@ -146,6 +146,16 @@ class Settings(BaseSettings):
     rate_limit_course: RateSetting = Rate(20, 3600)
     rate_limit_trainer: RateSetting = Rate(600, 3600)
 
+    # Сессия 16.3 — тренажёр эндшпиля. Таблицы Syzygy (≤ 7 фигур) — Lichess tablebase без
+    # токена; вежливость как у Explorer: один запрос за раз, пауза, 429 → ждать. Ответы
+    # не устаревают и кэшируются в `tablebase_cache`. Лимит — на пользователя: в партии
+    # тренажёра запрос идёт после каждого хода человека (ответ бота — из того же ответа).
+    tablebase_api_url: str = "https://tablebase.lichess.ovh"
+    tablebase_min_interval_s: float = Field(default=0.3, ge=0)
+    rate_limit_tablebase: RateSetting = Rate(1200, 3600)
+    # Сколько позиций из своих партий отдаёт `GET /endgames/mine` (по умолчанию и максимум).
+    endgames_mine_limit: int = Field(default=30, ge=1, le=200)
+
     llm_provider: LLMProviderName = LLMProviderName.NONE
     llm_model: str | None = None
     gemini_api_key: SecretStr | None = None

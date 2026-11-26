@@ -11,6 +11,7 @@ const rateLimited: Record<string, (wait: string) => string> = {
   register: (wait) => `Слишком много регистраций с этого адреса. Попробуйте через ${wait}.`,
   browser: (wait) => `Слишком много анализов из браузера. Попробуйте через ${wait}.`,
   explore: (wait) => `Слишком много запросов к движку в Docker. Переключитесь на браузер или подождите ${wait}.`,
+  tablebase: (wait) => `Слишком много запросов к таблицам эндшпиля. Попробуйте через ${wait}.`,
 };
 
 const wait = (seconds: number) => {
@@ -62,6 +63,8 @@ export const errors = {
     line_invalid: () => "Некорректная линия ходов",
     trainer_card_not_found: () => "Позиция тренажёра не найдена",
     explorer_unavailable: () => "База партий Lichess не отвечает — попробуйте позже",
+    tablebase_unavailable: () => "Таблицы эндшпиля Lichess не отвечают — попробуйте позже",
+    endgame_not_found: () => "Позиция эндшпиля не найдена",
     source_no_games: (p: ErrorParams) => `У ${p.username ?? "игрока"} нет партий в классические шахматы`,
     engine_data_invalid: () => "Браузерный движок прислал некорректные оценки — попробуйте ещё раз",
     depth_too_low: (p: ErrorParams) => `Глубина анализа должна быть не меньше ${p.min}`,

@@ -5,11 +5,13 @@ from app.api import (
     auth,
     browser,
     courses,
+    endgames,
     engine,
     explain,
     explorer,
     games,
     imports,
+    insights,
     plans,
     puzzles,
     repertoire,
@@ -37,3 +39,6 @@ api_router.include_router(courses.router)
 api_router.include_router(trainer.router)
 api_router.include_router(explorer.router)
 api_router.include_router(plans.router)
+# Сессия 16: тренировка — слабые места, тренажёр эндшпиля (пазлы по темам — в puzzles).
+api_router.include_router(insights.router)
+api_router.include_router(endgames.router)

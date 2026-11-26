@@ -2,13 +2,14 @@
 
 // Партия с ботом Stockfish (сессия 14.2): доска за цвет человека, ход кликом и перетаскиванием,
 // превращение с выбором фигуры, книга соперника (курс), сдача, взять ход назад, просмотр прошлых
-// позиций, итог с PGN и «Разобрать партию». Контракт props — `./types` (им пользуется 14.3).
+// позиций, итог с PGN и «Разобрать партию». Контракт props — `./types` (им пользуются 14.3 и 16.3:
+// партия с позиции `startFen`, асинхронная книга, итог от страницы `verdict`, стрелки и переход к ходу).
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useEffectEvent, useMemo, useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import { useUser } from "../auth/auth-provider";
 import { createBot, type Bot } from "@/lib/bots";
-import { boardMoveUci, pieceOn, sideToMove, uciSquares } from "@/lib/chess";
+import { boardMoveUci, pieceOn, sideToMove, START_FEN, uciSquares } from "@/lib/chess";
 import { useI18n } from "@/lib/i18n/use-i18n";
 import { playMove, playSound, preloadSounds, toggleMuted, useSoundMuted } from "@/lib/sounds";
 import type { Color } from "@/lib/types";
@@ -24,11 +25,13 @@ import {
   material,
   opposite,
   pawnOnTarget,
+  plyColorFrom,
   replay,
+  startOf,
   targets,
 } from "./game";
 import { IconButton, MoveList, MoveNav, PlayerBar, PromotionPicker, ResultModal, Thinking } from "./parts";
-import type { BotGameProps, GameEndReason, GameResult } from "./types";
+import type { BotGameProps, BotGameVerdict, GameEndReason, GameResult } from "./types";
 
 // Ход книги (линия курса) — с паузой, как будто соперник подумал; бот держит паузу сам.
 const BOOK_DELAY_MS = 550;
@@ -42,14 +45,19 @@ const DOT = "radial-gradient(circle, rgba(0, 0, 0, 0.16) 21%, transparent 23%)";
 const RING = "radial-gradient(circle, transparent 74%, rgba(0, 0, 0, 0.16) 76%, rgba(0, 0, 0, 0.16) 92%, transparent 94%)";
 
 const STORAGE = "chess-review:bot-game";
-type Saved = { key: string; elo: number; color: Color; moves: string[] };
+// `fen` — начальная позиция партии с позиции; у партий с начала его нет (как до сессии 16).
+type Saved = { key: string; elo: number; color: Color; moves: string[]; fen?: string };
 
-function restore(key: string | undefined, elo: number, color: Color): string[] {
+function restore(key: string | undefined, elo: number, color: Color, startFen: string): string[] {
   if (!key) return [];
   try {
     const saved = JSON.parse(sessionStorage.getItem(STORAGE) ?? "null") as Saved | null;
     if (!saved || saved.key !== key || saved.elo !== elo || saved.color !== color || !Array.isArray(saved.moves)) return [];
-    const game = replay(saved.moves.filter((move) => typeof move === "string"));
+    if ((saved.fen ?? START_FEN) !== startFen) return [];
+    const game = replay(
+      saved.moves.filter((move) => typeof move === "string"),
+      startFen,
+    );
     // Законченную партию не восстанавливаем — она уже в итоге.
     return game.end ? [] : game.moves;
   } catch {
@@ -75,12 +83,14 @@ const wait = (ms: number, signal: AbortSignal) =>
     });
   });
 
-/** Цвет полуода с номером `index` (партия всегда с начальной позиции). */
-const plyColor = (index: number): Color => (index % 2 === 0 ? "white" : "black");
-
 type Engine = { key: string; bot: Bot | null; error: boolean };
 
 export function BotGame({
+  startFen: startFenProp,
+  verdict = null,
+  arrows,
+  focus = null,
+  hideAnalyze = false,
   elo,
   color,
   book,
@@ -100,7 +110,11 @@ export function BotGame({
   const pgnName = user.chesscom_username || user.lichess_username || t.play.you;
   const muted = useSoundMuted();
 
-  const [moves, setMoves] = useState<string[]>(() => restore(storageKey, elo, color));
+  const startFen = startFenProp ?? START_FEN;
+  const start = useMemo(() => startOf(startFen), [startFen]);
+  const plyColor = useCallback((index: number): Color => plyColorFrom(start.turn, index), [start.turn]);
+
+  const [moves, setMoves] = useState<string[]>(() => restore(storageKey, elo, color, startFen));
   /** Показанная позиция (число сыгранных полуходов); null — текущая. */
   const [view, setView] = useState<number | null>(null);
   const [orientation, setOrientation] = useState<Color>(color);
@@ -141,13 +155,13 @@ export function BotGame({
 
   useEffect(preloadSounds, []);
 
-  const game = useMemo(() => replay(moves), [moves]);
+  const game = useMemo(() => replay(moves, startFen), [moves, startFen]);
   const total = game.moves.length;
   const liveFen = game.fens[total];
   const shown = view === null ? total : Math.min(view, total);
   const live = shown === total;
   const turn = sideToMove(liveFen);
-  const over = result !== null || game.end !== null;
+  const over = result !== null || game.end !== null || verdict !== null;
   const canMove = live && turn === color && !over && promotion === null;
   const thinking = bot !== null && !engineError && turn !== color && !over;
 
@@ -157,8 +171,18 @@ export function BotGame({
   // Ходы — в sessionStorage, пока партия идёт.
   useEffect(() => {
     if (!storageKey) return;
-    save(result || game.end ? null : { key: storageKey, elo, color, moves: game.moves });
-  }, [storageKey, elo, color, game, result]);
+    const fen = startFenProp ? { fen: startFenProp } : {};
+    save(result || game.end || verdict ? null : { key: storageKey, elo, color, moves: game.moves, ...fen });
+  }, [storageKey, elo, color, game, result, verdict, startFenProp]);
+
+  // Переход к позиции по просьбе страницы (момент, где упущен выигрыш): новый `focus.key` —
+  // новый переход (состояние правится во время рендера, как советует React).
+  const [seenFocus, setSeenFocus] = useState(focus?.key);
+  if (focus && focus.key !== seenFocus) {
+    setSeenFocus(focus.key);
+    setView(focus.ply);
+    setSelected(null);
+  }
 
   const botName = t.play.botName(elo);
 
@@ -174,20 +198,21 @@ export function BotGame({
         elo,
         event: t.play.pgnEvent,
         headers: pgnHeaders,
+        startFen: startFenProp,
       });
       setResult(finished);
       setModalOpen(true);
       setConfirmResign(false);
       onFinished?.(finished);
     },
-    [botName, color, elo, onFinished, pgnHeaders, pgnName, t.play.pgnEvent],
+    [botName, color, elo, onFinished, pgnHeaders, pgnName, startFenProp, t.play.pgnEvent],
   );
 
   /** Сыграть ход (человека или бота) в конце партии `history`. */
   const commit = useCallback(
     (history: readonly string[], uci: string) => {
       const next = [...history, uci];
-      const after = replay(next);
+      const after = replay(next, startFen);
       if (after.moves.length !== next.length) return;
       const mover = plyColor(history.length);
       playMove(after.sans[after.sans.length - 1], mover, color, after.end !== null);
@@ -198,12 +223,20 @@ export function BotGame({
       if (mover === color) onPlayerMove?.(next);
       if (after.end) finish(next, after.end.reason, after.end.winner);
     },
-    [color, finish, onPlayerMove],
+    [color, finish, onPlayerMove, plyColor, startFen],
   );
 
-  // Ход бота: сначала книга (линия курса), если её ход легален, иначе — сам бот.
-  // Любое изменение партии (взять назад, новая позиция) отменяет идущий поиск.
-  const bookMove = useEffectEvent((history: readonly string[]) => book?.(history) ?? null);
+  // Ход бота: сначала книга (линия курса, таблицы), если её ход легален, иначе — сам бот.
+  // Книга может ответить асинхронно; её ошибка — как «хода нет». Любое изменение партии
+  // (взять назад, новая позиция) отменяет идущий запрос и поиск.
+  const bookMove = useEffectEvent(async (history: readonly string[]): Promise<string | null> => {
+    try {
+      return (await book?.(history)) ?? null;
+    } catch (error) {
+      console.warn("opponent book failed", error);
+      return null;
+    }
+  });
   const playBotMove = useEffectEvent((history: readonly string[], uci: string) => commit(history, uci));
   useEffect(() => {
     if (!bot || over || turn === color) return;
@@ -212,7 +245,8 @@ export function BotGame({
     const history = game.moves;
     const fen = liveFen;
     (async () => {
-      let uci = bookMove(history);
+      let uci = await bookMove(history);
+      if (signal.aborted) return;
       if (uci && isLegal(fen, uci)) await wait(BOOK_DELAY_MS, signal);
       else uci = (await bot.move({ fen, historyUci: history, signal })).uci;
       if (signal.aborted) return;
@@ -276,7 +310,7 @@ export function BotGame({
       break;
     }
   }
-  const canTakeback = takebackTo >= 0 && result === null && game.end === null;
+  const canTakeback = takebackTo >= 0 && result === null && game.end === null && verdict === null;
   const takeback = () => {
     if (!canTakeback) return;
     setMoves(game.moves.slice(0, takebackTo));
@@ -353,12 +387,12 @@ export function BotGame({
   }
   const marks: BoardMarks = {
     key: `${shown}-${last ?? ""}`,
-    arrows: [],
+    arrows: promotion ? [] : (arrows?.[shown] ?? []),
     highlights,
     badge: null,
   };
 
-  const materials = material(game.fens[shown]);
+  const materials = material(game.fens[shown], startFenProp);
   const bar = (side: Color) =>
     side === color ? (
       <PlayerBar name={t.play.you} color={side} captured={materials[side].captured} advantage={materials[side].advantage} />
@@ -384,10 +418,14 @@ export function BotGame({
 
   const resultActions = (
     <>
-      <Button size="lg" onClick={analyze} disabled={review.busy} autoFocus>
-        {review.busy ? t.play.analyzing : t.play.analyze}
-      </Button>
-      <ErrorText>{review.error}</ErrorText>
+      {!hideAnalyze && (
+        <>
+          <Button size="lg" onClick={analyze} disabled={review.busy} autoFocus>
+            {review.busy ? t.play.analyzing : t.play.analyze}
+          </Button>
+          <ErrorText>{review.error}</ErrorText>
+        </>
+      )}
       {(onNewGame || onChangeBot) && (
         <div className={`grid gap-2 ${onNewGame && onChangeBot ? "grid-cols-2" : ""}`}>
           {onNewGame && (
@@ -450,18 +488,24 @@ export function BotGame({
           </IconButton>
         </header>
 
-        <div className="flex flex-col gap-3 p-4">
-          <StatusBanner
-            outcome={outcome}
-            text={
-              result
-                ? `${t.play.result[outcome!]} · ${t.play.result.reasons[result.reason]}`
-                : turn === color
-                  ? t.play.yourMove
-                  : t.play.botMove
-            }
-            side={turn}
-          />
+        {/* На десктопе высота панели — высота экрана: если вердикт и пояснения страницы не влезают,
+            прокручивается этот блок, а список ходов не сжимается меньше своего минимума. */}
+        <div className="flex flex-col gap-3 p-4 lg:min-h-0 lg:overflow-y-auto">
+          {verdict ? (
+            <VerdictBanner verdict={verdict} />
+          ) : (
+            <StatusBanner
+              outcome={outcome}
+              text={
+                result
+                  ? `${t.play.result[outcome!]} · ${t.play.result.reasons[result.reason]}`
+                  : turn === color
+                    ? t.play.yourMove
+                    : t.play.botMove
+              }
+              side={turn}
+            />
+          )}
           {engineError && (
             <div role="alert" className="flex flex-col gap-2 rounded-lg bg-danger/15 p-3">
               <p className="text-sm font-bold text-ink">{t.play.engineError}</p>
@@ -482,15 +526,24 @@ export function BotGame({
           {aside}
         </div>
 
-        <div className="flex min-h-0 flex-1 flex-col border-t border-line">
+        <div className="flex min-h-0 flex-1 flex-col border-t border-line lg:min-h-32 lg:shrink-0">
           <p className="px-4 pt-2.5 pb-1 text-xs font-bold tracking-wide text-muted uppercase">{t.play.moves}</p>
-          <MoveList sans={game.sans} current={shown} onSelect={go} empty={color === "white" ? t.play.noMoves : t.play.noMovesBot} />
+          <MoveList
+            sans={game.sans}
+            current={shown}
+            onSelect={go}
+            empty={start.turn === color ? t.play.noMoves : t.play.noMovesBot}
+            firstMove={start.fullmove}
+            blackFirst={start.turn === "black"}
+          />
         </div>
 
         {/* На телефоне действия липнут к низу экрана, как в пазлах. */}
-        <div className={`flex flex-col gap-2 rounded-b-xl border-t border-line bg-panel p-4 lg:static ${result ? "" : "sticky bottom-0"}`}>
+        <div className={`flex flex-col gap-2 rounded-b-xl border-t border-line bg-panel p-4 lg:static ${result || verdict ? "" : "sticky bottom-0"}`}>
           <MoveNav current={shown} total={total} onGo={go} />
-          {result ? (
+          {verdict ? (
+            verdict.actions
+          ) : result ? (
             resultActions
           ) : confirmResign ? (
             <div className="flex flex-col gap-2">
@@ -524,9 +577,19 @@ export function BotGame({
         </div>
       </section>
 
-      {result && modalOpen && (
+      {result && modalOpen && !verdict && (
         <ResultModal result={result} color={color} elo={elo} onClose={() => setModalOpen(false)} actions={resultActions} />
       )}
+    </div>
+  );
+}
+
+function VerdictBanner({ verdict }: { verdict: BotGameVerdict }) {
+  const tone =
+    verdict.tone === "success" ? "bg-green text-white" : verdict.tone === "failure" ? "bg-danger/90 text-white" : "bg-raised text-ink";
+  return (
+    <div role="status" className={`rounded-lg px-4 py-3 text-lg font-extrabold ${tone}`}>
+      {verdict.text}
     </div>
   );
 }

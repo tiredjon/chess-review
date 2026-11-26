@@ -8,7 +8,7 @@
 
 import uuid
 from collections import defaultdict
-from typing import Any
+from typing import Any, NamedTuple
 
 from sqlalchemy import (
     ColumnElement,
@@ -103,7 +103,7 @@ def group_accuracy_sql(
     )
 
 
-def _user_games(user_id: uuid.UUID, source: GameSource | None, tc: TimeClass | None) -> CTE:
+def user_games(user_id: uuid.UUID, source: GameSource | None, tc: TimeClass | None) -> CTE:
     """Партии пользователя после фильтров + последний анализ + показываемая точность."""
     game = Game.__table__
     latest = (
@@ -184,14 +184,14 @@ def _user_games(user_id: uuid.UUID, source: GameSource | None, tc: TimeClass | N
     return stmt.cte("ug")
 
 
-def _own_move(ug: CTE) -> ColumnElement[bool]:
+def own_move(ug: CTE) -> ColumnElement[bool]:
     """Ход сделал пользователь: сторона на ходу в `fen_before` = его цвет."""
     side = func.split_part(Move.fen_before, " ", 2)
     return side == case((ug.c.user_color == Color.WHITE, "w"), else_="b")
 
 
-def _analyzed_moves[*Ts](stmt: Select[*Ts], ug: CTE) -> Select[*Ts]:
-    return stmt.join(ug, Move.analysis_id == ug.c.analysis_id).where(ug.c.done, _own_move(ug))
+def analyzed_moves[*Ts](stmt: Select[*Ts], ug: CTE) -> Select[*Ts]:
+    return stmt.join(ug, Move.analysis_id == ug.c.analysis_id).where(ug.c.done, own_move(ug))
 
 
 async def _totals(session: AsyncSession, ug: CTE) -> StatsTotals:
@@ -335,7 +335,7 @@ async def _phases(session: AsyncSession, ug: CTE) -> list[PhaseStat]:
 
 
 async def _classes(session: AsyncSession, ug: CTE, analyzed: int) -> ClassesStats:
-    stmt = _analyzed_moves(
+    stmt = analyzed_moves(
         select(
             Move.move_class,
             func.count().label("n"),
@@ -373,7 +373,7 @@ async def _motifs(session: AsyncSession, ug: CTE) -> list[MotifStat]:
     )
     element = func.jsonb_array_elements(motifs).table_valued(column("value", JSONB)).lateral("el")
     errors = (
-        _analyzed_moves(
+        analyzed_moves(
             select(
                 Move.id.label("move_id"),
                 Move.ply,
@@ -434,7 +434,7 @@ async def _brilliant(session: AsyncSession, ug: CTE) -> BrilliantStats:
     brilliant = Move.move_class == MoveClass.BRILLIANT
     totals = (
         await session.execute(
-            _analyzed_moves(
+            analyzed_moves(
                 select(
                     func.count().label("count"),
                     func.count(func.distinct(ug.c.id)).label("games"),
@@ -444,7 +444,7 @@ async def _brilliant(session: AsyncSession, ug: CTE) -> BrilliantStats:
         )
     ).one()
     rows = await session.execute(
-        _analyzed_moves(
+        analyzed_moves(
             select(
                 Move.id.label("move_id"),
                 Move.ply,
@@ -481,11 +481,35 @@ _TIME_ERRORS = (MoveClass.MISTAKE, MoveClass.BLUNDER)
 _CLOCK_BUCKETS = ("over_half", "quarter_half", "tenth_quarter", "under_tenth")
 
 
-async def _time(session: AsyncSession, ug: CTE) -> TimeStats | None:
-    """Время на ход по часам партии (`app/review/clock.py`; флаги совпадают — проверяет тест)."""
+class ClockSql(NamedTuple):
+    """Часы хода в SQL (`app/review/clock.py`): база, потрачено, остаток перед ходом,
+    флаги цейтнота и быстрого хода; `known` — условия, при которых всё это известно."""
+
+    base: ColumnElement[Any]
+    spent: ColumnElement[Any]
+    before: ColumnElement[Any]
+    trouble: ColumnElement[bool]
+    fast: ColumnElement[bool]
+    known: tuple[ColumnElement[bool], ...]
+
+
+def clock_sql(ug: CTE) -> ClockSql:
     base = ug.c.base_cs
     spent = ug.c.move_times[Move.ply]
     before = case((Move.ply <= 2, base), else_=ug.c.clocks[Move.ply - 2])
+    return ClockSql(
+        base=base,
+        spent=spent,
+        before=before,
+        trouble=before < TROUBLE_SHARE * base,
+        fast=spent <= func.greatest(FAST_MIN_CS, FAST_SHARE * base),
+        known=(ug.c.move_times.is_not(None), base > 0, spent.is_not(None), before.is_not(None)),
+    )
+
+
+async def _time(session: AsyncSession, ug: CTE) -> TimeStats | None:
+    """Время на ход по часам партии (`app/review/clock.py`; флаги совпадают — проверяет тест)."""
+    base, spent, before, trouble, fast, known = clock_sql(ug)
     share = cast(before, Float) / base
     bucket = case(
         (share > 0.5, "over_half"),
@@ -493,14 +517,10 @@ async def _time(session: AsyncSession, ug: CTE) -> TimeStats | None:
         (share >= TROUBLE_SHARE, "tenth_quarter"),
         else_="under_tenth",
     ).label("bucket")
-    trouble = before < TROUBLE_SHARE * base
-    fast = spent <= func.greatest(FAST_MIN_CS, FAST_SHARE * base)
     error = Move.move_class.in_(_TIME_ERRORS)
 
     def timed[*Ts](stmt: Select[*Ts]) -> Select[*Ts]:
-        return _analyzed_moves(stmt, ug).where(
-            ug.c.move_times.is_not(None), base > 0, spent.is_not(None), before.is_not(None)
-        )
+        return analyzed_moves(stmt, ug).where(*known)
 
     totals = (
         await session.execute(
@@ -578,7 +598,7 @@ async def user_stats(
     source: GameSource | None = None,
     time_class: TimeClass | None = None,
 ) -> StatsOut:
-    ug = _user_games(user_id, source, time_class)
+    ug = user_games(user_id, source, time_class)
     totals = await _totals(session, ug)
     return StatsOut(
         filters=StatsFilters(source=source, time_class=time_class),

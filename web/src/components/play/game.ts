@@ -1,6 +1,6 @@
 // Логика партии с ботом без React: позиции по ходам, конец партии по правилам, PGN, материал.
 import { Chess } from "chess.js";
-import { uciSquares } from "@/lib/chess";
+import { START_FEN, uciSquares } from "@/lib/chess";
 import type { Color } from "@/lib/types";
 import type { GameEndReason, GameResult } from "./types";
 
@@ -17,8 +17,28 @@ export type Replay = {
 
 export const opposite = (color: Color): Color => (color === "white" ? "black" : "white");
 
-export function replay(moves: readonly string[]): Replay {
-  const board = new Chess();
+/** Очередь хода и номер хода позиции — с них нумеруются ходы партии с позиции. */
+export function startOf(fen: string): { turn: Color; fullmove: number } {
+  const [, turn, , , , fullmove] = fen.split(" ");
+  return { turn: turn === "b" ? "black" : "white", fullmove: Math.max(1, Number(fullmove) || 1) };
+}
+
+/** Цвет полуода с номером `index` (0 — первый ход партии) при очереди `first` в начале. */
+export const plyColorFrom = (first: Color, index: number): Color => (index % 2 === 0 ? first : opposite(first));
+
+/** Корректный FEN, с которого можно начать партию (позиция легальна, партия не окончена). */
+export function isPlayableFen(fen: string): boolean {
+  try {
+    const board = new Chess(fen);
+    return !board.isGameOver();
+  } catch {
+    return false;
+  }
+}
+
+/** Ходы партии с позиции `startFen` (по умолчанию — начальная позиция). */
+export function replay(moves: readonly string[], startFen: string = START_FEN): Replay {
+  const board = new Chess(startFen);
   const fens = [board.fen()];
   const sans: string[] = [];
   const played: string[] = [];
@@ -105,11 +125,13 @@ export type ResultInput = {
   elo: number;
   event: string;
   headers?: Record<string, string>;
+  /** Партия с позиции: в PGN — заголовки SetUp / FEN (chess.js ставит их сам). */
+  startFen?: string;
 };
 
 export function buildResult(input: ResultInput): GameResult {
   const result: GameResult["result"] = input.winner === "white" ? "1-0" : input.winner === "black" ? "0-1" : "1/2-1/2";
-  const board = new Chess();
+  const board = new Chess(input.startFen ?? START_FEN);
   for (const uci of input.moves) board.move(uciSquares(uci));
   const white = input.color === "white" ? input.you : input.botName;
   const black = input.color === "black" ? input.you : input.botName;
@@ -134,17 +156,28 @@ const START_COUNT = { p: 8, n: 2, b: 2, r: 2, q: 1 } as const;
 export type PieceKind = keyof typeof VALUES;
 const KINDS: PieceKind[] = ["p", "n", "b", "r", "q"];
 
-/** Взятые фигуры соперника (по видам) и перевес в материале для каждой стороны. */
-export function material(fen: string): Record<Color, { captured: PieceKind[]; advantage: number }> {
-  const counts = { w: { p: 0, n: 0, b: 0, r: 0, q: 0 }, b: { p: 0, n: 0, b: 0, r: 0, q: 0 } };
+type Counts = Record<"w" | "b", Record<PieceKind, number>>;
+
+function countPieces(fen: string): Counts {
+  const counts: Counts = { w: { p: 0, n: 0, b: 0, r: 0, q: 0 }, b: { p: 0, n: 0, b: 0, r: 0, q: 0 } };
   for (const char of fen.split(" ")[0]) {
     const kind = char.toLowerCase() as PieceKind;
     if (!(kind in VALUES)) continue;
     counts[char === kind ? "b" : "w"][kind] += 1;
   }
+  return counts;
+}
+
+/**
+ * Взятые фигуры соперника (по видам) и перевес в материале для каждой стороны. Взятые считаются
+ * от `startFen` (партия с позиции — от неё), иначе от полного комплекта.
+ */
+export function material(fen: string, startFen?: string): Record<Color, { captured: PieceKind[]; advantage: number }> {
+  const counts = countPieces(fen);
+  const base: Counts = startFen ? countPieces(startFen) : { w: START_COUNT, b: START_COUNT };
   const sum = (side: "w" | "b") => KINDS.reduce((total, kind) => total + counts[side][kind] * VALUES[kind], 0);
   const captured = (side: "w" | "b") =>
-    KINDS.flatMap((kind) => Array<PieceKind>(Math.max(0, START_COUNT[kind] - counts[side][kind])).fill(kind));
+    KINDS.flatMap((kind) => Array<PieceKind>(Math.max(0, base[side][kind] - counts[side][kind])).fill(kind));
   const diff = sum("w") - sum("b");
   return {
     white: { captured: captured("b"), advantage: Math.max(0, diff) },

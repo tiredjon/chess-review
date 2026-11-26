@@ -312,6 +312,9 @@ class PuzzleAttempt(Base):
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     correct: Mapped[bool]
     hint_used: Mapped[bool] = mapped_column(default=False, server_default=sa.false())
+    # Сессия 16: `srs` — повторение (меняет коробку), `practice` — тема, `rush` — на время;
+    # practice и rush коробку и дату повторения не меняют.
+    mode: Mapped[str] = mapped_column(String(16), default="srs", server_default="srs")
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
 
@@ -445,3 +448,51 @@ class TrainerAttempt(Base):
     uci: Mapped[str] = mapped_column(String(8))
     verdict: Mapped[str] = mapped_column(String(16))
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
+# --- Сессия 16: тренировка — слабые места, пазлы по темам и на время, эндшпиль ---
+
+
+class PuzzleRushRun(Base):
+    """Завершённый забег «Пазлы на время» (16.2): решено, ошибок, длительность, фильтры."""
+
+    __tablename__ = "puzzle_rush_runs"
+    __table_args__ = (Index("ix_puzzle_rush_runs_user_id_created_at", "user_id", "created_at"),)
+
+    id: Mapped[int] = mapped_column(sa.BigInteger, sa.Identity(), primary_key=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    score: Mapped[int]
+    mistakes: Mapped[int]
+    duration_s: Mapped[int]
+    # {"theme": …, "phase": …, "eco": …} — только заданные.
+    filters: Mapped[dict[str, Any]] = mapped_column(server_default="{}")
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
+class EndgameAttempt(Base):
+    """Попытка в тренажёре эндшпиля (16.3). `source` — `catalog` (типовая позиция, `key` — её
+    id) или `game` (позиция из своей партии, `key` — id хода); `goal` — `win` или `draw`."""
+
+    __tablename__ = "endgame_attempts"
+    __table_args__ = (Index("ix_endgame_attempts_user_id_key", "user_id", "source", "key"),)
+
+    id: Mapped[int] = mapped_column(sa.BigInteger, sa.Identity(), primary_key=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    source: Mapped[str] = mapped_column(String(16))
+    key: Mapped[str] = mapped_column(String(64))
+    goal: Mapped[str] = mapped_column(String(8))
+    success: Mapped[bool]
+    # Полуходов сыграно с начальной позиции.
+    plies: Mapped[int]
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
+class TablebaseCacheEntry(Base):
+    """Ответ таблиц Syzygy (Lichess tablebase) по позиции ≤ 7 фигур (16.3); `epd` — FEN без
+    счётчиков ходов. Ответ таблиц не устаревает."""
+
+    __tablename__ = "tablebase_cache"
+
+    epd: Mapped[str] = mapped_column(String(100), primary_key=True)
+    data: Mapped[dict[str, Any]]
+    fetched_at: Mapped[datetime] = mapped_column(server_default=func.now())
