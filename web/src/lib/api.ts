@@ -22,7 +22,14 @@ import type {
   MoveExplanation,
   ProfileUpdate,
   PuzzleAttempt,
+  PuzzleMode,
   PuzzleNext,
+  PuzzleFilters,
+  PuzzleThemes,
+  RushRunBody,
+  RushRunResult,
+  RushRuns,
+  RushVariant,
   Stats,
   StreamToken,
   Summary,
@@ -206,12 +213,21 @@ export const api = {
     return request<Stats>(`/stats/me${qs ? `?${qs}` : ""}`);
   },
 
-  nextPuzzle: (exclude: string[] = []) => {
+  nextPuzzle: (params: { exclude?: string[]; mode?: PuzzleMode } & Partial<PuzzleFilters> = {}) => {
     const query = new URLSearchParams();
-    exclude.forEach((id) => query.append("exclude", id));
+    params.exclude?.forEach((id) => query.append("exclude", id));
+    if (params.mode) query.set("mode", params.mode);
+    if (params.theme) query.set("theme", params.theme);
+    if (params.phase) query.set("phase", params.phase);
+    if (params.eco) query.set("eco", params.eco);
     const qs = query.toString();
     return request<PuzzleNext>(`/puzzles/next${qs ? `?${qs}` : ""}`);
   },
-  attemptPuzzle: (id: string, body: { moves_uci: string[]; hint_used?: boolean; gave_up?: boolean }) =>
-    post<PuzzleAttempt>(`/puzzles/${id}/attempt`, body),
+  attemptPuzzle: (
+    id: string,
+    body: { moves_uci: string[]; hint_used?: boolean; gave_up?: boolean; mode?: PuzzleMode },
+  ) => post<PuzzleAttempt>(`/puzzles/${id}/attempt`, body),
+  puzzleThemes: () => request<PuzzleThemes>("/puzzles/themes"),
+  rushRuns: (variant: RushVariant) => request<RushRuns>(`/puzzles/rush?variant=${variant}`),
+  saveRushRun: (body: RushRunBody) => post<RushRunResult>("/puzzles/rush", body),
 };
