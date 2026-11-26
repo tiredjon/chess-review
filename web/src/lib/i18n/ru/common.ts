@@ -12,6 +12,7 @@ export const common = {
     stats: "Статистика",
     puzzles: "Пазлы",
     openings: "Дебюты",
+    play: "Игра",
     profile: "Профиль",
     logout: "Выйти",
   },
@@ -31,6 +32,9 @@ export const common = {
     courses: "Курсы дебютов",
     course: "Курс",
     trainer: "Тренажёр дебютов",
+    // Сессия 14: игра с ботами.
+    play: "Игра с ботом",
+    coursePlay: "Партия по курсу",
   },
   actions: {
     retry: "Повторить",
