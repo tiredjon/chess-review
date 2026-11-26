@@ -8,7 +8,7 @@ import { coursesApi, isBuilding, type CourseDetail, type CourseNode, type Course
 import { useI18n } from "@/lib/i18n/use-i18n";
 import { trainerApi } from "@/lib/trainer-api";
 import { OpeningBoard } from "../openings/opening-board";
-import { OpeningControls, OpeningTree } from "../openings/opening-tree";
+import { LineSwitcher, OpeningControls, OpeningTree } from "../openings/opening-tree";
 import { indexNodes } from "../openings/types";
 import { useOpeningNav } from "../openings/use-opening-nav";
 import { Button, ErrorText, Panel } from "../ui";
@@ -265,6 +265,7 @@ function Explorer({ course, tree, initialNode }: { course: CourseDetail; tree: C
               <>
                 <OpeningBoard index={index} currentId={currentId} orientation={tree.color} onSelect={select} weights={weights} />
                 <OpeningControls nav={nav} className="mt-2" />
+                <LineSwitcher nav={nav} className="mt-2" />
                 <p className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-muted">
                   <span className="inline-flex items-center gap-1.5">
                     <span className="h-1 w-5 rounded-full bg-[#96bc4b]" />

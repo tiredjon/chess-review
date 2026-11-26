@@ -207,3 +207,30 @@ export function OpeningControls({ nav, className = "" }: { nav: OpeningNav; clas
     </div>
   );
 }
+
+/** «◀ Вариант 3 из 52 ▶» — перебор всех линий дерева по очереди (под кнопками доски). */
+export function LineSwitcher({ nav, className = "" }: { nav: OpeningNav; className?: string }) {
+  const { t } = useI18n();
+  const l = t.repertoire.shared;
+  if (nav.lines < 2) return null;
+  const button = (label: string, text: string, disabled: boolean, onClick: () => void) => (
+    <button
+      type="button"
+      title={label}
+      disabled={disabled}
+      onClick={onClick}
+      className="min-h-10 rounded-lg bg-raised px-3 text-sm font-bold text-soft shadow-[0_3px_0_0_rgba(0,0,0,0.35)] hover:bg-raised-hover hover:text-ink active:translate-y-[2px] active:shadow-none disabled:cursor-not-allowed disabled:opacity-40 disabled:active:translate-y-0"
+    >
+      {text}
+    </button>
+  );
+  return (
+    <div className={`flex items-center gap-2 ${className}`}>
+      {button(l.prevLineHint, `‹ ${l.prevLine}`, nav.line === 0, nav.prevLine)}
+      <span className="flex-1 text-center text-sm font-semibold text-soft tabular-nums" aria-live="polite">
+        {l.lineOf(nav.line + 1, nav.lines)}
+      </span>
+      {button(l.nextLineHint, `${l.nextLine} ›`, nav.line >= nav.lines - 1, nav.nextLine)}
+    </div>
+  );
+}

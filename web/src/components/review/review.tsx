@@ -392,17 +392,20 @@ export function Review({
   );
 
   // Звук шага по линии исследования кнопками / клавишами (свой ход звучит в exploreMove).
+  // Шаг назад до начала ответвления — это позиция партии: возврат в партию, чтобы
+  // стрелки дальше листали её ходы, а не упирались в начало линии.
   const exploreStep = useCallback(
     (step: number) => {
       if (mode.kind !== "explore") return;
       const next = Math.max(0, Math.min(mode.moves.length, step));
-      if (next === mode.step) return;
+      if (next === mode.step && next > 0) return;
       const index = next > mode.step ? next - 1 : mode.step - 1;
       const move = mode.moves[index];
-      if (move) playMove(move.san, sideToMove(mode.fens[index]), selfColor);
-      setMode({ ...mode, step: next, selected: null });
+      if (move && next !== mode.step) playMove(move.san, sideToMove(mode.fens[index]), selfColor);
+      if (next === 0) goTo(mode.baseCursor);
+      else setMode({ ...mode, step: next, selected: null });
     },
-    [mode, selfColor],
+    [goTo, mode, selfColor],
   );
 
   // Клавиатура: ← → по ходам (или по линии), ↑/Home — начало, ↓/End — конец, Esc — к партии,
@@ -678,12 +681,28 @@ export function Review({
               </div>
               <MoveList
                 plies={plies}
-                cursor={mode.kind === "game" ? cursor : -1}
+                cursor={mode.kind === "explore" ? mode.baseCursor : cursor}
                 onSelect={goTo}
                 className="max-h-80 border-t border-line lg:max-h-none lg:flex-[1_0_13rem]"
               />
             </div>
-            <NavBar cursor={cursor} total={plies.length} onGo={goTo} onFlip={flip} />
+            <NavBar
+              cursor={cursor}
+              total={plies.length}
+              onGo={goTo}
+              onFlip={flip}
+              // В исследовании ◀ ▶ листают ответвление (◀ с его начала — обратно в партию).
+              step={
+                mode.kind === "explore"
+                  ? {
+                      onPrev: () => exploreStep(mode.step - 1),
+                      onNext: () => exploreStep(mode.step + 1),
+                      onLast: () => exploreStep(mode.moves.length),
+                      atEnd: mode.step >= mode.moves.length,
+                    }
+                  : undefined
+              }
+            />
           </>
         )}
       </section>
@@ -719,20 +738,30 @@ function NavBar({
   total,
   onGo,
   onFlip,
+  step,
 }: {
   cursor: number;
   total: number;
   onGo: (index: number) => void;
   onFlip: () => void;
+  /** Листание ответвления вместо ходов партии. */
+  step?: { onPrev: () => void; onNext: () => void; onLast: () => void; atEnd: boolean };
 }) {
   const { t } = useI18n();
-  const buttons: [keyof typeof NAV_ICONS, string, () => void, boolean][] = [
-    ["first", t.review.navFirst, () => onGo(0), cursor === 0],
-    ["prev", t.review.navPrev, () => onGo(cursor - 1), cursor === 0],
-    ["next", t.review.navNext, () => onGo(cursor + 1), cursor >= total],
-    ["last", t.review.navLast, () => onGo(total), cursor >= total],
-    ["flip", t.review.navFlip, onFlip, false],
-  ];
+  const buttons: [keyof typeof NAV_ICONS, string, () => void, boolean][] = step
+    ? [
+        ["first", t.review.navFirst, () => onGo(0), false],
+        ["prev", t.review.navPrev, step.onPrev, false],
+        ["next", t.review.navNext, step.onNext, step.atEnd],
+        ["last", t.review.navLast, step.onLast, step.atEnd],
+      ]
+    : [
+        ["first", t.review.navFirst, () => onGo(0), cursor === 0],
+        ["prev", t.review.navPrev, () => onGo(cursor - 1), cursor === 0],
+        ["next", t.review.navNext, () => onGo(cursor + 1), cursor >= total],
+        ["last", t.review.navLast, () => onGo(total), cursor >= total],
+      ];
+  buttons.push(["flip", t.review.navFlip, onFlip, false]);
   return (
     <div
       className="sticky bottom-0 grid grid-cols-[1fr_1fr_1.4fr_1fr_0.8fr] gap-1.5 rounded-b-xl border-t border-line bg-panel p-3 lg:static"
