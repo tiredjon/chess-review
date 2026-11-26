@@ -844,7 +844,6 @@ async def test_rush_window_is_duration_plus_a_minute(
         {"duration_s": -5},
         {"variant": "3min", "duration_s": 400},
         {"variant": "5min", "duration_s": 400},
-        {"variant": "survival", "mistakes": 1},
         {"filters": {"phase": "midgame"}},
         {"filters": {"theme": "Fork"}},
         {"filters": {"variant": "5min"}},

@@ -1,4 +1,5 @@
 import type { Dict } from "..";
+import { enPlural } from "../plural";
 
 export const puzzles: Dict["puzzles"] = {
   title: "Puzzles from your mistakes",
@@ -51,5 +52,65 @@ export const puzzles: Dict["puzzles"] = {
   done: {
     title: "All caught up for now",
     text: (when, streak) => `Next review ${when}. Streak: ${streak}.`,
+  },
+  tabs: { label: "Mode", srs: "Review", practice: "By theme", rush: "Timed" },
+  filters: {
+    label: "Puzzle filters",
+    theme: "Theme",
+    phase: "Phase",
+    opening: "Opening",
+    all: "All",
+    allOpenings: "All openings",
+    reset: "Reset filters",
+    active: "Filters",
+    loadError: "Couldn't load the themes",
+    themeTitle: (total, due, solved) => `${total} total, ${due} due, ${solved} solved`,
+  },
+  practice: {
+    progress: (n, total) => `Puzzle ${n} of ${total}`,
+    note: "Practice: your review schedule doesn't change.",
+    doneTitle: "You've gone through all puzzles for this filter",
+    doneText: (n) => `You went through ${n} ${enPlural(n, "puzzle", "puzzles")}.`,
+    again: "Start over",
+    noMatchTitle: "No puzzles match these filters",
+    noMatchText: "Try another theme, phase or opening.",
+  },
+  rush: {
+    variants: {
+      "3min": { title: "3 minutes", text: "Solve as many as you can before time runs out." },
+      "5min": { title: "5 minutes", text: "The same for five minutes." },
+      survival: { title: "Survival", text: "No clock — until you make three mistakes." },
+    },
+    mistakesNote: "Three mistakes end the run. Puzzles go from short to long.",
+    best: (n) => `Best: ${n}`,
+    noBest: "No record yet",
+    start: "Start",
+    recent: "Recent runs",
+    recentRow: (score, mistakes, time) =>
+      `${score} ${enPlural(score, "puzzle", "puzzles")} · ${mistakes} ${enPlural(mistakes, "mistake", "mistakes")} · ${time}`,
+    score: "Solved",
+    mistakes: "Mistakes",
+    mistakesLabel: (used) => `Mistakes: ${used} of 3`,
+    timeLeft: "Time left",
+    elapsed: "Time elapsed",
+    skip: "Skip (counts as a mistake)",
+    finish: "Finish",
+    loadError: "Couldn't load your runs",
+    summary: {
+      title: "Run finished",
+      timeUp: "Time's up",
+      threeMistakes: "Three mistakes",
+      exhausted: "Out of puzzles",
+      finished: "Run finished",
+      newBest: "New record!",
+      best: (n) => `Best: ${n}`,
+      saving: "Saving your result…",
+      saveError: "Couldn't save the result",
+      again: "Try again",
+      back: "Back to setup",
+      solved: (n) => `${n} ${enPlural(n, "puzzle", "puzzles")} solved`,
+    },
+    noPuzzlesTitle: "No puzzles for a run",
+    noPuzzlesText: "Change the filters or review more games.",
   },
 };

@@ -39,9 +39,6 @@ def check_run_shape(variant: Variant, *, score: int, mistakes: int, duration_s: 
         raise RunInvalidError("забег длиннее лимита варианта")
     if duration_s > MAX_DURATION_S:
         raise RunInvalidError("забег слишком длинный")
-    if limit is None and mistakes < MAX_MISTAKES:
-        # «На выживание» кончается только на третьей ошибке.
-        raise RunInvalidError("забег на выживание заканчивается третьей ошибкой")
     if score < 0:
         raise RunInvalidError("счёт не может быть отрицательным")
 

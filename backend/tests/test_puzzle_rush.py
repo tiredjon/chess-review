@@ -22,6 +22,8 @@ from app.puzzles.rush import (
         ("3min", 1, 185),  # итог уходит уже после сигнала таймера
         ("5min", 2, 300),
         ("survival", MAX_MISTAKES, 3000),
+        # Забег на выживание можно закончить и раньше третьей ошибки: пазлы кончились.
+        ("survival", 1, 3000),
     ],
 )
 def test_valid_shape(variant: Variant, mistakes: int, duration_s: int) -> None:
@@ -35,7 +37,6 @@ def test_valid_shape(variant: Variant, mistakes: int, duration_s: int) -> None:
         ("3min", -1, 100),
         ("3min", 0, 200),  # дольше лимита
         ("5min", 0, 400),
-        ("survival", 2, 100),  # выживание кончается только третьей ошибкой
         ("survival", 3, 4 * 3600),  # дольше трёх часов
     ],
 )
