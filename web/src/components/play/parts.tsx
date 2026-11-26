@@ -76,12 +76,18 @@ export function MoveList({
   current,
   onSelect,
   empty,
+  firstMove = 1,
+  blackFirst = false,
 }: {
   sans: string[];
   /** Сколько полуходов сыграно в показанной позиции. */
   current: number;
   onSelect: (plies: number) => void;
   empty: string;
+  /** Номер первого хода (партия с позиции — из FEN). */
+  firstMove?: number;
+  /** Партия с позиции начинается ходом чёрных: первая клетка белых пустая («12. …»). */
+  blackFirst?: boolean;
 }) {
   const box = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -99,7 +105,9 @@ export function MoveList({
       container.scrollTop = top + active.offsetHeight - container.clientHeight;
   }, [current, sans.length]);
 
-  const rows = Math.ceil(sans.length / 2);
+  // Клетка списка → номер полуода; при ходе чёрных первым первая клетка — «…».
+  const shift = blackFirst ? 1 : 0;
+  const rows = Math.ceil((sans.length + shift) / 2);
   return (
     <div ref={box} className="relative max-h-56 min-h-24 overflow-y-auto lg:max-h-none lg:flex-1">
       {sans.length === 0 ? (
@@ -108,9 +116,15 @@ export function MoveList({
         <ol className="py-1 text-[15px]">
           {Array.from({ length: rows }, (_, row) => (
             <li key={row} className={`grid grid-cols-[3rem_1fr_1fr] items-center px-2 ${row % 2 ? "bg-sunken/30" : ""}`}>
-              <span className="pl-2 text-sm font-semibold text-muted">{row + 1}.</span>
+              <span className="pl-2 text-sm font-semibold text-muted">{row + firstMove}.</span>
               {[0, 1].map((side) => {
-                const index = row * 2 + side;
+                const index = row * 2 + side - shift;
+                if (index < 0)
+                  return (
+                    <span key={side} className="px-2 font-bold text-muted">
+                      …
+                    </span>
+                  );
                 if (index >= sans.length) return <span key={side} />;
                 const active = index + 1 === current;
                 return (
