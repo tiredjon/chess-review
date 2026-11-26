@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
 import { api, ApiError } from "@/lib/api";
-import { CLASS_COLORS, CLASS_ORDER, classPlural, phaseClass, type ClassKey } from "@/lib/classes";
+import { CLASS_COLORS, CLASS_ORDER, classPlural, displayClass, phaseClass, type ClassKey } from "@/lib/classes";
 import { formatDate } from "@/lib/format";
 import { useI18n } from "@/lib/i18n/use-i18n";
 import { motifName } from "@/lib/motifs";
@@ -421,7 +421,7 @@ function Motifs({ stats }: { stats: Stats }) {
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {motif.examples.map((example) => {
-                  const cls: ClassKey = example.is_miss && !["mistake", "blunder"].includes(example.class) ? "miss" : example.class;
+                  const cls: ClassKey = displayClass(example);
                   return (
                     <Link
                       key={example.move_id}

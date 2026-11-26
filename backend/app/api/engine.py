@@ -100,6 +100,18 @@ async def analyse_position(
     )
 
 
+def _move_between(prior: chess.Board, board: chess.Board) -> chess.Move | None:
+    """Ход, который из `prior` ведёт в `board` (для «взятия в ответ»), если он один."""
+    target = board.board_fen()
+    for candidate in prior.legal_moves:
+        prior.push(candidate)
+        found = prior.board_fen() == target and prior.turn == board.turn
+        prior.pop()
+        if found:
+            return candidate
+    return None
+
+
 @router.post("/engine/classify")
 async def classify(body: ClassifyIn, user: CurrentUser) -> ClassifyOut:
     """Класс хода в режиме исследования по оценкам позиций до и после — той же логикой,
@@ -122,11 +134,13 @@ async def classify(body: ClassifyIn, user: CurrentUser) -> ClassifyOut:
             params={"index": exc.index},
         ) from exc
     (evaluated,) = evaluate_game(board, [move], evals).moves
+    prior = None if body.prior_fen is None else _board(body.prior_fen)
     result = classify_move(
         evaluated,
         in_book=default_openings().is_book(board, move),
         previous=body.previous,
-        prior=None if body.prior_fen is None else _board(body.prior_fen),
+        prior=prior,
+        previous_move=None if prior is None else _move_between(prior, board),
     )
     best = evaluated.best_move
     eval_before_cp, mate_before = split_score(evaluated.eval_before)

@@ -5,8 +5,8 @@ Chess.com) из `scripts/collect_chesscom_accuracy.py`.
   E[точность | r] = a − b·e^(−r/c),
 подбирается по средним в диапазонах рейтинга шириной BIN (вес диапазона ограничен, чтобы
 плотная середина не диктовала форму); daily — кривая рапида со сдвигом (партий мало).
-Рейтинг партии — обратная функция: какой рейтинг в среднем играет с такой точностью
-(так же ведёт себя «Game Rating» Chess.com: 77 → ~1750, 71 → ~1250 в рапиде).
+Рейтинг партии — байесовская оценка на этих кривых с опорой на рейтинг игрока
+(`app/review/game_rating.py`); ниже для сравнения печатается и чистая обратная функция.
 
     PYTHONPATH=. uv run python scripts/fit_game_rating.py data.jsonl
 """
@@ -82,6 +82,19 @@ def main() -> None:
             if cls == tc and len(v) >= MIN_POINTS
         ]
         print(tc, "факт/модель:", "; ".join(line))
+
+    # Разброс точности одной партии у игроков одного рейтинга — для `NOISE` / `TAU`
+    # в `app/review/game_rating.py` (там σ взят меньше: см. docstring модуля).
+    for tc in ("rapid", "blitz", "bullet"):
+        residuals = [
+            r["accuracy"] - expected(r["rating"], *curves[tc], 0)
+            for r in rows
+            if r["time_class"] == tc
+        ]
+        if residuals:
+            mean = sum(residuals) / len(residuals)
+            sd = math.sqrt(sum((x - mean) ** 2 for x in residuals) / len(residuals))
+            print(f"{tc}: σ точности при данном рейтинге {sd:.1f} (n={len(residuals)})")
 
     def inverse(acc: float, tc: str) -> float:
         a, b, c = curves[tc]

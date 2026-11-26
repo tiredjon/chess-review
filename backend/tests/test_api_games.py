@@ -188,3 +188,18 @@ async def test_game_rating_from_accuracy(client: AsyncClient, db: Database) -> N
         next(item for item in listed if item["id"] == game["id"])["game_rating"]
         == detail["game_rating"]
     )
+
+    # Партия Chess.com: опора оценки — рейтинги игроков (у PGN рейтинги не учитываются).
+    async with db.sessionmaker() as session:
+        await session.execute(
+            update(Game)
+            .where(Game.id == uuid.UUID(str(game["id"])))
+            .values(source="chesscom", white_elo=900, black_elo=1800)
+        )
+        await session.commit()
+    rated = (await client.get(f"/api/v1/games/{game['id']}")).json()
+    assert rated["game_rating"] == {
+        "white": game_rating(77.23, "rapid", rating=900, opponent_rating=1800),
+        "black": game_rating(71.37, "rapid", rating=1800, opponent_rating=900),
+    }
+    assert rated["game_rating"] != detail["game_rating"]

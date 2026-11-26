@@ -62,6 +62,11 @@ files = ["app", "tests", "alembic", "scripts"]
 module = ["arq.*", "asyncpg.*"]
 ignore_missing_imports = true
 
+# numpy — только у экспериментального scripts/fit_position_rating.py (`uv run --with numpy`).
+[[tool.mypy.overrides]]
+module = ["numpy.*"]
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"

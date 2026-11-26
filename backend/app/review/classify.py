@@ -10,19 +10,24 @@ from dataclasses import dataclass
 import chess
 
 from app.review.evaluate import MoveEval
+from app.review.material import see
 from app.review.openings import OpeningBook
 from app.review.sacrifice import Sacrifice, find_sacrifice
 from app.review.thresholds import (
+    BEST_MAX_DELTA,
     BOOK_MAX_FULLMOVE,
     BRILLIANT_MAX_DELTA,
     BRILLIANT_MAX_WIN_BEFORE,
     BRILLIANT_MIN_EVAL_CP,
     EXCELLENT_MAX_DELTA,
     GOOD_MAX_DELTA,
+    GREAT_CRITICAL_MIN_GAP,
     GREAT_MIN_GAP,
     INACCURACY_MAX_DELTA,
     LOSING_MAX_WIN,
     MISS_MIN_DELTA,
+    MISS_MIN_WIN_AFTER,
+    MISS_MIN_WIN_BEFORE,
     MISTAKE_MAX_DELTA,
     WINNING_MIN_WIN,
 )
@@ -65,12 +70,61 @@ def reply_line(move: MoveEval) -> tuple[chess.Move, ...]:
     return ()
 
 
-def is_great(move: MoveEval) -> bool:
-    """Лучший ход — единственный (второй вариант хуже на ≥ GREAT_MIN_GAP) или меняет результат."""
-    if len(move.lines) < 2:
+def is_recapture(
+    board: chess.Board,
+    move: chess.Move,
+    prior: chess.Board | None,
+    previous_move: chess.Move | None,
+) -> bool:
+    """Взятие на поле, где соперник только что взял (`prior` — позиция до его хода)."""
+    return (
+        prior is not None
+        and previous_move is not None
+        and prior.is_capture(previous_move)
+        and board.is_capture(move)
+        and move.to_square == previous_move.to_square
+    )
+
+
+def is_obvious(
+    board: chess.Board,
+    move: chess.Move,
+    prior: chess.Board | None = None,
+    previous_move: chess.Move | None = None,
+) -> bool:
+    """Ход, который находит каждый, — не `great`, даже если он единственный: взятие в ответ
+    или взятие с выигрышем материала (подставленная фигура, SEE > 0). Мат — не очевиден."""
+    if not board.is_capture(move) or _mates(board, move):
+        return False
+    return is_recapture(board, move, prior, previous_move) or see(board, move) > 0
+
+
+def _mates(board: chess.Board, move: chess.Move) -> bool:
+    after = board.copy(stack=False)
+    after.push(move)
+    return after.is_checkmate()
+
+
+def is_great(move: MoveEval, *, obvious: bool = False, punishing: bool = False) -> bool:
+    """Лучший ход — единственный: второй вариант хуже на ≥ GREAT_MIN_GAP win%, или на
+    ≥ GREAT_CRITICAL_MIN_GAP в критический момент — ход меняет результат или (`punishing`)
+    наказывает ошибку соперника. Очевидный ход (`is_obvious`) — никогда."""
+    if obvious or len(move.lines) < 2:
         return False
     best, second = win_percent(move.lines[0].score), win_percent(move.lines[1].score)
-    return best - second >= GREAT_MIN_GAP or outcome(best) > outcome(second)
+    gap = best - second
+    critical = punishing or outcome(best) > outcome(second)
+    return gap >= GREAT_MIN_GAP or (gap >= GREAT_CRITICAL_MIN_GAP and critical)
+
+
+def is_miss(move: MoveEval, delta: float, previous: MoveClass | None) -> bool:
+    """Соперник ошибся, у игрока был шанс, а он его упустил, не проиграв позицию."""
+    return (
+        previous in _ERRORS
+        and delta >= MISS_MIN_DELTA
+        and move.win_before >= MISS_MIN_WIN_BEFORE
+        and move.win_after >= MISS_MIN_WIN_AFTER
+    )
 
 
 def classify_move(
@@ -79,11 +133,12 @@ def classify_move(
     in_book: bool = False,
     previous: MoveClass | None = None,
     prior: chess.Board | None = None,
+    previous_move: chess.Move | None = None,
 ) -> MoveClassification:
     """`in_book` — позиция после хода есть в книге; `previous` — класс хода соперника
-    перед ним; `prior` — позиция до этого хода соперника."""
+    перед ним; `prior` — позиция до этого хода соперника, `previous_move` — сам этот ход."""
     delta = win_loss(move)
-    is_miss = previous in _ERRORS and delta >= MISS_MIN_DELTA
+    missed = is_miss(move, delta, previous)
     board = chess.Board(move.fen_before)
     is_best = move.best_move == move.move
 
@@ -92,7 +147,7 @@ def classify_move(
         sacrifice = find_sacrifice(board, move.move, reply_line(move), prior)
 
     def result(move_class: MoveClass) -> MoveClassification:
-        return MoveClassification(move_class, is_miss=is_miss, sacrifice=sacrifice)
+        return MoveClassification(move_class, is_miss=missed, sacrifice=sacrifice)
 
     if in_book and move.fullmove <= BOOK_MAX_FULLMOVE:
         return result(MoveClass.BOOK)
@@ -105,8 +160,15 @@ def classify_move(
     ):
         return result(MoveClass.BRILLIANT)
     if is_best:
-        return result(MoveClass.GREAT if is_great(move) else MoveClass.BEST)
+        great = is_great(
+            move,
+            obvious=is_obvious(board, move.move, prior, previous_move),
+            punishing=previous in _ERRORS,
+        )
+        return result(MoveClass.GREAT if great else MoveClass.BEST)
     for move_class, limit in (
+        # Не первый ход движка, но равноценный ему.
+        (MoveClass.BEST, BEST_MAX_DELTA),
         (MoveClass.EXCELLENT, EXCELLENT_MAX_DELTA),
         (MoveClass.GOOD, GOOD_MAX_DELTA),
         (MoveClass.INACCURACY, INACCURACY_MAX_DELTA),
@@ -130,6 +192,7 @@ def classify_game(
             in_book=in_book,
             previous=result[-1].move_class if result else None,
             prior=prior,
+            previous_move=moves[index - 1].move if index > 0 else None,
         )
         result.append(classification)
     return result

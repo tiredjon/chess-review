@@ -40,10 +40,11 @@ export const CLASS_ORDER: ClassKey[] = [
 /** Классы, которые в списке ходов отмечаются значком и цветом. */
 export const NOTABLE: ClassKey[] = ["brilliant", "great", "inaccuracy", "mistake", "miss", "blunder"];
 
-/** Класс для показа: флаг `miss` важнее класса хода, если ход не хуже неточности. */
-export function displayClass(move: MoveOut): ClassKey {
-  if (move.is_miss && !["mistake", "blunder"].includes(move.class)) return "miss";
-  return move.class;
+/** Класс для показа: флаг `miss` важнее класса хода — как у Chess.com, упущенная возможность
+ *  показывается вместо неточности / ошибки / зевка (позицию игрок при этом не проиграл —
+ *  это проверяет сервер, `review/classify.py`). */
+export function displayClass(move: Pick<MoveOut, "class" | "is_miss">): ClassKey {
+  return move.is_miss ? "miss" : move.class;
 }
 
 export const isError = (move: MoveOut) =>
