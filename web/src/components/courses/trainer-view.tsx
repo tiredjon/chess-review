@@ -378,6 +378,13 @@ export function TrainerView({ courseId }: { courseId: string | null }) {
                   <h2 className="truncate text-lg font-extrabold">{course ? shortName(course.name) : t.trainer.heading}</h2>
                   {summary && <p className="text-xs font-semibold text-muted">{t.trainer.counts(totals.due, totals.fresh, totals.learned, totals.total)}</p>}
                 </div>
+                <Link
+                  href={`/openings/courses/${game.card.course_id}/play?node=${game.card.node_id}`}
+                  title={t.courses.play.button}
+                  className="inline-flex min-h-9 shrink-0 items-center rounded-lg bg-raised px-3 text-sm font-bold text-soft shadow-[0_3px_0_0_rgba(0,0,0,0.35)] hover:bg-raised-hover hover:text-ink active:translate-y-[2px] active:shadow-none"
+                >
+                  {t.courses.play.buttonShort}
+                </Link>
                 <button
                   type="button"
                   onClick={toggleMuted}
