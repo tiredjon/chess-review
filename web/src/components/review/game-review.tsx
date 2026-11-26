@@ -113,6 +113,7 @@ function LoadedGame({
         initialCursor={Math.min(initialPly, plies.length)}
         initialOrientation={game.user_color ?? "white"}
         player={(color) => <PlayerBar game={game} color={color} />}
+        clock={game.clock}
         subtitle={subtitle}
         actions={<ShareButton gameId={game.id} />}
         status={

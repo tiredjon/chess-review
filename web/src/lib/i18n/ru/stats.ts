@@ -112,4 +112,27 @@ export const stats = {
     open: (move: string, name: string) => `Открыть разбор: ${move} против ${name}`,
     limited: (shown: number) => `Показаны последние ${shown}.`,
   },
+  // Время на ход по часам партий (%clk, сессия 15).
+  time: {
+    title: "Время на ход",
+    troubleErrors: "Ошибки в цейтноте",
+    hastyErrors: "Поспешные ошибки",
+    troubleGames: "Партий с цейтнотом",
+    ofErrors: (percent: number, total: number) => `${percent}% из ${total} ${ruPlural(total, "ошибки", "ошибок", "ошибок")}`,
+    noErrors: "ошибок не было",
+    ofGames: (n: number) => `из ${n} с часами`,
+    ratio: (value: string) => `В цейтноте вы ошибаетесь в ${value} раза чаще, чем при запасе времени.`,
+    bucketsTitle: "Точность по остатку на часах",
+    buckets: {
+      over_half: "Больше 50%",
+      quarter_half: "25–50%",
+      tenth_quarter: "10–25%",
+      under_tenth: "Цейтнот, < 10%",
+    },
+    moves: (n: number) => `${n} ${ruPlural(n, "ход", "хода", "ходов")}`,
+    errorsPer100: (value: string) => `${value} ош./100`,
+    errorsHint: "Ошибок и зевков на 100 ходов",
+    phasesTitle: "В среднем на ход",
+    note: "Только разобранные партии с часами (%clk). Ошибки — ошибки и зевки. Цейтнот — перед ходом меньше 10% начального времени; поспешная ошибка — сделана быстрее 2% начального времени (но не меньше секунды) вне цейтнота.",
+  },
 };

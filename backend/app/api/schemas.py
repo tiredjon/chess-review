@@ -1,5 +1,6 @@
 """Схемы запросов и ответов API v1 (SPEC §8)."""
 
+import re
 import uuid
 from datetime import datetime
 from typing import Annotated, Any, Literal
@@ -8,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field, computed_field
 
 from app.db.accuracy import pick_accuracy
 from app.db.models import AnalysisRunner, AnalysisStatus, Color, GameSource, ImportStatus
+from app.review.clock import TimeControl, clock_before, parse_time_control, time_flags
 from app.review.game_rating import TimeClass, game_rating, group_accuracy, time_class
 from app.review.thresholds import PUZZLE_MAX_PLAYER_MOVES
 from app.review.types import MoveClass, Phase
@@ -248,9 +250,101 @@ class GameOut(ORMModel):
         return None if white is None and black is None else GroupAccuracy(white=white, black=black)
 
 
+_FEN_SIDE_RE = re.compile(r'\[FEN "\S+ ([wb])\b')
+
+
+class PlyClock(BaseModel):
+    """Часы на полуходе (сотые секунды): остаток после хода и потрачено на него; флаги —
+    `app/review/clock.py` (цейтнот перед ходом, быстрый ход, долгое раздумье)."""
+
+    clock_cs: int | None
+    spent_cs: int | None
+    trouble: bool
+    fast: bool
+    long: bool
+
+
+class PlayerClock(BaseModel):
+    moves: int
+    avg_spent_cs: int | None
+    # Самое долгое раздумье: полуход (с 1) и потрачено.
+    longest_ply: int | None
+    longest_spent_cs: int | None
+    trouble_moves: int
+    # Первый ход в цейтноте; None — в цейтнот не попадал.
+    first_trouble_ply: int | None
+
+
+class GameClockOut(BaseModel):
+    base_cs: int
+    increment_cs: int
+    plies: list[PlyClock]
+    white: PlayerClock
+    black: PlayerClock
+
+
+def _player_clock(plies: list[PlyClock], parity: int) -> PlayerClock:
+    own = [(index + 1, ply) for index, ply in enumerate(plies) if index % 2 == parity]
+    spent = [(number, ply.spent_cs) for number, ply in own if ply.spent_cs is not None]
+    longest = max(spent, key=lambda item: item[1], default=None)
+    trouble = [number for number, ply in own if ply.trouble]
+    return PlayerClock(
+        moves=len(own),
+        avg_spent_cs=round(sum(value for _, value in spent) / len(spent)) if spent else None,
+        longest_ply=longest[0] if longest else None,
+        longest_spent_cs=longest[1] if longest else None,
+        trouble_moves=len(trouble),
+        first_trouble_ply=trouble[0] if trouble else None,
+    )
+
+
+def game_clock_out(
+    control: TimeControl,
+    clocks: list[int | None],
+    spent: list[int | None],
+    *,
+    white_first: bool = True,
+) -> GameClockOut:
+    plies = []
+    for index, (clock, used) in enumerate(zip(clocks, spent, strict=True)):
+        flags = time_flags(clock_before(clocks, control, index + 1), used, control)
+        plies.append(
+            PlyClock(
+                clock_cs=clock,
+                spent_cs=used,
+                trouble=flags.trouble,
+                fast=flags.fast,
+                long=flags.long,
+            )
+        )
+    return GameClockOut(
+        base_cs=control.base_cs,
+        increment_cs=control.increment_cs,
+        plies=plies,
+        white=_player_clock(plies, 0 if white_first else 1),
+        black=_player_clock(plies, 1 if white_first else 0),
+    )
+
+
 class GameDetail(GameOut):
     pgn: str
     analysis: AnalysisOut | None = None
+    clocks: list[int | None] | None = Field(default=None, exclude=True)
+    move_times: list[int | None] | None = Field(default=None, exclude=True)
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def clock(self) -> GameClockOut | None:
+        """Время на ход по `%clk`; None — в партии нет часов (`app/review/clock.py`)."""
+        control = parse_time_control(self.time_control)
+        if control is None or self.clocks is None or self.move_times is None:
+            return None
+        if len(self.clocks) != len(self.move_times):
+            return None
+        # Партия из позиции с ходом чёрных: первый полуход — их.
+        start = _FEN_SIDE_RE.search(self.pgn)
+        white_first = start is None or start[1] == "w"
+        return game_clock_out(control, self.clocks, self.move_times, white_first=white_first)
 
 
 class GamePage(BaseModel):
@@ -450,6 +544,41 @@ class RatingGroupStat(BaseModel):
     group_accuracy: float
 
 
+ClockBucket = Literal["over_half", "quarter_half", "tenth_quarter", "under_tenth"]
+
+
+class ClockBucketStat(BaseModel):
+    """Ходы по остатку на часах перед ходом (доля базы): > 50 %, 25–50 %, 10–25 %, < 10 %
+    (последнее — цейтнот)."""
+
+    bucket: ClockBucket
+    moves: int
+    accuracy: float | None
+    # Ошибок (mistake + blunder) на 100 ходов.
+    errors_per_100: float | None
+
+
+class PhaseTimeStat(BaseModel):
+    phase: Phase
+    moves: int
+    avg_spent_cs: int | None
+
+
+class TimeStats(BaseModel):
+    """Время на ход (`app/review/clock.py`): только разобранные партии с часами."""
+
+    games: int
+    moves: int
+    # Партий, в которых пользователь хоть раз ходил в цейтноте.
+    trouble_games: int
+    buckets: list[ClockBucketStat]
+    phases: list[PhaseTimeStat]
+    # Ошибки (mistake + blunder): всего, в цейтноте и «поспешные» — быстрый ход вне цейтнота.
+    errors: int
+    trouble_errors: int
+    hasty_errors: int
+
+
 class StatsOut(BaseModel):
     filters: StatsFilters
     totals: StatsTotals
@@ -460,6 +589,7 @@ class StatsOut(BaseModel):
     motifs: list[MotifStat]
     brilliant: BrilliantStats
     rating_groups: list[RatingGroupStat] = []
+    time: TimeStats | None = None
 
 
 # --- Пазлы (GET /puzzles/next, POST /puzzles/{id}/attempt) ---

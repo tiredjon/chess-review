@@ -13,6 +13,7 @@ from typing import Any
 from sqlalchemy import (
     ColumnElement,
     Float,
+    Integer,
     Numeric,
     Select,
     String,
@@ -38,19 +39,23 @@ from app.api.schemas import (
     BrilliantStats,
     ClassesStats,
     ClassStat,
+    ClockBucketStat,
     MotifExample,
     MotifStat,
     OpeningsStats,
     OpeningStat,
     PhaseStat,
+    PhaseTimeStat,
     RatingGroupStat,
     StatsFilters,
     StatsOut,
     StatsTotals,
+    TimeStats,
 )
 from app.db.accuracy import accuracy_sql
 from app.db.models import Analysis, AnalysisStatus, Color, Game, GameSource, Move
 from app.explain.facts import ERRORS
+from app.review.clock import FAST_MIN_CS, FAST_SHARE, TROUBLE_SHARE
 from app.review.game_rating import CURVES, DAILY_SHIFT, TimeClass
 from app.review.types import MoveClass, Phase
 
@@ -162,6 +167,11 @@ def _user_games(user_id: uuid.UUID, source: GameSource | None, tc: TimeClass | N
             kind.label("accuracy_kind"),
             rating.label("rating"),
             group.label("group_accuracy"),
+            game.c.clocks,
+            game.c.move_times,
+            (cast(func.substring(game.c.time_control, r"^(\d+)(?:\+\d+)?$"), Integer) * 100).label(
+                "base_cs"
+            ),
         )
         .select_from(game)
         .outerjoin(latest, true())
@@ -466,6 +476,101 @@ async def _brilliant(session: AsyncSession, ug: CTE) -> BrilliantStats:
     return BrilliantStats(count=totals.count, games=totals.games, moves=moves)
 
 
+# Серьёзные ошибки для статистики времени: неточности слишком шумят.
+_TIME_ERRORS = (MoveClass.MISTAKE, MoveClass.BLUNDER)
+_CLOCK_BUCKETS = ("over_half", "quarter_half", "tenth_quarter", "under_tenth")
+
+
+async def _time(session: AsyncSession, ug: CTE) -> TimeStats | None:
+    """Время на ход по часам партии (`app/review/clock.py`; флаги совпадают — проверяет тест)."""
+    base = ug.c.base_cs
+    spent = ug.c.move_times[Move.ply]
+    before = case((Move.ply <= 2, base), else_=ug.c.clocks[Move.ply - 2])
+    share = cast(before, Float) / base
+    bucket = case(
+        (share > 0.5, "over_half"),
+        (share >= 0.25, "quarter_half"),
+        (share >= TROUBLE_SHARE, "tenth_quarter"),
+        else_="under_tenth",
+    ).label("bucket")
+    trouble = before < TROUBLE_SHARE * base
+    fast = spent <= func.greatest(FAST_MIN_CS, FAST_SHARE * base)
+    error = Move.move_class.in_(_TIME_ERRORS)
+
+    def timed[*Ts](stmt: Select[*Ts]) -> Select[*Ts]:
+        return _analyzed_moves(stmt, ug).where(
+            ug.c.move_times.is_not(None), base > 0, spent.is_not(None), before.is_not(None)
+        )
+
+    totals = (
+        await session.execute(
+            timed(
+                select(
+                    func.count().label("moves"),
+                    func.count(func.distinct(ug.c.id)).label("games"),
+                    func.count(func.distinct(ug.c.id)).filter(trouble).label("trouble_games"),
+                    func.count().filter(error).label("errors"),
+                    func.count().filter(error, trouble).label("trouble_errors"),
+                    func.count().filter(error, fast, ~trouble).label("hasty_errors"),
+                )
+            )
+        )
+    ).one()
+    if not totals.moves:
+        return None
+    by_bucket = {
+        row.bucket: row
+        for row in await session.execute(
+            timed(
+                select(
+                    bucket,
+                    func.count().label("moves"),
+                    func.avg(Move.accuracy).label("accuracy"),
+                    func.count().filter(error).label("errors"),
+                )
+            ).group_by(bucket)
+        )
+    }
+    by_phase = {
+        row.phase: row
+        for row in await session.execute(
+            timed(
+                select(Move.phase, func.count().label("moves"), func.avg(spent).label("spent"))
+            ).group_by(Move.phase)
+        )
+    }
+
+    def bucket_stat(name: str) -> ClockBucketStat:
+        row = by_bucket.get(name)
+        moves = row.moves if row else 0
+        return ClockBucketStat.model_validate(
+            {
+                "bucket": name,
+                "moves": moves,
+                "accuracy": round(row.accuracy, 1) if row else None,
+                "errors_per_100": round(100 * row.errors / moves, 1) if row else None,
+            }
+        )
+
+    return TimeStats(
+        games=totals.games,
+        moves=totals.moves,
+        trouble_games=totals.trouble_games,
+        buckets=[bucket_stat(name) for name in _CLOCK_BUCKETS],
+        phases=[
+            PhaseTimeStat(
+                phase=phase,
+                moves=by_phase[phase].moves if phase in by_phase else 0,
+                avg_spent_cs=round(by_phase[phase].spent) if phase in by_phase else None,
+            )
+            for phase in Phase
+        ],
+        errors=totals.errors,
+        trouble_errors=totals.trouble_errors,
+        hasty_errors=totals.hasty_errors,
+    )
+
+
 async def user_stats(
     session: AsyncSession,
     user_id: uuid.UUID,
@@ -485,4 +590,5 @@ async def user_stats(
         motifs=await _motifs(session, ug),
         brilliant=await _brilliant(session, ug),
         rating_groups=await _rating_groups(session, ug),
+        time=await _time(session, ug),
     )

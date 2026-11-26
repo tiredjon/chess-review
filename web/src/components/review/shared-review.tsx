@@ -85,6 +85,7 @@ function SharedGame({ game, initialPly, active }: { game: GameDetail; initialPly
         initialCursor={Math.min(initialPly, plies.length)}
         initialOrientation={game.user_color ?? "white"}
         player={(color) => <PlayerBar game={game} color={color} />}
+        clock={game.clock}
         subtitle={subtitle}
         status={<CoachBubble>{active ? t.review.shared.analyzing : t.review.shared.notAnalyzed}</CoachBubble>}
         overview={

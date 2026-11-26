@@ -164,6 +164,29 @@ async def test_get_game(client: AsyncClient, db: Database) -> None:
     assert missing.status_code == 404
 
 
+async def test_get_game_clock(client: AsyncClient, db: Database) -> None:
+    """Часы партии из `%clk`: потрачено на ход, флаги и итог по игрокам; без часов — None."""
+    pgn = (
+        '[White "A"]\n[Black "B"]\n[Result "*"]\n[TimeControl "180+2"]\n\n'
+        "1. e4 { [%clk 0:02:57] } 1... e5 { [%clk 0:02:52] } 2. Nf3 { [%clk 0:00:17] } "
+        "2... Nc6 { [%clk 0:02:51] } 3. Bc4 { [%clk 0:00:18] } *\n"
+    )
+    (game,) = await import_pgn(client, pgn)
+    (plain,) = await import_pgn(client, OPERA)
+
+    clock = (await client.get(f"/api/v1/games/{game['id']}")).json()["clock"]
+    assert (clock["base_cs"], clock["increment_cs"]) == (18000, 200)
+    assert [ply["spent_cs"] for ply in clock["plies"]] == [500, 1000, 16200, 300, 100]
+    assert [ply["trouble"] for ply in clock["plies"]] == [False, False, False, False, True]
+    assert clock["plies"][2]["long"]
+    assert clock["plies"][4]["fast"]
+    assert clock["white"]["first_trouble_ply"] == 5
+    assert clock["black"]["longest_spent_cs"] == 1000
+    assert "clocks" not in clock
+    assert "move_times" not in clock
+    assert (await client.get(f"/api/v1/games/{plain['id']}")).json()["clock"] is None
+
+
 async def test_game_rating_from_accuracy(client: AsyncClient, db: Database) -> None:
     """Рейтинг партии — по точности Chess.com (если есть) и контролю времени; без точности — нет."""
     pgn = '[White "A"]\n[Black "B"]\n[Result "1-0"]\n[TimeControl "600"]\n\n1. e4 e5 1-0\n'

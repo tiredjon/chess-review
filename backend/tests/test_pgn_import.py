@@ -69,6 +69,16 @@ def test_lichess_style_headers() -> None:
     assert game.played_at == datetime(2024, 3, 10, 21, 5, 7, tzinfo=UTC)
 
 
+def test_clocks_from_pgn() -> None:
+    (game,) = parse_pgn(LICHESS)
+    (no_clocks,) = parse_pgn(OPERA)
+
+    # Часы только у первых двух полуходов; остальные — None.
+    assert game.clocks == [18000, 18000, None, None, None, None, None]
+    assert game.move_times == [200, 200, None, None, None, None, None]
+    assert (no_clocks.clocks, no_clocks.move_times) == (None, None)
+
+
 def test_stored_pgn_keeps_comments_but_drops_variations() -> None:
     (game,) = parse_pgn(LICHESS)
 

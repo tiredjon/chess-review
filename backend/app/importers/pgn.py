@@ -15,6 +15,7 @@ import chess
 import chess.pgn
 
 from app.importers.types import ImportedGame
+from app.review.clock import game_clock
 from app.review.evaluate import replay
 from app.review.openings import default_openings
 
@@ -124,6 +125,8 @@ def to_imported(game: chess.pgn.Game) -> ImportedGame:
     moves = list(game.mainline_moves())
     opening = default_openings().identify(replay(game.board(), moves))
     result = game.headers.get("Result", "*")
+    time_control = (_tag(game, "TimeControl") or "")[:32] or None
+    clock = game_clock(game, time_control)
     return ImportedGame(
         external_id=pgn_hash(game),
         pgn=stored_pgn(game),
@@ -132,10 +135,12 @@ def to_imported(game: chess.pgn.Game) -> ImportedGame:
         white_elo=_elo(game, "WhiteElo"),
         black_elo=_elo(game, "BlackElo"),
         result=result if result in _RESULTS else "*",
-        time_control=(_tag(game, "TimeControl") or "")[:32] or None,
+        time_control=time_control,
         played_at=played_at(game),
         opening_eco=opening.eco if opening else None,
         opening_name=opening.name[:255] if opening else None,
+        clocks=clock.clocks if clock else None,
+        move_times=clock.spent if clock else None,
     )
 
 
