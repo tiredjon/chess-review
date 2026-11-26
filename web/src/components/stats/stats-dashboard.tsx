@@ -8,6 +8,7 @@ import { formatDate } from "@/lib/format";
 import { useI18n } from "@/lib/i18n/use-i18n";
 import { motifName } from "@/lib/motifs";
 import type { GameSource, OpeningStat, Stats, TimeClass } from "@/lib/types";
+import { WeaknessesLink } from "../insights/weaknesses-link";
 import { ClassBadge } from "../review/class-badge";
 import { ColorSquare } from "../player-avatar";
 import { ErrorText, Panel } from "../ui";
@@ -60,6 +61,7 @@ export function StatsDashboard({ source, timeClass }: Props) {
   return (
     <div className="flex flex-col gap-5">
       <StatsFilters source={source} timeClass={timeClass} />
+      <WeaknessesLink query={new URLSearchParams({ ...(source && { source }), ...(timeClass && { tc: timeClass }) }).toString()} />
       <ErrorText>{error}</ErrorText>
       {stats === null ? (
         !error && <BodySkeleton />
