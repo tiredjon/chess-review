@@ -525,12 +525,12 @@ function Notes({
   return (
     <ul className="mt-3 flex flex-col gap-2" aria-live="polite">
       {notes.map((note) => (
-        <li
-          key={note.key}
-          className={`rounded-md border-l-4 bg-panel px-3 py-2 text-sm ${note.tone === "warn" ? "border-[#f7c045]" : "border-[#6f98c2]"}`}
-        >
-          <p className="font-bold text-ink">{note.title}</p>
-          {note.text && <p className="mt-0.5 leading-snug text-soft">{note.text}</p>}
+        <li key={note.key} className="flex gap-2.5 rounded-md bg-panel px-3 py-2 text-sm">
+          <span aria-hidden className={`mt-1.5 size-2 shrink-0 rounded-full ${note.tone === "warn" ? "bg-[#f7c045]" : "bg-[#6f98c2]"}`} />
+          <div className="min-w-0">
+            <p className="font-bold text-ink">{note.title}</p>
+            {note.text && <p className="mt-0.5 leading-snug text-soft">{note.text}</p>}
+          </div>
         </li>
       ))}
     </ul>
