@@ -595,6 +595,10 @@ class StatsOut(BaseModel):
 # --- Пазлы (GET /puzzles/next, POST /puzzles/{id}/attempt) ---
 
 UciMove = Annotated[str, Field(pattern=r"^[a-h][1-8][a-h][1-8][qrbn]?$")]
+PuzzleMode = Literal["srs", "practice", "rush"]
+# Тема — тип мотива (`common.motifs`) или `only_move` / `mate_in_n`; дебют — код ECO.
+PuzzleTheme = Annotated[str, Field(pattern=r"^[a-z][a-z0-9_]{0,31}$")]
+PuzzleEco = Annotated[str, Field(pattern=r"^[A-Za-z0-9]{1,8}$")]
 
 
 class PuzzleSource(BaseModel):
@@ -636,7 +640,8 @@ class PuzzleOut(BaseModel):
 
 
 class PuzzleCounts(BaseModel):
-    # Пора повторить / новые (ещё не решались) / всего.
+    # Пора повторить / новые (ещё не решались) / всего — среди пазлов под фильтрами запроса
+    # (без фильтров — все пазлы пользователя).
     due: int
     new: int
     total: int
@@ -660,6 +665,8 @@ class AttemptIn(BaseModel):
     hint_used: bool = False
     # «Показать решение»: попытка завершается как нерешённая.
     gave_up: bool = False
+    # `srs` меняет коробку и дату повторения; `practice` / `rush` только пишут попытку.
+    mode: PuzzleMode = "srs"
 
 
 class AttemptOut(BaseModel):
@@ -675,6 +682,83 @@ class AttemptOut(BaseModel):
     box: int | None = None
     next_review_at: datetime | None = None
     streak: int | None = None
+
+
+class PuzzleFilters(BaseModel):
+    """Фильтры тренировки: только заданные поля; работают во всех режимах."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    theme: PuzzleTheme | None = None
+    phase: Phase | None = None
+    eco: PuzzleEco | None = None
+
+
+class PuzzleThemeStat(BaseModel):
+    theme: str
+    total: int
+    # Пора повторить (`next_review_at` наступил).
+    due: int
+    # Последняя попытка решена.
+    solved: int
+
+
+class PuzzlePhaseStat(BaseModel):
+    phase: Phase
+    total: int
+    solved: int
+
+
+class PuzzleOpeningStat(BaseModel):
+    eco: str
+    name: str | None
+    total: int
+
+
+class PuzzleThemesOut(BaseModel):
+    """Числа для выбора темы, фазы хода-источника и дебюта партии (`GET /puzzles/themes`)."""
+
+    themes: list[PuzzleThemeStat]
+    # Всегда три фазы по порядку партии, у пустой — нули.
+    phases: list[PuzzlePhaseStat]
+    openings: list[PuzzleOpeningStat]
+
+
+RushVariant = Literal["3min", "5min", "survival"]
+
+
+class RushRunIn(BaseModel):
+    """Итог забега. Счёт сверяется с `rush`-попытками за время забега + минута."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    variant: RushVariant
+    score: int = Field(ge=0, le=1000)
+    mistakes: int = Field(ge=0, le=3)
+    duration_s: int = Field(ge=0, le=3 * 3600)
+    filters: PuzzleFilters = PuzzleFilters()
+
+
+class RushRunOut(BaseModel):
+    id: int
+    # Рекорд по варианту с учётом этого забега.
+    best: int
+    is_best: bool
+
+
+class RushRunItem(BaseModel):
+    id: int
+    score: int
+    mistakes: int
+    duration_s: int
+    filters: PuzzleFilters
+    created_at: datetime
+
+
+class RushOut(BaseModel):
+    # None — забегов по варианту ещё не было.
+    best: int | None
+    recent: list[RushRunItem]
 
 
 # --- Движок: анализ в браузере и режим исследования (сессия 11) ---
