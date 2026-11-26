@@ -488,7 +488,9 @@ export function BotGame({
           </IconButton>
         </header>
 
-        <div className="flex flex-col gap-3 p-4">
+        {/* На десктопе высота панели — высота экрана: если вердикт и пояснения страницы не влезают,
+            прокручивается этот блок, а список ходов не сжимается меньше своего минимума. */}
+        <div className="flex flex-col gap-3 p-4 lg:min-h-0 lg:overflow-y-auto">
           {verdict ? (
             <VerdictBanner verdict={verdict} />
           ) : (
@@ -524,7 +526,7 @@ export function BotGame({
           {aside}
         </div>
 
-        <div className="flex min-h-0 flex-1 flex-col border-t border-line">
+        <div className="flex min-h-0 flex-1 flex-col border-t border-line lg:min-h-32 lg:shrink-0">
           <p className="px-4 pt-2.5 pb-1 text-xs font-bold tracking-wide text-muted uppercase">{t.play.moves}</p>
           <MoveList
             sans={game.sans}
