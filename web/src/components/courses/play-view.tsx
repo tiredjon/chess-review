@@ -358,24 +358,13 @@ function PlayGame({
   const [history, setHistory] = useState<readonly string[]>([]);
   const [result, setResult] = useState<GameResult | null>(null);
 
-  // Книга стабильна на всю партию; ход соперника из книги сразу виден в подсказках.
-  const book = useMemo(() => {
-    const move = courseBook(index, game.line, game.random ? "random" : "line");
-    return (historyUci: readonly string[]) => {
-      const uci = move(historyUci);
-      const next = uci ? [...historyUci, uci] : [...historyUci];
-      queueMicrotask(() => setHistory(next));
-      return uci;
-    };
-  }, [index, game]);
+  // Книга стабильна на всю партию; ходы партии (и «взять назад») приходят из onHistoryChange.
+  const book = useMemo(() => courseBook(index, game.line, game.random ? "random" : "line"), [index, game]);
 
   const lineLabel = game.random ? `${l.random} (${l.lineNo(game.line.n + 1)})` : l.lineOf(game.line.n + 1, lines.length);
   const headers = useMemo(() => ({ Event: `${course.name} — ${lineLabel}` }), [course.name, lineLabel]);
-  const onFinished = useCallback((value: GameResult) => {
-    setResult(value);
-    setHistory(value.historyUci);
-  }, []);
-  const onPlayerMove = useCallback((value: readonly string[]) => setHistory([...value]), []);
+  const onFinished = useCallback((value: GameResult) => setResult(value), []);
+  const onHistoryChange = useCallback((value: readonly string[]) => setHistory([...value]), []);
 
   return (
     <div className="flex flex-col gap-3">
@@ -395,7 +384,7 @@ function PlayGame({
         elo={elo}
         color={course.color}
         book={book}
-        onPlayerMove={onPlayerMove}
+        onHistoryChange={onHistoryChange}
         onFinished={onFinished}
         onNewGame={onSetup}
         pgnHeaders={headers}

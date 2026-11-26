@@ -37,6 +37,8 @@ export type BotGameProps = {
   book?: OpponentBook;
   /** После каждого хода человека: ходы партии с начала, последний — его ход. */
   onPlayerMove?: (historyUci: readonly string[]) => void;
+  /** Ходы партии изменились — любой ход, «взять назад», восстановление после перезагрузки. */
+  onHistoryChange?: (historyUci: readonly string[]) => void;
   /** Партия кончилась (мат, пат, ничья по правилам, сдача). */
   onFinished?: (result: GameResult) => void;
   /** «Новая партия» / «Другой бот» — страница сама решает, что показать. */

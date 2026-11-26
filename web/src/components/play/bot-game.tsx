@@ -85,6 +85,7 @@ export function BotGame({
   color,
   book,
   onPlayerMove,
+  onHistoryChange,
   onFinished,
   onNewGame,
   onChangeBot,
@@ -149,6 +150,9 @@ export function BotGame({
   const over = result !== null || game.end !== null;
   const canMove = live && turn === color && !over && promotion === null;
   const thinking = bot !== null && !engineError && turn !== color && !over;
+
+  const historyChanged = useEffectEvent((history: readonly string[]) => onHistoryChange?.(history));
+  useEffect(() => historyChanged(game.moves), [game]);
 
   // Ходы — в sessionStorage, пока партия идёт.
   useEffect(() => {
