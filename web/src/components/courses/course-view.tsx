@@ -73,7 +73,7 @@ export function CourseView({ id, initialNode }: { id: string; initialNode: numbe
   return <Explorer course={course} tree={course.tree} initialNode={initialNode} />;
 }
 
-function Building({ course, onRequeued }: { course: CourseDetail; onRequeued: () => void }) {
+export function Building({ course, onRequeued }: { course: CourseDetail; onRequeued: () => void }) {
   const { t } = useI18n();
   const l = t.courses.building;
   const [busy, setBusy] = useState(false);
@@ -143,7 +143,7 @@ function Building({ course, onRequeued }: { course: CourseDetail; onRequeued: ()
 }
 
 /** Название курса: «Najdorf Variation» крупно, семейство и цвет — мелко. */
-function CourseHeading({ course, aside }: { course: CourseDetail; aside?: ReactNode }) {
+export function CourseHeading({ course, aside }: { course: CourseDetail; aside?: ReactNode }) {
   const { t } = useI18n();
   const [family, ...rest] = course.name.split(":");
   return (
@@ -241,9 +241,17 @@ function Explorer({ course, tree, initialNode }: { course: CourseDetail; tree: C
         course={course}
         aside={
           <div className="flex w-full flex-col items-stretch gap-1 sm:w-auto sm:items-end">
-            <Button onClick={train} disabled={training} className="sm:min-w-44">
-              {training ? l.trainBusy : l.train}
-            </Button>
+            <div className="grid grid-cols-2 gap-2 sm:flex">
+              <Button onClick={train} disabled={training} className="sm:min-w-44">
+                {training ? l.trainBusy : l.train}
+              </Button>
+              <Link
+                href={`/openings/courses/${course.id}/play?node=${currentId}`}
+                className="inline-flex min-h-10 items-center justify-center rounded-lg bg-raised px-4 text-[15px] font-bold text-soft shadow-[0_3px_0_0_rgba(0,0,0,0.35)] hover:bg-raised-hover hover:text-ink active:translate-y-[2px] active:shadow-none"
+              >
+                {t.courses.play.button}
+              </Link>
+            </div>
             <p className="text-xs text-muted">{l.trainHint(cards)}</p>
             <ErrorText>{trainError}</ErrorText>
           </div>
