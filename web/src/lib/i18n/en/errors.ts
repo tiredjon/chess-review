@@ -9,6 +9,7 @@ const rateLimited: Record<string, (wait: string) => string> = {
   register: (wait) => `Too many sign-ups from this address. Try again in ${wait}.`,
   browser: (wait) => `Too many in-browser analyses saved. Try again in ${wait}.`,
   explore: (wait) => `Too many Docker engine requests. Switch to the browser or wait ${wait}.`,
+  tablebase: (wait) => `Too many endgame tablebase requests. Try again in ${wait}.`,
 };
 
 const wait = (seconds: number) => {

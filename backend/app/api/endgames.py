@@ -1,7 +1,7 @@
 """Тренажёр эндшпиля (сессия 16.3): каталог типовых позиций, позиции из своих партий,
 таблицы Syzygy, попытки."""
 
-from typing import Annotated, cast
+from typing import Annotated
 
 import chess
 import structlog
@@ -34,14 +34,14 @@ from app.importers.http import make_http_client
 router = APIRouter(tags=["endgames"])
 log = structlog.get_logger(__name__)
 
-# Вид лимита `tablebase` (`RATE_LIMIT_TABLEBASE`); `Scope` в общем ratelimit.py его пока не
-# перечисляет — `hit` берёт настройку по имени, поэтому приведение типа безопасно.
-TABLEBASE_SCOPE = cast(Scope, "tablebase")
+# Вид лимита `tablebase` (`RATE_LIMIT_TABLEBASE`).
+TABLEBASE_SCOPE: Scope = "tablebase"
 
 
 def get_tablebase(request: Request) -> Tablebase:
     """Один клиент таблиц на процесс (пауза и «один запрос за раз» — на весь API). Создаётся
-    при первом запросе: тесты подменяют `app.state.tablebase` фейком."""
+    в lifespan (`app/main.py`); без lifespan — при первом запросе. Тесты подменяют
+    `app.state.tablebase` фейком."""
     state = request.app.state
     tablebase: Tablebase | None = getattr(state, "tablebase", None)
     if tablebase is None:
