@@ -6,7 +6,15 @@ import chess
 import pytest
 from chess.engine import Cp, Mate, Score
 
-from app.review.classify import classify_game, classify_move, is_great, outcome, reply_line
+from app.review.classify import (
+    classify_game,
+    classify_move,
+    is_great,
+    is_obvious,
+    is_recapture,
+    outcome,
+    reply_line,
+)
 from app.review.evaluate import MoveEval, evaluate_game
 from app.review.openings import default_openings
 from app.review.types import EngineLine, MoveClass, PositionEval
@@ -54,7 +62,9 @@ def quiet_move() -> MoveEval:
 @pytest.mark.parametrize(
     ("delta", "expected"),
     [
-        (0.0, MoveClass.EXCELLENT),
+        (0.0, MoveClass.BEST),
+        (0.5, MoveClass.BEST),
+        (0.51, MoveClass.EXCELLENT),
         (2.0, MoveClass.EXCELLENT),
         (2.01, MoveClass.GOOD),
         (5.0, MoveClass.GOOD),
@@ -71,7 +81,8 @@ def test_delta_thresholds(quiet_move: MoveEval, delta: float, expected: MoveClas
 
 
 def test_win_gain_counts_as_zero_loss(quiet_move: MoveEval) -> None:
-    assert classify_move(with_delta(quiet_move, -15)).move_class is MoveClass.EXCELLENT
+    # Не первый ход движка, но не хуже его — тоже «лучший», как у Chess.com.
+    assert classify_move(with_delta(quiet_move, -15)).move_class is MoveClass.BEST
 
 
 def test_best_move() -> None:
@@ -84,23 +95,35 @@ def test_best_move() -> None:
 def test_great_only_move() -> None:
     lines = (line(Cp(100), "e2e4"), line(Cp(-200), "d2d4"))
     move = move_eval(chess.STARTING_FEN, "e2e4", lines, after_score=Cp(-100))
-    assert win_percent(Cp(100)) - win_percent(Cp(-200)) >= 10
+    assert win_percent(Cp(100)) - win_percent(Cp(-200)) >= 20
     assert classify_move(move).move_class is MoveClass.GREAT
+
+
+def test_not_great_when_second_is_only_a_mistake() -> None:
+    # Второй вариант хуже на ~13 win% — ошибка, но не зевок: лучший ход не единственный.
+    lines = (line(Cp(50), "e2e4"), line(Cp(-60), "d2d4"))
+    move = move_eval(chess.STARTING_FEN, "e2e4", lines, after_score=Cp(-50))
+    assert 10 <= win_percent(Cp(50)) - win_percent(Cp(-60)) < 20
+    assert classify_move(move).move_class is MoveClass.BEST
+    # Но если соперник только что ошибся, единственный способ наказать — «великолепный».
+    punish = classify_move(move, previous=MoveClass.MISTAKE)
+    assert punish.move_class is MoveClass.GREAT
 
 
 @pytest.mark.parametrize(
     ("best", "second", "great"),
     [
-        (Cp(400), Cp(350), True),  # выигрыш против ничьей
-        (Cp(-350), Cp(-400), True),  # ничья против проигрыша
-        (Cp(300), Cp(250), False),  # оба — ничья
+        (Cp(400), Cp(150), True),  # выигрыш против ничьей
+        (Cp(-150), Cp(-400), True),  # ничья против проигрыша
+        (Cp(400), Cp(350), False),  # граница результата, но разница — 3 win%
+        (Cp(300), Cp(150), False),  # оба — ничья
         (Mate(3), Mate(5), False),  # оба — выигрыш
     ],
 )
 def test_great_outcome_change(best: Score, second: Score, great: bool) -> None:
     lines = (line(best, "e2e4"), line(second, "d2d4"))
     move = move_eval(chess.STARTING_FEN, "e2e4", lines, after_score=-best)
-    assert win_percent(best) - win_percent(second) < 10
+    assert win_percent(best) - win_percent(second) < 20
     assert is_great(move) is great
     assert classify_move(move).move_class is (MoveClass.GREAT if great else MoveClass.BEST)
 
@@ -176,11 +199,47 @@ def test_miss_flag(quiet_move: MoveEval) -> None:
 
     assert miss(MoveClass.BLUNDER, 12)
     assert miss(MoveClass.MISTAKE, 10)
+    assert miss(MoveClass.MISTAKE, 30)
     assert not miss(MoveClass.BLUNDER, 9.9)
     assert not miss(MoveClass.INACCURACY, 30)
     assert not miss(None, 30)
+    # Позицию проиграл (win% после хода < 30) — это зевок, а не упущение.
+    assert not miss(MoveClass.MISTAKE, 31)
+    # Ошибка соперника не дала шанса (win% при лучшей игре < 60) — упускать нечего.
+    small = classify_move(with_delta(quiet_move, 12, win_before=55), previous=MoveClass.BLUNDER)
+    assert not small.is_miss
     result = classify_move(with_delta(quiet_move, 12), previous=MoveClass.BLUNDER)
     assert result.move_class is MoveClass.MISTAKE
+
+
+def test_recapture_is_never_great() -> None:
+    # 1. e4 d5 2. exd5 Qxd5: взятие в ответ — «лучший», даже если остальное проигрывает.
+    board = chess.Board()
+    for san in ("e4", "d5"):
+        board.push_san(san)
+    prior = board.copy()
+    exd5 = board.push_san("exd5")
+    lines = (line(Cp(0), "d8d5"), line(Cp(-300), "g8f6"))
+    move = move_eval(board.fen(), "d8d5", lines, after_score=Cp(0))
+    assert is_great(move)
+    result = classify_move(move, prior=prior, previous_move=exd5)
+    assert result.move_class is MoveClass.BEST
+    assert is_recapture(chess.Board(board.fen()), move.move, prior, exd5)
+
+
+def test_taking_free_material_is_never_great() -> None:
+    # 1. e4 e5 2. Nf3 Qh4?? 3. Nxh4: ферзь подставлен — взять его может каждый.
+    board = chess.Board()
+    for san in ("e4", "e5", "Nf3", "Qh4"):
+        board.push_san(san)
+    lines = (line(Cp(900), "f3h4"), line(Cp(40), "b1c3"))
+    move = move_eval(board.fen(), "f3h4", lines, after_score=Cp(-900))
+    assert is_great(move)
+    assert is_obvious(chess.Board(board.fen()), move.move)
+    assert classify_move(move, previous=MoveClass.BLUNDER).move_class is MoveClass.BEST
+    # Мат взятием (детский мат) — не «очевидный» ход.
+    scholar = chess.Board("r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4")
+    assert not is_obvious(scholar, chess.Move.from_uci("h5f7"))
 
 
 def test_classify_game_chains_book_previous_and_prior() -> None:

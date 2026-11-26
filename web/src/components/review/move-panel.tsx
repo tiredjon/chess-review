@@ -286,9 +286,9 @@ function FigurineLine({ fen, moves }: { fen: string; moves: LineMove[] }) {
   );
 }
 
-/** Класс хода исследования для показа: «упущение» — значком вместо класса, кроме ошибок. */
+/** Класс хода исследования для показа: «упущение» — значком вместо класса. */
 export function exploreClassKey(result: ClassifyOut): ClassKey {
-  return result.is_miss && !["mistake", "blunder"].includes(result.class) ? "miss" : result.class;
+  return displayClass(result);
 }
 
 /** Режим исследования: свои ходы от позиции партии, класс каждого хода, оценка и лучшие

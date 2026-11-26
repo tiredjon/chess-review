@@ -5,16 +5,19 @@
 титулованные игроки из `/pub/titled/{title}` (верх). Берутся только рейтинговые партии в
 классические шахматы, у которых есть `accuracies` (партию разбирали на Chess.com).
 
-    uv run python scripts/collect_chesscom_accuracy.py --user tiredavalanche --out data.jsonl
+    uv run python scripts/collect_chesscom_accuracy.py --user tiredavalanche --user other \\
+        --out data.jsonl
 """
 
 import argparse
 import asyncio
+import io
 import json
 import random
 from pathlib import Path
 from typing import Any
 
+import chess.pgn
 import httpx
 
 from app.core.config import Settings
@@ -25,7 +28,12 @@ TITLES = ("GM", "IM", "FM", "CM", "NM", "WGM", "WIM", "WFM")
 
 async def get(http: httpx.AsyncClient, url: str) -> dict[str, Any] | None:
     for attempt in range(4):
-        response = await http.get(url)
+        try:
+            response = await http.get(url)
+        except httpx.TransportError:
+            # Таймаут или обрыв: подождать и повторить, а не терять весь сбор.
+            await asyncio.sleep(2**attempt * 5)
+            continue
         if response.status_code == 429:
             await asyncio.sleep(2**attempt * 5)
             continue
@@ -34,6 +42,17 @@ async def get(http: httpx.AsyncClient, url: str) -> dict[str, Any] | None:
         data: dict[str, Any] = response.json()
         return data
     return None
+
+
+def move_counts(pgn: str | None) -> tuple[int, int] | None:
+    """Ходов белых и чёрных в партии (по PGN архива)."""
+    if not pgn:
+        return None
+    game = chess.pgn.read_game(io.StringIO(pgn))
+    if game is None:
+        return None
+    plies = sum(1 for _ in game.mainline_moves())
+    return (plies + 1) // 2, plies // 2
 
 
 def rows(games: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -46,8 +65,10 @@ def rows(games: list[dict[str, Any]]) -> list[dict[str, Any]]:
             or not game.get("rated")
         ):
             continue
-        for color in ("white", "black"):
+        counts = move_counts(game.get("pgn"))
+        for side, color in enumerate(("white", "black")):
             accuracy, player = accuracies.get(color), game.get(color, {})
+            opponent = game.get("black" if color == "white" else "white", {})
             if isinstance(accuracy, int | float) and isinstance(player.get("rating"), int):
                 result.append(
                     {
@@ -55,6 +76,13 @@ def rows(games: list[dict[str, Any]]) -> list[dict[str, Any]]:
                         "rating": player["rating"],
                         "accuracy": float(accuracy),
                         "username": str(player.get("username", "")).lower(),
+                        "opponent_rating": opponent.get("rating"),
+                        "opponent_accuracy": accuracies.get(
+                            "black" if color == "white" else "white"
+                        ),
+                        "moves": counts[side] if counts else None,
+                        "result": player.get("result"),
+                        "time_control": game.get("time_control"),
                         "url": game.get("url"),
                     }
                 )
@@ -78,7 +106,7 @@ async def player_games(
 
 async def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--user", required=True)
+    parser.add_argument("--user", required=True, action="append", help="можно несколько")
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--opponents", type=int, default=120, help="сколько соперников взять")
     parser.add_argument("--titled", type=int, default=25, help="игроков на каждый титул")
@@ -101,15 +129,19 @@ async def main() -> None:
             return len(fresh)
 
         async with httpx.AsyncClient(headers=headers, timeout=30, follow_redirects=True) as http:
-            own = await player_games(http, args.user, None)
-            print(f"{args.user}: {write(rows(own))} точек")
+            own: list[dict[str, Any]] = []
+            for user in args.user:
+                games = await player_games(http, user, None)
+                own.extend(games)
+                print(f"{user}: {write(rows(games))} точек")
 
+            seeds = {user.lower() for user in args.user}
             opponents = sorted(
                 {
                     game[color]["username"].lower()
                     for game in own
                     for color in ("white", "black")
-                    if game[color]["username"].lower() != args.user.lower()
+                    if game[color]["username"].lower() not in seeds
                 }
             )
             for name in rng.sample(opponents, min(args.opponents, len(opponents))):

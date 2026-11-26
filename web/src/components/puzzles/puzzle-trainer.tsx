@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import { applyUci, boardMoveUci, pieceOn, sideToMove, uciSan, uciSquares } from "@/lib/chess";
-import { CLASS_COLORS, classLabel, type ClassKey } from "@/lib/classes";
+import { CLASS_COLORS, classLabel, displayClass, type ClassKey } from "@/lib/classes";
 import { formatDate } from "@/lib/format";
 import type { Dict, Lang } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n/use-i18n";
@@ -527,7 +527,7 @@ function StatusText({ game, lang }: { game: Game; lang: Lang }) {
 
 function SourceLink({ source, color, lang }: { source: NonNullable<Puzzle["source"]>; color: Color; lang: Lang }) {
   const { t } = useI18n();
-  const value: ClassKey = source.is_miss && !["mistake", "blunder"].includes(source.class) ? "miss" : source.class;
+  const value: ClassKey = displayClass(source);
   const number = `${source.fullmove}${color === "white" ? "." : "…"}`;
   return (
     <Link

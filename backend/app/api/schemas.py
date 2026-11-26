@@ -211,14 +211,22 @@ class GameOut(ORMModel):
     @computed_field  # type: ignore[prop-decorator]
     @property
     def game_rating(self) -> GameRating | None:
-        """Рейтинг партии по точности, как «Game Rating» Chess.com; None — точности нет."""
+        """Рейтинг партии по точности и рейтингам игроков, как «Game Rating» Chess.com;
+        None — точности нет."""
         white, black = self.accuracy_of(Color.WHITE), self.accuracy_of(Color.BLACK)
         if white is None and black is None:
             return None
         tc = time_class(self.time_control)
+        # Рейтинги — опора оценки, но только на шкале Chess.com (у Lichess шкала другая).
+        own = self.source == GameSource.CHESSCOM
+        white_elo, black_elo = (self.white_elo, self.black_elo) if own else (None, None)
         return GameRating(
-            white=None if white is None else game_rating(white, tc),
-            black=None if black is None else game_rating(black, tc),
+            white=None
+            if white is None
+            else game_rating(white, tc, rating=white_elo, opponent_rating=black_elo),
+            black=None
+            if black is None
+            else game_rating(black, tc, rating=black_elo, opponent_rating=white_elo),
         )
 
     @computed_field  # type: ignore[prop-decorator]
