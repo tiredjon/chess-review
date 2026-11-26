@@ -900,4 +900,4 @@ async def test_users_are_isolated(
 async def solve_rush_foreign_check(client: AsyncClient, stranger: AsyncClient) -> bool:
     theirs = (await stranger.get("/api/v1/puzzles/rush", params={"variant": "3min"})).json()
     mine = (await client.get("/api/v1/puzzles/rush", params={"variant": "3min"})).json()
-    return theirs == {"best": None, "recent": []} and mine["best"] == 2
+    return bool(theirs == {"best": None, "recent": []} and mine["best"] == 2)
