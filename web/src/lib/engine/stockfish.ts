@@ -87,6 +87,22 @@ export class Stockfish {
     this.worker.postMessage(command);
   }
 
+  /** UCI `setoption` (боты: `UCI_LimitStrength`, `UCI_Elo`, `Skill Level`). Встаёт в ту же
+   *  очередь, что и поиски, — не меняет опции посреди идущего поиска. Опции действуют на все
+   *  следующие поиски воркера: боту — свой экземпляр, не общий с анализом. */
+  setOption(name: string, value: string | number | boolean): Promise<void> {
+    const run = this.queue.then(() => this.send(`setoption name ${name} value ${value}`));
+    this.queue = run.catch(() => undefined);
+    return run;
+  }
+
+  /** Новая партия (`ucinewgame`): сбросить хеш между партиями бота. */
+  newGame(): Promise<void> {
+    const run = this.queue.then(() => this.send("ucinewgame"));
+    this.queue = run.catch(() => undefined);
+    return run;
+  }
+
   /** Поиск до глубины; поиски одного воркера идут по очереди. Отмена — `stop`, затем
    *  отклонение с AbortError (движок к этому времени уже свободен). */
   search(options: SearchOptions): Promise<SearchResult> {

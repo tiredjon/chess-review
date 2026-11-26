@@ -10,5 +10,6 @@ import { courses } from "./courses";
 import { review } from "./review";
 import { stats } from "./stats";
 import { trainer } from "./trainer";
+import { play } from "./play";
 
-export const en: Dict = { common, errors, auth, home, review, puzzles, stats, openings, repertoire, courses, trainer };
+export const en: Dict = { common, errors, auth, home, review, puzzles, stats, openings, repertoire, courses, trainer, play };
