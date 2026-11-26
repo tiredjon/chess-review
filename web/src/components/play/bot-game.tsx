@@ -6,6 +6,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useEffectEvent, useMemo, useState } from "react";
 import { api, ApiError } from "@/lib/api";
+import { useUser } from "../auth/auth-provider";
 import { createBot, type Bot } from "@/lib/bots";
 import { boardMoveUci, pieceOn, sideToMove, uciSquares } from "@/lib/chess";
 import { useI18n } from "@/lib/i18n/use-i18n";
@@ -93,6 +94,9 @@ export function BotGame({
 }: BotGameProps) {
   const { t } = useI18n();
   const router = useRouter();
+  const user = useUser();
+  // Имя в PGN — ник пользователя: по нему бэкенд узнаёт его цвет в импортированной партии.
+  const pgnName = user.chesscom_username || user.lichess_username || t.play.you;
   const muted = useSoundMuted();
 
   const [moves, setMoves] = useState<string[]>(() => restore(storageKey, elo, color));
@@ -161,7 +165,7 @@ export function BotGame({
         reason,
         winner,
         color,
-        you: t.play.you,
+        you: pgnName,
         botName,
         elo,
         event: t.play.pgnEvent,
@@ -172,7 +176,7 @@ export function BotGame({
       setConfirmResign(false);
       onFinished?.(finished);
     },
-    [botName, color, elo, onFinished, pgnHeaders, t.play.pgnEvent, t.play.you],
+    [botName, color, elo, onFinished, pgnHeaders, pgnName, t.play.pgnEvent],
   );
 
   /** Сыграть ход (человека или бота) в конце партии `history`. */
