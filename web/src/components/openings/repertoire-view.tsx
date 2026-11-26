@@ -11,7 +11,7 @@ import { Button, Chip, ErrorText, fieldClass, Panel } from "../ui";
 import { NodeStats } from "./node-stats";
 import { OpeningBoard } from "./opening-board";
 import { OpeningList } from "./opening-list";
-import { OpeningControls, OpeningTree } from "./opening-tree";
+import { LineSwitcher, OpeningControls, OpeningTree } from "./opening-tree";
 import { indexNodes, lineUciTo, nameAt, nodeAtLine, rootOf } from "./types";
 import { useOpeningNav } from "./use-opening-nav";
 
@@ -162,6 +162,7 @@ function Loaded({ color, data }: { color: Color; data: Data }) {
         <div className="mx-auto w-full" style={BOARD_WIDTH}>
           <OpeningBoard index={index} currentId={currentId} orientation={color} onSelect={select} weights={weights} />
           <OpeningControls nav={nav} className="mt-2" />
+          <LineSwitcher nav={nav} className="mt-2" />
         </div>
         <NodeStats index={index} currentId={currentId} onSelect={select} />
         <div>
