@@ -30,6 +30,9 @@ export function Chip({
   return (
     <button
       type="button"
+      // Выбранность видна не только рамкой: её объявляет и скринридер. С `role` (radio, tab)
+      // состояние задаёт вызывающий (aria-checked / aria-selected), aria-pressed там недопустим.
+      aria-pressed={props.role ? undefined : active}
       {...props}
       className={`min-h-11 rounded-lg px-3 text-sm font-semibold ${
         active

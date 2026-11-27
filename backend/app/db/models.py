@@ -5,7 +5,7 @@
 """
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from enum import StrEnum
 from typing import Any
 
@@ -496,3 +496,87 @@ class TablebaseCacheEntry(Base):
     epd: Mapped[str] = mapped_column(String(100), primary_key=True)
     data: Mapped[dict[str, Any]]
     fetched_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
+class CoachGoal(Base):
+    """Цель тренера (сессия 17): с какого рейтинга на какой, на какой площадке и в каком
+    контроле, сколько времени в день. Активная цель у пользователя одна (`archived_at` пуст);
+    новая цель архивирует прежнюю, история целей сохраняется."""
+
+    __tablename__ = "coach_goals"
+    __table_args__ = (
+        Index(
+            "uq_coach_goals_user_id_active",
+            "user_id",
+            unique=True,
+            postgresql_where=sa.text("archived_at IS NULL"),
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(sa.BigInteger, sa.Identity(), primary_key=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    source: Mapped[GameSource] = mapped_column(str_enum(GameSource, "game_source"))
+    # `TimeClass` из `app/review/game_rating.py`: bullet | blitz | rapid | daily.
+    time_class: Mapped[str] = mapped_column(String(8))
+    # Рейтинг на площадке в этом контроле на момент постановки цели (по последней партии).
+    start_rating: Mapped[int]
+    target_rating: Mapped[int]
+    minutes_per_day: Mapped[int]
+    days_per_week: Mapped[int]
+    # IANA-зона браузера: границы «дня» для плана и зачёта заданий.
+    tz: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    achieved_at: Mapped[datetime | None]
+    archived_at: Mapped[datetime | None]
+
+
+class CoachPlan(Base):
+    """План тренера на неделю (с понедельника по зоне цели): снимок диагностики, распределение
+    времени по видам занятий и прогноз на момент сборки. Пересобирается лениво — при первом
+    обращении в новой неделе — или по запросу пользователя."""
+
+    __tablename__ = "coach_plans"
+    __table_args__ = (UniqueConstraint("goal_id", "week_start"),)
+
+    id: Mapped[int] = mapped_column(sa.BigInteger, sa.Identity(), primary_key=True)
+    goal_id: Mapped[int] = mapped_column(ForeignKey("coach_goals.id", ondelete="CASCADE"))
+    week_start: Mapped[date]
+    diagnosis: Mapped[dict[str, Any]]
+    allocation: Mapped[list[Any]]
+    forecast: Mapped[dict[str, Any] | None]
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
+class CoachTask(Base):
+    """Задание дня (домашка): вид, параметры ссылки на тренировку, норма и прогресс. Прогресс
+    считается по уже существующим таблицам (попытки пазлов, эндшпиля, тренажёра, партии);
+    `done_at` — когда норма выполнена или пользователь отметил задание вручную."""
+
+    __tablename__ = "coach_tasks"
+    __table_args__ = (Index("ix_coach_tasks_user_id_day", "user_id", "day"),)
+
+    id: Mapped[int] = mapped_column(sa.BigInteger, sa.Identity(), primary_key=True)
+    plan_id: Mapped[int] = mapped_column(ForeignKey("coach_plans.id", ondelete="CASCADE"))
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    day: Mapped[date]
+    position: Mapped[int]
+    # puzzles | rush | endgames | course | play | review | lesson (SPEC «Сессия 17»).
+    kind: Mapped[str] = mapped_column(String(16))
+    params: Mapped[dict[str, Any]] = mapped_column(server_default="{}")
+    target: Mapped[int]
+    progress: Mapped[int] = mapped_column(server_default="0")
+    minutes: Mapped[int]
+    done_at: Mapped[datetime | None]
+
+
+class CoachLessonRead(Base):
+    """Прочитанный урок тренера (17.2): `POST /coach/lessons/{key}/read`; заодно засчитывает
+    задание дня с этим уроком."""
+
+    __tablename__ = "coach_lesson_reads"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    read_at: Mapped[datetime] = mapped_column(server_default=func.now())

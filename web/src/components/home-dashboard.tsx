@@ -14,6 +14,7 @@ import { EmptyGames } from "./games-list";
 import { GamesTable, GamesTableSkeleton } from "./games-table";
 import { ImportCard } from "./import-form";
 import { PlayerAvatar } from "./player-avatar";
+import { CoachCard } from "./coach/coach-card";
 import { WeaknessesCard } from "./insights/weaknesses-card";
 import { PuzzlesCard } from "./puzzles/puzzles-card";
 import { ErrorText, Panel } from "./ui";
@@ -63,6 +64,7 @@ export function HomeDashboard() {
       </div>
 
       <PuzzlesCard />
+      <CoachCard />
       <WeaknessesCard />
 
       <Panel

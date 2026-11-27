@@ -4,6 +4,7 @@
 // Последний выбор — в localStorage, идущая партия — в sessionStorage (переживает перезагрузку).
 import Link from "next/link";
 import { useState } from "react";
+import { api } from "@/lib/api";
 import { BOT_ELOS } from "@/lib/bots/types";
 import { START_FEN } from "@/lib/chess";
 import { useI18n } from "@/lib/i18n/use-i18n";
@@ -89,7 +90,13 @@ export function PlayScreen() {
           color={active.color}
           storageKey={`play:${active.id}`}
           // Закончилась — после перезагрузки снова экран выбора, а не пустая партия.
-          onFinished={() => store(() => sessionStorage, ACTIVE_KEY, null)}
+          onFinished={(result) => {
+            store(() => sessionStorage, ACTIVE_KEY, null);
+            // Тренер (сессия 17) засчитывает партии из БД: сохраняем сыгранную партию молча, без
+            // анализа (импорт идемпотентен — «Разобрать партию» потом найдёт её же). Совсем
+            // короткие (< 10 полуходов) не сохраняем.
+            if (result.historyUci.length >= 10) void api.importPgn(result.pgn).catch(() => undefined);
+          }}
           onNewGame={() => start({ ...setup, elo: active.elo })}
           onChangeBot={toSetup}
         />

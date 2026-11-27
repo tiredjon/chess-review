@@ -8,7 +8,7 @@ import { LogoutIcon } from "@/components/auth/profile-form";
 import type { Dict } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n/use-i18n";
 
-type NavKey = keyof Pick<Dict["common"]["nav"], "home" | "games" | "stats" | "puzzles" | "openings" | "play">;
+type NavKey = keyof Pick<Dict["common"]["nav"], "home" | "games" | "stats" | "puzzles" | "openings" | "play" | "coach">;
 
 const NAV: { href: string; key: NavKey; icon: ReactNode }[] = [
   {
@@ -53,13 +53,25 @@ const NAV: { href: string; key: NavKey; icon: ReactNode }[] = [
     // Пешка (сессия 14: игра с ботами).
     icon: <path d="M12 3a3.5 3.5 0 0 0-2.2 6.2C8.4 10 7.5 11.3 7.5 13h2.2l-1.2 5H6v3h12v-3h-2.5l-1.2-5h2.2c0-1.7-.9-3-2.3-3.8A3.5 3.5 0 0 0 12 3z" />,
   },
+  {
+    href: "/coach",
+    key: "coach",
+    // Мишень (сессия 17: тренер — цель, план, прогноз).
+    icon: (
+      <path
+        fillRule="evenodd"
+        d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm0 2.5a7.5 7.5 0 1 0 0 15 7.5 7.5 0 0 0 0-15zM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0 2.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z"
+      />
+    ),
+  },
 ];
 
 const isActive = (href: string, pathname: string | null) =>
   pathname !== null && (href === "/" ? pathname === "/" : pathname.startsWith(href));
 
+// На телефоне (375 px) в полосе 7 значков, главная и профиль: отступы значков — 6 px.
 const itemClass = (active: boolean) =>
-  `flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-semibold sm:px-3 md:w-[60px] md:flex-col md:gap-1 md:px-0 md:py-2 md:text-[11px] ${
+  `flex items-center gap-2 rounded-lg px-1.5 py-2 text-sm font-semibold sm:px-3 md:w-[60px] md:flex-col md:gap-1 md:px-0 md:py-2 md:text-[11px] ${
     active ? "bg-raised text-ink" : "text-muted hover:bg-raised/60 hover:text-ink"
   }`;
 

@@ -59,6 +59,11 @@ class ErrorCode(StrEnum):
     # Сессия 16: тренировка.
     TABLEBASE_UNAVAILABLE = "tablebase_unavailable"
     ENDGAME_NOT_FOUND = "endgame_not_found"
+    # Сессия 17: тренер.
+    COACH_GOAL_NOT_FOUND = "coach_goal_not_found"
+    COACH_NO_RATING = "coach_no_rating"
+    COACH_TASK_NOT_FOUND = "coach_task_not_found"
+    LESSON_NOT_FOUND = "lesson_not_found"
     # Общие
     VALIDATION_ERROR = "validation_error"
     HTTP_ERROR = "http_error"

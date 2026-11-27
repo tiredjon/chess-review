@@ -13,5 +13,6 @@ import { trainer } from "./trainer";
 import { play } from "./play";
 import { insights } from "./insights";
 import { endgames } from "./endgames";
+import { coach } from "./coach";
 
-export const ru = { common, errors, auth, home, review, puzzles, stats, openings, repertoire, courses, trainer, play, insights, endgames };
+export const ru = { common, errors, auth, home, review, puzzles, stats, openings, repertoire, courses, trainer, play, insights, endgames, coach };
