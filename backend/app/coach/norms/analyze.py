@@ -25,21 +25,21 @@ from app.workers.analysis import save_review
 
 log = structlog.get_logger(__name__)
 
-# Порядок — «волнами»: k-я партия каждого игрока по кругу групп, чтобы на группу быстрее
-# набиралось игроков, а не партий; остальные группы отстают от приоритетных на `lag` волн.
-PRIORITY_LAG = 2
+# Порядок: только собираемые группы (`PRIORITY_BANDS`), сначала весь рапид, затем блиц; внутри —
+# «волнами»: k-я партия каждого игрока по кругу групп, чтобы на группу быстрее набиралось
+# игроков, а не партий.
 _NEXT_SQL = """
 WITH todo AS (
     SELECT s.game_id, s.time_class, s.center,
            row_number() OVER (PARTITION BY s.username ORDER BY s.game_id) AS k,
            dense_rank() OVER (PARTITION BY s.time_class, s.center ORDER BY s.username) AS p
     FROM norms_samples s
-    WHERE NOT EXISTS (
+    WHERE s.center = ANY(:priority) AND NOT EXISTS (
         SELECT 1 FROM analyses a WHERE a.game_id = s.game_id AND a.status = 'done'
     )
 )
 SELECT game_id FROM todo
-ORDER BY k + CASE WHEN center = ANY(:priority) THEN 0 ELSE :lag END, p, center, time_class
+ORDER BY time_class <> 'rapid', k, p, center
 LIMIT :limit
 """
 
@@ -47,7 +47,7 @@ LIMIT :limit
 async def pending_games(session: AsyncSession, limit: int) -> list[uuid.UUID]:
     rows = await session.execute(
         text(_NEXT_SQL),
-        {"priority": list(PRIORITY_BANDS), "lag": PRIORITY_LAG, "limit": limit},
+        {"priority": list(PRIORITY_BANDS), "limit": limit},
     )
     return [row.game_id for row in rows]
 

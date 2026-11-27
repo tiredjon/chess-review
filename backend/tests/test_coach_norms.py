@@ -164,7 +164,7 @@ def test_opponents_hints_and_limit() -> None:
     assert limited == opponents(games, 3, "alice")
 
 
-def test_deficits_rank_priority_bands_first() -> None:
+def test_deficits_only_collected_groups_rapid_first() -> None:
     d = Deficits(TARGETS)
     full = TARGETS.players
     d.players[("rapid", 1700)] = full
@@ -172,8 +172,11 @@ def test_deficits_rank_priority_bands_first() -> None:
     assert d.need("rapid", 1700) == 0
     assert d.need("rapid", 1600) == full
     ranked = d.ranked()
-    assert ranked[0][1] in range(1500, 2201)
+    # Только рапид и блиц 1500–2200, весь рапид — раньше блица.
+    assert {c for _, c in ranked} <= set(range(1500, 2201, 100))
+    assert [tc for tc, _ in ranked] == ["rapid"] * 7 + ["blitz"] * 8
     assert ("rapid", 1700) not in ranked
+    assert d.needed()[("rapid", 1200)] == 0
     # Игроков хватает, а партий мало — нужно ещё.
     d.players[("blitz", 1500)] = full
     d.games[("blitz", 1500)] = full * TARGETS.games_per_player - 6

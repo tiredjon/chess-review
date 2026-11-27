@@ -2,8 +2,9 @@
 `trajectories.json` в формате SPEC (парсер — `app/coach/norms_data.py`). В файлы попадают
 только агрегаты: ни ников, ни партий.
 
-**Группы.** Центры 800…2600 через 100, в группу — партии с рейтингом игрока в момент партии
-в [центр − 100, центр + 100]; группы перекрываются. Группа попадает в файл, если в ней
+**Группы.** Центры 1500…2200 через 100 (`PRIORITY_BANDS`; остальные пока не собираются),
+в группу — партии с рейтингом игрока в момент партии в [центр − 100, центр + 100]; группы
+перекрываются. Группа попадает в файл, если в ней
 не меньше `MIN_BAND_PLAYERS` игроков; метрика — если у неё не меньше `MIN_METRIC_PLAYERS`.
 
 **Квартили.** Метрика игрока — по его партиям группы той же функцией, что у пользователя
@@ -41,9 +42,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.coach.metrics import GameAgg, MetricSpec, all_specs, load_game_aggs
 from app.coach.norms import (
-    BAND_CENTERS,
     BAND_HALF_WIDTH,
     NORM_TIME_CLASSES,
+    PRIORITY_BANDS,
     TARGETS,
     nearest_center,
 )
@@ -151,7 +152,7 @@ class SampleGame:
 def build_bands(games: Sequence[SampleGame], specs: Sequence[MetricSpec]) -> list[dict[str, Any]]:
     """Группы одного контроля (только с достаточным числом игроков)."""
     bands = []
-    for center in BAND_CENTERS:
+    for center in PRIORITY_BANDS:
         lo, hi = center - BAND_HALF_WIDTH, center + BAND_HALF_WIDTH
         players: dict[str, list[GameAgg]] = defaultdict(list)
         for g in games:
@@ -281,7 +282,7 @@ def _weeks_quartiles(starts: Sequence[Start], gain: int) -> list[float | None]:
 
 def trajectory_rows(starts: Sequence[Start]) -> list[dict[str, Any]]:
     rows = []
-    for center in BAND_CENTERS:
+    for center in PRIORITY_BANDS:
         group = [s for s in starts if s.center == center]
         if len(group) < MIN_TRAJECTORY_PLAYERS:
             continue

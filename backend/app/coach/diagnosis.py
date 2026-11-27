@@ -451,6 +451,12 @@ def _band_center(bands: Sequence[Band], rating: int) -> int:
     return nearest_center(clamped) or clamped
 
 
+def band_far(bands: Sequence[Band], rating: int, t: DiagnosisThresholds = THRESHOLDS) -> bool:
+    """Ближайшая собранная группа дальше `max_band_distance` (или групп нет): эталон собран
+    не для всех центров (сейчас — 1500–2200), и сравнивать с далёкой группой нечестно."""
+    return all(abs(b.center - rating) > t.max_band_distance for b in bands)
+
+
 async def _gap(
     session: AsyncSession, user_id: uuid.UUID, ug: CTE, e: MetricEval, *, strength: bool
 ) -> GapOut:
@@ -550,6 +556,8 @@ async def diagnose(
         current_rating=rating,
         current_band=_band_center(bands, rating),
         target_band=_band_center(bands, goal.target_rating),
+        current_band_far=band_far(bands, rating, t),
+        target_band_far=band_far(bands, goal.target_rating, t),
         norms_version=norms.version,
         analyzed_games=len(games),
         min_games=t.min_games,

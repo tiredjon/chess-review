@@ -170,6 +170,13 @@ def test_find_gaps_orders_and_limits() -> None:
     assert "accuracy" in keys
 
 
+def test_band_far_when_only_distant_groups() -> None:
+    bands = [_band(1500), _band(2200)]
+    assert not diagnosis.band_far(bands, 1600)
+    assert diagnosis.band_far(bands, 1200)
+    assert diagnosis.band_far([], 1700)
+
+
 def test_train_mapping_like_insights() -> None:
     fork = train_for("motif:fork")
     assert fork is not None
@@ -315,6 +322,7 @@ async def test_diagnosis_on_fixture_games(
     assert body["analyzed_games"] == 24
     assert body["current_rating"] == 1700
     assert (body["current_band"], body["target_band"]) == (1700, 2000)
+    assert (body["current_band_far"], body["target_band_far"]) == (False, False)
     assert body["norms_version"] == "test"
     metrics = {(m["kind"], m["key"]): m for m in body["metrics"]}
     blunders = metrics[("metric", "blunders_per_100")]

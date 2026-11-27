@@ -135,6 +135,10 @@ class DiagnosisOut(BaseModel):
     # Центры групп эталона (например, 1700 и 2000).
     current_band: int
     target_band: int
+    # Ближайшая собранная группа дальше её ширины (±100) от рейтинга — сравнения с ней нет
+    # (`current` / `target` у метрик — null). Добавлено 17.1: эталон собран не для всех групп.
+    current_band_far: bool = False
+    target_band_far: bool = False
     norms_version: str
     analyzed_games: int
     min_games: int

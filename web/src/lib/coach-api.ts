@@ -93,6 +93,9 @@ export type Diagnosis = {
   current_rating: number;
   current_band: number;
   target_band: number;
+  /** Ближайшая собранная группа дальше ±100 от рейтинга: сравнения с ней нет. */
+  current_band_far?: boolean;
+  target_band_far?: boolean;
   norms_version: string;
   analyzed_games: number;
   min_games: number;

@@ -35,6 +35,7 @@ from app.coach.norms import (
     BAND_CENTERS,
     NORM_TIME_CLASSES,
     PRIORITY_BANDS,
+    STAGES,
     TARGETS,
     SampleTargets,
     nearest_center,
@@ -54,8 +55,6 @@ MIN_INTERVAL_S = 1.1
 USER_AGENT = "ChessReview/0.1 (self-hosted game review; rating-group sample, 1 req/s)"
 # Соперников из архива игрока в очередь — не больше (иначе очередь растёт на порядки).
 MAX_NEW_OPPONENTS = 40
-# Группы 1500–2200 при выборе группы весят больше.
-PRIORITY_WEIGHT = 3.0
 _ARCHIVE_RE = re.compile(r"/games/(\d{4})/(\d{2})/?$")
 _GAME_URL_RE = re.compile(r"/game/(live|daily)/(\d+)")
 
@@ -258,16 +257,17 @@ class Deficits:
         return max(0, by_players, by_games)
 
     def needed(self) -> dict[tuple[str, int], int]:
-        return {(tc, c): self.need(tc, c) for tc in NORM_TIME_CLASSES for c in BAND_CENTERS}
+        """Нехватка по собираемым группам (`STAGES` × `PRIORITY_BANDS`); остальные — 0."""
+        return {
+            (tc, c): self.need(tc, c) if c in PRIORITY_BANDS else 0
+            for tc in NORM_TIME_CLASSES
+            for c in BAND_CENTERS
+        }
 
     def ranked(self) -> list[tuple[str, int]]:
-        """Группы с нехваткой по убыванию веса (приоритетные — выше)."""
-
-        def weight(key: tuple[str, int]) -> float:
-            return self.need(*key) * (PRIORITY_WEIGHT if key[1] in PRIORITY_BANDS else 1.0)
-
+        """Группы с нехваткой: сначала контроль первого этапа (рапид), внутри — по нехватке."""
         keys = [k for k, v in self.needed().items() if v > 0]
-        return sorted(keys, key=lambda k: (-weight(k), k[1], k[0]))
+        return sorted(keys, key=lambda k: (STAGES.index(k[0]), -self.need(*k), k[1]))
 
 
 async def load_deficits(session: AsyncSession, targets: SampleTargets) -> Deficits:
@@ -559,9 +559,12 @@ async def next_trajectory(session: AsyncSession) -> str | None:
         text(
             "SELECT p.username FROM norms_players p WHERE p.status = 'sampled' "
             "AND p.traj_status = 'pending' "
-            "AND EXISTS (SELECT 1 FROM norms_samples s WHERE s.username = p.username) "
-            "ORDER BY p.sampled_at LIMIT 1"
-        )
+            "AND EXISTS (SELECT 1 FROM norms_samples s WHERE s.username = p.username "
+            "AND s.center = ANY(:bands)) "
+            "ORDER BY (SELECT min(CASE WHEN s.time_class = 'rapid' THEN 0 ELSE 1 END) "
+            "FROM norms_samples s WHERE s.username = p.username), p.sampled_at LIMIT 1"
+        ),
+        {"bands": list(PRIORITY_BANDS)},
     )
     return None if name is None else str(name)
 
