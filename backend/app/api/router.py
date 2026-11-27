@@ -4,6 +4,8 @@ from app.api import (
     analyses,
     auth,
     browser,
+    coach,
+    coach_diagnosis,
     courses,
     endgames,
     engine,
@@ -42,3 +44,6 @@ api_router.include_router(plans.router)
 # Сессия 16: тренировка — слабые места, тренажёр эндшпиля (пазлы по темам — в puzzles).
 api_router.include_router(insights.router)
 api_router.include_router(endgames.router)
+# Сессия 17: тренер — цель, диагностика против эталонов, план, домашка, прогноз, уроки.
+api_router.include_router(coach_diagnosis.router)
+api_router.include_router(coach.router)

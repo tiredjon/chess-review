@@ -36,6 +36,11 @@ EXPECTED_TABLES = {
     "puzzle_rush_runs",
     "endgame_attempts",
     "tablebase_cache",
+    # Сессия 17: тренер.
+    "coach_goals",
+    "coach_plans",
+    "coach_tasks",
+    "coach_lesson_reads",
 }
 
 

@@ -13,6 +13,7 @@ export const common: Dict["common"] = {
     puzzles: "Puzzles",
     openings: "Openings",
     play: "Play",
+    coach: "Coach",
     profile: "Profile",
     logout: "Log out",
   },
@@ -34,6 +35,8 @@ export const common: Dict["common"] = {
     coursePlay: "Course game",
     weaknesses: "Weak spots",
     endgames: "Endgame trainer",
+    coach: "Coach",
+    coachLesson: "Coach lesson",
   },
   actions: {
     retry: "Retry",

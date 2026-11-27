@@ -13,6 +13,7 @@ export const common = {
     puzzles: "Пазлы",
     openings: "Дебюты",
     play: "Игра",
+    coach: "Тренер",
     profile: "Профиль",
     logout: "Выйти",
   },
@@ -38,6 +39,9 @@ export const common = {
     // Сессия 16: тренировка.
     weaknesses: "Слабые места",
     endgames: "Тренажёр эндшпиля",
+    // Сессия 17: тренер.
+    coach: "Тренер",
+    coachLesson: "Урок тренера",
   },
   actions: {
     retry: "Повторить",
