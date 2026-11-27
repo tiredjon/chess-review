@@ -50,6 +50,7 @@ export const coach = {
     rebuilding: "Пересобираем…",
     achieved: "Цель достигнута",
     rebuildFailed: "Не удалось пересобрать план",
+    rebuildTooSoon: "План уже свежий: пересобрать можно не чаще раза в час.",
   },
   today: {
     title: "Сегодня",

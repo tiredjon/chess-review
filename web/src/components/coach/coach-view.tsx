@@ -54,12 +54,18 @@ function Dashboard({ state, goal, onChanged }: { state: GoalState; goal: Goal; o
   const report = useSection(coach.report, t.coach.sectionError);
   const [rebuilding, setRebuilding] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const rebuild = async () => {
     setRebuilding(true);
     setError(null);
+    setNotice(null);
     try {
-      plan.setData(await coach.rebuildPlan());
+      const before = plan.data?.created_at;
+      const next = await coach.rebuildPlan();
+      // План моложе часа бэкенд не пересобирает и возвращает как есть — скажем об этом.
+      if (before !== undefined && next.created_at === before) setNotice(t.coach.head.rebuildTooSoon);
+      plan.setData(next);
       today.reload();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t.coach.head.rebuildFailed);
@@ -107,6 +113,7 @@ function Dashboard({ state, goal, onChanged }: { state: GoalState; goal: Goal; o
           </Button>
         </div>
         {error && <ErrorText>{error}</ErrorText>}
+        {notice && <p className="w-full text-sm font-semibold text-muted">{notice}</p>}
       </section>
 
       <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-2 lg:items-start">

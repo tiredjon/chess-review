@@ -50,6 +50,7 @@ export const coach: Dict["coach"] = {
     rebuilding: "Rebuilding…",
     achieved: "Goal reached",
     rebuildFailed: "Could not rebuild the plan",
+    rebuildTooSoon: "The plan is already fresh: it can be rebuilt at most once an hour.",
   },
   today: {
     title: "Today",

@@ -430,12 +430,15 @@ async def ensure_plan(session: AsyncSession, goal: CoachGoal, today: date) -> Co
     plan = CoachPlan(
         goal_id=goal.id, week_start=start, diagnosis={}, allocation=[], created_at=now_utc()
     )
-    session.add(plan)
     try:
-        await session.flush()
+        # Точка сохранения: при гонке откатывается только вставка плана, а не вся сессия —
+        # иначе `goal` и другие объекты истекают, и обращение к ним из async-кода падает
+        # с MissingGreenlet (так было при одновременных /coach/today и /coach/plan).
+        async with session.begin_nested():
+            session.add(plan)
+            await session.flush()
     except IntegrityError:
         # Параллельный запрос уже собрал план этой недели.
-        await session.rollback()
         existing = await week_plan(session, goal, start)
         assert existing is not None
         return existing

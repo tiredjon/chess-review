@@ -4,6 +4,7 @@
 «сейчас» (`app.coach.tasks.now_utc`): среда 2026-11-25, 10:00 UTC, зона цели — Москва.
 """
 
+import asyncio
 import uuid
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
@@ -23,6 +24,7 @@ from app.db.models import (
     Analysis,
     AnalysisStatus,
     CoachGoal,
+    CoachPlan,
     Color,
     EndgameAttempt,
     Game,
@@ -501,6 +503,29 @@ async def test_other_trainings_and_streak(
     # Четверг: среда пропущена — серия только из сегодняшнего (если выполнено) — 0.
     clock.now = monday + timedelta(days=3)
     assert (await client.get("/api/v1/coach/today")).json()["streak_days"] == 0
+
+
+async def test_concurrent_first_requests_build_one_plan(
+    client: AsyncClient, db: Database, user: uuid.UUID
+) -> None:
+    """Страница тренера сразу после новой цели шлёт /today, /plan и /report одновременно:
+    план собирается один, проигравший гонку запрос берёт готовый, а не падает."""
+    await seed_ratings(db, user)
+    await set_goal(client)
+    responses = await asyncio.gather(
+        client.get("/api/v1/coach/today"),
+        client.get("/api/v1/coach/plan"),
+        client.get("/api/v1/coach/today"),
+        client.get("/api/v1/coach/plan"),
+    )
+    assert [r.status_code for r in responses] == [200] * 4
+    async with db.sessionmaker() as session:
+        plans = (
+            await session.scalars(
+                select(CoachPlan).join(CoachGoal).where(CoachGoal.user_id == user)
+            )
+        ).all()
+    assert len(plans) == 1
 
 
 async def test_task_done_is_isolated(
