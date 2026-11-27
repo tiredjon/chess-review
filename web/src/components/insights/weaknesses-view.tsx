@@ -7,6 +7,7 @@ import { SOURCE_NAMES } from "@/lib/format";
 import { useI18n } from "@/lib/i18n/use-i18n";
 import { insightsApi, type Insights } from "@/lib/insights-api";
 import type { GameSource, TimeClass } from "@/lib/types";
+import { CoachLink } from "../coach/coach-link";
 import { ErrorText, Panel } from "../ui";
 import { FindingCard } from "./finding-card";
 
@@ -64,6 +65,7 @@ export function WeaknessesView({ source, timeClass }: Filters) {
   return (
     <div className="flex flex-col gap-5">
       <InsightsFilters source={source} timeClass={timeClass} />
+      <CoachLink />
       <ErrorText>{error}</ErrorText>
       {data === null ? (
         !error && <WeaknessesSkeleton />
