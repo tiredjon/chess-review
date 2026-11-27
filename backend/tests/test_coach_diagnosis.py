@@ -340,3 +340,15 @@ async def test_diagnosis_insufficient_with_few_games(
     assert body["strengths"] == body["weaknesses"] == []
     assert {m["status"] for m in body["metrics"]} == {"insufficient"}
     assert all(m["value"] is None for m in body["metrics"])
+
+
+def test_every_lesson_has_ru_and_en_text() -> None:
+    from pathlib import Path  # noqa: PLC0415
+
+    from app.coach.lessons import LESSONS  # noqa: PLC0415
+
+    root = Path(__file__).resolve().parents[2] / "web" / "src" / "lib" / "coach-lessons"
+    for lang in ("ru", "en"):
+        text = (root / f"{lang}.ts").read_text()
+        missing = [key for key in LESSONS if f"  {key}: lesson(" not in text]
+        assert missing == [], lang
