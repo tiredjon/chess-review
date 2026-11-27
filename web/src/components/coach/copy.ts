@@ -39,16 +39,17 @@ export function focusName(t: Dict, focus: string, lang: Lang): string {
 
 const PERCENT_KEYS = new Set(["accuracy", "accuracy_opening", "accuracy_middlegame", "accuracy_endgame", "conversion", "resilience", "time_trouble_share"]);
 
-/** Значение метрики с единицей: доли и точность — `%`, остальное — «на 100 ходов». */
+/** Значение метрики с единицей: доли, точность и выводы о дебютах — `%`; «на 100 ходов» —
+ *  `*_per_100` и мотивы (`motif:<тип>` в эталоне — пропусков на 100 своих ходов). */
 export function formatValue(t: Dict, lang: Lang, kind: MetricKind, key: string, value: number | null): string {
   if (value === null) return "—";
   const number = formatNumber(value, lang, 1);
-  if (kind !== "metric" || PERCENT_KEYS.has(key)) return `${number}%`;
+  if (kind === "opening" || (kind === "metric" && PERCENT_KEYS.has(key))) return `${number}%`;
   return `${number}`;
 }
 
 export const metricUnit = (t: Dict, kind: MetricKind, key: string): string | null =>
-  kind === "metric" && key.endsWith("_per_100") ? t.coach.diagnosis.unitPer100 : null;
+  kind === "motif" || (kind === "metric" && key.endsWith("_per_100")) ? t.coach.diagnosis.unitPer100 : null;
 
 export const deltaTone = (delta: MetricDelta): "better" | "worse" | "same" => {
   if (delta.before === null || delta.after === null) return "same";
