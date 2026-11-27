@@ -172,6 +172,7 @@ export const coach: Dict["coach"] = {
     title: "Weekly plan",
     week: (from: string) => `Week of ${from}`,
     rest: "Rest",
+    beforePlan: "Before plan",
     today: "Today",
     minutes: (n: number) => minutes(n),
     allocationTitle: "How the time is split",

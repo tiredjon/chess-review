@@ -9,10 +9,8 @@ import { focusName, formatDay, formatShortDay, itemName } from "./copy";
 import { KindIcon } from "./task-row";
 import type { Section } from "./use-section";
 
-const todayIso = () => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-};
+const isoDay = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const todayIso = () => isoDay(new Date());
 
 /** «План недели»: дни × задания, распределение времени по видам, фокус и дата пересборки. */
 export function PlanCard({ section }: { section: Section<Plan> }) {
@@ -32,6 +30,8 @@ function PlanBody({ plan }: { plan: Plan }) {
   const c = t.coach.plan;
   if (plan.days.length === 0) return <Empty title={c.empty} />;
   const today = todayIso();
+  // План собран посреди недели: дни до сборки — не «выходной», а «до плана».
+  const planStart = isoDay(new Date(plan.created_at));
   return (
     <div className="flex flex-col gap-5">
       {/* Телефон: дни лентой прокрутки вбок; от sm — сетка из семи колонок. */}
@@ -47,7 +47,9 @@ function PlanBody({ plan }: { plan: Plan }) {
                 <span>{c.weekdays[i] ?? formatShortDay(day.day, lang)}</span>
                 <span className="font-semibold text-muted">{isToday ? c.today : formatShortDay(day.day, lang)}</span>
               </p>
-              {day.rest_day || day.tasks.length === 0 ? (
+              {day.tasks.length === 0 && day.day < planStart ? (
+                <p className="py-3 text-center text-sm font-semibold text-muted/60">{c.beforePlan}</p>
+              ) : day.rest_day || day.tasks.length === 0 ? (
                 <p className="py-3 text-center text-sm font-semibold text-muted">{c.rest}</p>
               ) : (
                 <>

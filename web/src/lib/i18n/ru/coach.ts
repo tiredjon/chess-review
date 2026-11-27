@@ -172,6 +172,7 @@ export const coach = {
     title: "План недели",
     week: (from: string) => `Неделя с ${from}`,
     rest: "Выходной",
+    beforePlan: "До плана",
     today: "Сегодня",
     minutes: (n: number) => minutes(n),
     allocationTitle: "Как распределено время",

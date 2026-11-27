@@ -180,11 +180,21 @@ def test_course_weakness_uses_user_course() -> None:
 def test_no_weaknesses_and_no_puzzles() -> None:
     plan = build_week_plan([], goal(), Availability(puzzles=0), MONDAY, MONDAY)
     kinds = {t.kind for t in plan.tasks}
-    assert kinds <= {"play", "review"}
+    # Пазлов нет — время тактики уходит в типовые эндшпили каталога и в партии.
+    assert kinds <= {"play", "review", "endgames"}
     assert "play" in kinds
+    assert all(t.params == {"tab": "catalog"} for t in plan.tasks if t.kind == "endgames")
     assert plan.focus == ()
-    # Без пазлов и слабых сторон — один урок не ставится, тактики нет.
     assert sum(t.target for t in plan.tasks if t.kind == "play") >= 3
+
+
+def test_puzzle_minutes_capped_by_available_puzzles() -> None:
+    plan = build_week_plan([], goal(minutes=60), Availability(puzzles=1), MONDAY, MONDAY)
+    puzzles = sum(t.target for t in plan.tasks if t.kind == "puzzles")
+    # Один пазл — не больше двух решений за неделю, остальное — каталог эндшпиля и партии.
+    assert puzzles <= 2
+    catalog = sum(t.target for t in plan.tasks if t.kind == "endgames")
+    assert 0 < catalog <= 2 * 21
 
 
 def test_high_target_lowers_tactics_floor() -> None:

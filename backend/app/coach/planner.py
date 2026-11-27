@@ -36,9 +36,13 @@ from datetime import date, timedelta
 from typing import Literal, Protocol
 
 from app.api.schemas_coach import GapOut, TaskKind, TaskUnit
+from app.endgames.catalog import CATALOG
 
 TimeClassName = Literal["bullet", "blitz", "rapid", "daily"]
 SMALL_KINDS: tuple[TaskKind, ...] = ("puzzles", "rush", "endgames", "course")
+# Сколько раз за неделю план повторяет один пазл / позицию каталога эндшпиля.
+REPEATS_PER_WEEK = 2
+CATALOG_POSITIONS = len(CATALOG)
 KIND_ORDER: tuple[TaskKind, ...] = (
     "lesson",
     "play",
@@ -283,12 +287,24 @@ class _Week:
             extra = math.floor((rest / 2) / pair)
             games += extra
             leftover = rest - extra * pair
-        if self.avail.puzzles > 0:
-            if tactics + leftover > 0:
-                streams.insert(0, _Stream("puzzles", (), None, tactics + leftover))
+        # Тактика — не больше, чем пазлов в наличии (каждый ≈ дважды за неделю): иначе один и тот
+        # же пазл по кругу. Лишнее — пополам: типовые эндшпили каталога (есть всегда, тоже в
+        # пределах «дважды за неделю») и партии.
+        general = tactics + leftover
+        puzzle_cap = self.unit["puzzles"] * self.avail.puzzles * REPEATS_PER_WEEK
+        puzzle_minutes = min(general, puzzle_cap)
+        if puzzle_minutes >= self.unit["puzzles"]:
+            streams.insert(0, _Stream("puzzles", (), None, puzzle_minutes))
         else:
-            # Пазлов нет — время тактики уходит в партии.
-            games += math.floor((tactics + leftover) / pair)
+            puzzle_minutes = 0.0
+        spill = general - puzzle_minutes
+        catalog_cap = self.unit["endgames"] * CATALOG_POSITIONS * REPEATS_PER_WEEK
+        catalog_minutes = min(spill / 2, catalog_cap)
+        if catalog_minutes >= self.rules.min_task_minutes:
+            streams.append(_Stream("endgames", (("tab", "catalog"),), None, catalog_minutes))
+        else:
+            catalog_minutes = 0.0
+        games += math.floor((spill - catalog_minutes) / pair)
         return streams, games
 
     def place_lessons(self, keys: Sequence[tuple[str, str]]) -> None:

@@ -224,6 +224,9 @@ def forecast(inp: ForecastInput, trajectories: Trajectories) -> ForecastOut:
             w50, w80 = _inverse(f, 0.5), _inverse(f, 0.8)
             prob = round(f(52), 3)
             projection = _projection(inp, f, w80)
+            # За горизонт цель не достигается — «по плану» было бы неправдой.
+            if w50 is None and status in ("on_track", "ahead"):
+                status = "behind"
         return ForecastOut(
             start_rating=inp.start_rating,
             current_rating=inp.current_rating,

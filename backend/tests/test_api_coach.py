@@ -536,18 +536,23 @@ async def test_report_for_last_week(
     await add(
         db,
         game(user, datetime(2026, 11, 26, 12, tzinfo=UTC), rating=1730),
-        game(user, datetime(2026, 11, 28, 12, tzinfo=UTC), rating=1750),
+        game(user, datetime(2026, 11, 27, 12, tzinfo=UTC), rating=1750),
     )
     clock.now = NOW + timedelta(days=7)
     body = (await client.get("/api/v1/coach/report")).json()["report"]
     assert body["week_start"] == MONDAY.isoformat()
-    # Отмечено вручную первое задание; партия субботы засчитала субботнюю партию задним числом.
-    saturday = next(t for d in week["days"] if d["day"] == "2026-11-28" for t in d["tasks"])
-    assert saturday["kind"] == "play"
+    # Отмечено вручную первое задание; партия пятницы засчитала пятничную партию задним числом.
+    friday = next(
+        t
+        for d in week["days"]
+        if d["day"] == "2026-11-27"
+        for t in d["tasks"]
+        if t["kind"] == "play"
+    )
     assert body["tasks_done"] == 2
     assert body["tasks_total"] == sum(len(d["tasks"]) for d in week["days"])
-    assert body["minutes_done"] == first["minutes"] + saturday["minutes"]
-    # Пн (из сида), чт и сб.
+    assert body["minutes_done"] == first["minutes"] + friday["minutes"]
+    # Пн (из сида), чт и пт.
     assert body["games_played"] == 3
     assert body["rating_start"] == 1650
     assert body["rating_end"] == 1750
