@@ -5,6 +5,7 @@ import uuid
 
 import pytest
 
+from app.coach.lessons import METRIC_LESSONS
 from app.coach.metrics import (
     METRIC_KEYS,
     GameAgg,
@@ -15,7 +16,6 @@ from app.coach.metrics import (
     ratio,
     spec_for,
 )
-from app.coach.lessons import METRIC_LESSONS
 
 
 def _game(**kwargs: object) -> GameAgg:
@@ -45,7 +45,7 @@ def test_per_100_metrics_weight_moves_not_games() -> None:
     assert m["blunders_per_100"].value == pytest.approx(2.0)
     assert m["blunders_per_100"].n == 100
     assert m["blunders_per_100"].games == 2
-    assert m["blunders_per_100"].events == pytest.approx(200.0)
+    assert m["blunders_per_100"].events == pytest.approx(2.0)
 
 
 def test_accuracy_is_mean_of_games_and_skips_missing() -> None:

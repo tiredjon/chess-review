@@ -35,7 +35,7 @@ def _spec(key: str) -> Any:
     return spec
 
 
-def _value(value: float, *, n: int = 1000, se: float | None = 0.1, events: float = 1e6) -> Any:
+def _value(value: float, *, n: int = 1000, se: float | None = 0.1, events: float = 1e4) -> Any:
     return MetricValue(value=value, n=n, games=40, se=se, events=events)
 
 
@@ -100,7 +100,8 @@ def test_weakness_needs_low_target_percentile_and_stability() -> None:
     weak = evaluate_metric(spec, _value(6.0, se=0.3), Norm(3.0, 4.0, 5.0), target)
     assert weak.status == "weakness"
     assert weak.severity == "high"
-    assert weak.percentile is not None and weak.percentile < 10
+    assert weak.percentile is not None
+    assert weak.percentile < 10
     # То же значение, но шумное (большая ошибка): не слабость.
     noisy = evaluate_metric(spec, _value(4.6, se=3.0), None, target)
     assert noisy.status == "neutral"
@@ -122,8 +123,10 @@ def test_strength_is_against_current_group() -> None:
     current, target = Norm(60.0, 65.0, 70.0), Norm(70.0, 75.0, 80.0)
     e = evaluate_metric(spec, _value(74.0, n=40, se=0.5), current, target)
     assert e.status == "strength"
-    assert e.current_percentile is not None and e.current_percentile > 65
-    assert e.percentile is not None and e.percentile < 50
+    assert e.current_percentile is not None
+    assert e.current_percentile > 65
+    assert e.percentile is not None
+    assert e.percentile < 50
 
 
 def test_insufficient_volume_and_missing_norms() -> None:
@@ -138,9 +141,9 @@ def test_insufficient_volume_and_missing_norms() -> None:
 def test_motif_weakness_needs_enough_misses() -> None:
     spec = motif_spec("fork")
     target = Norm(0.2, 0.4, 0.6)
-    rare = evaluate_metric(spec, _value(2.0, n=500, se=0.1, events=200), None, target)
+    rare = evaluate_metric(spec, _value(2.0, n=500, se=0.1, events=2), None, target)
     assert rare.status == "neutral"
-    many = evaluate_metric(spec, _value(2.0, n=500, se=0.1, events=1000), None, target)
+    many = evaluate_metric(spec, _value(2.0, n=500, se=0.1, events=10), None, target)
     assert many.status == "weakness"
 
 
@@ -169,13 +172,17 @@ def test_find_gaps_orders_and_limits() -> None:
 
 def test_train_mapping_like_insights() -> None:
     fork = train_for("motif:fork")
-    assert fork is not None and (fork.kind, fork.theme) == ("puzzles", "fork")
+    assert fork is not None
+    assert (fork.kind, fork.theme) == ("puzzles", "fork")
     endgame = train_for("accuracy_endgame")
-    assert endgame is not None and endgame.kind == "endgames"
+    assert endgame is not None
+    assert endgame.kind == "endgames"
     middle = train_for("accuracy_middlegame")
-    assert middle is not None and middle.phase == Phase.MIDDLEGAME
+    assert middle is not None
+    assert middle.phase == Phase.MIDDLEGAME
     conv = train_for("conversion")
-    assert conv is not None and conv.kind == "endgames"
+    assert conv is not None
+    assert conv.kind == "endgames"
     assert THRESHOLDS.min_games == 20
 
 

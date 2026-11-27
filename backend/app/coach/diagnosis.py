@@ -229,10 +229,7 @@ def evaluate_metric(
     status: MetricStatus = "neutral"
     severity: Severity | None = None
     score = 0.0
-    # `events` — Σ пропусков × масштаб (100): у мотива — «сколько раз упущен» × 100.
-    motif_ok = (
-        not spec.key.startswith(MOTIF_PREFIX) or value.events >= t.motif_min_events * spec.scale
-    )
+    motif_ok = not spec.key.startswith(MOTIF_PREFIX) or value.events >= t.motif_min_events
     if pct is not None and pct < t.weak_pct and motif_ok and target is not None:
         optimistic = _shifted(value, t.robust_z, better=True, higher_better=higher)
         if (
@@ -289,6 +286,11 @@ def find_gaps(
     return strong[: t.max_strengths], weak[: t.max_weaknesses]
 
 
+def has_enough(games: Sequence[GameAgg], t: DiagnosisThresholds = THRESHOLDS) -> bool:
+    """Разобранных партий цели и своих ходов в них хватает для выводов."""
+    return len(games) >= t.min_games and sum(g.moves for g in games) >= t.min_moves
+
+
 def evaluate_all(
     games: Sequence[GameAgg],
     bands: Sequence[Band],
@@ -299,7 +301,7 @@ def evaluate_all(
     """Фиксированные метрики + мотивы, у которых есть эталон целевой группы."""
     motif_keys = sorted({k for b in bands for k in b.metrics if k.startswith(MOTIF_PREFIX)})
     specs = [*METRICS, *(motif_spec(k.removeprefix(MOTIF_PREFIX)) for k in motif_keys)]
-    enough = len(games) >= t.min_games and sum(g.moves for g in games) >= t.min_moves
+    enough = has_enough(games, t)
     result = []
     for spec in specs:
         current = norm_at(bands, spec.key, current_rating, t)
@@ -533,7 +535,7 @@ async def diagnose(
     metrics = [metric_out(e) for e in evals]
     strengths: list[GapOut] = []
     weaknesses: list[GapOut] = []
-    if len(games) >= t.min_games:
+    if has_enough(games, t):
         strong, weak = find_gaps(evals, t)
         strengths = [await _gap(session, user_id, ug, e, strength=True) for e in strong]
         weaknesses = [await _gap(session, user_id, ug, e, strength=False) for e in weak]

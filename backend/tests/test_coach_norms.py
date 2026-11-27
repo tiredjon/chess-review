@@ -287,7 +287,7 @@ def test_trajectory_starts_reach_and_censoring() -> None:
     assert first.reached[100] is not None
     assert first.reached[200] is not None
     assert first.reached[300] is None
-    assert first.observed_weeks > first.reached[200]  # type: ignore[operator]
+    assert first.observed_weeks > first.reached[200]
     # Месяц без партий тоже наблюдён: активность — среднее с нулём.
     assert first.games_per_week == pytest.approx(10 * 5 / 6 / (365.25 / 12 / 7))
     # Второй старт — при первом попадании в группу 1600.

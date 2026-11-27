@@ -176,7 +176,7 @@ class MetricValue:
     games: int
     # Стандартная ошибка по партиям-кластерам; None — одна партия.
     se: float | None
-    # Σ числителей в масштабе метрики («сколько случаев»: пропусков, зевков…).
+    # Σ числителей без масштаба: сколько случаев (пропусков мотива, зевков…) или очков точности.
     events: float
 
 
@@ -197,8 +197,7 @@ def metric_value(spec: MetricSpec, games: Iterable[GameAgg]) -> MetricValue | No
         return None
     value, se = ratio(parts, spec.scale)
     n = len(parts) if spec.per_game else round(sum(m for _, m in parts))
-    events = sum(c for c, _ in parts) * (spec.scale if not spec.per_game else 1.0)
-    return MetricValue(value=value, n=n, games=len(parts), se=se, events=events)
+    return MetricValue(value=value, n=n, games=len(parts), se=se, events=sum(c for c, _ in parts))
 
 
 def compute_metrics(
