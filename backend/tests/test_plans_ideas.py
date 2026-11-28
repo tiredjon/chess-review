@@ -5,6 +5,7 @@
 пешка в параметрах действительно стоит на доске.
 """
 
+import itertools
 import re
 from collections.abc import Iterator
 
@@ -24,6 +25,19 @@ SQUARE = re.compile(r"[a-h][1-8]")
 PLACEHOLDER = re.compile(r"\{\w+\}")
 # Синтетика: открыты линии c и f — ключ `rook_open_files` в дебютных линиях не встречается.
 OPEN_FILES_FEN = "r3k2r/pp2p1pp/3p4/8/8/3P4/PP2P1PP/R3K2R w KQkq - 0 1"
+# Синтетика миттельшпиля: укрытие короля, 7-я горизонталь, конь на краю.
+MIDDLEGAME_FENS: dict[str, str] = {
+    # Ласкер, диаграмма 95: …g6 при слоне g7 — разменяйте его.
+    "fianchetto_defender": "r2q1rk1/pbppnpbp/1pn1p1p1/4P3/3P4/2NBBN2/PPP2PPP/R2Q1RK1 w - - 0 1",
+    # Та же позиция без чёрнопольного слона у чёрных: f6 и h6 — дыры.
+    "king_holes": "r2q1rk1/pbppnp1p/1pn1p1p1/4P3/3P4/2NB1N2/PPP2PPP/R2Q1RK1 w - - 0 1",
+    # Разносторонние рокировки, у чёрных …h6: зацепка для g2–g4.
+    "pawn_hook": "r1bq1rk1/pp2bpp1/2n1pn1p/3p4/3P4/2N1PN2/PPQ1BPPP/2KR3R w - - 0 1",
+    # Лазар — Ласкер (Париж, 1914), диаграмма 99: ладья по открытой линии b на b2.
+    "rook_to_seventh": "1r3rk1/p1p2ppp/2p5/8/8/5B2/P1P2PPP/R4RK1 b - - 0 1",
+    "rook_seventh": "6k1/pR3ppp/8/8/8/8/5PPP/6K1 w - - 0 1",
+    "knight_rim": "r1bqkb1r/pppp1ppp/5n2/4p3/n3P3/2N2N2/PPPP1PPP/R1BQKB1R b KQkq - 0 1",
+}
 
 # Параметры, где записаны клетки пешек (любого цвета).
 PAWN_PARAMS = {"pawn", "pawns", "target", "support", "base", "chain", "opp_chain", "d", "e"}
@@ -35,6 +49,8 @@ def boards() -> Iterator[tuple[str, chess.Board]]:
     for name in sorted(LINES):
         yield name, board_of(name)
     yield "open_files", chess.Board(OPEN_FILES_FEN)
+    for name, fen in MIDDLEGAME_FENS.items():
+        yield name, chess.Board(fen)
 
 
 ALL = list(boards())
@@ -102,6 +118,25 @@ def test_squares_in_text_come_from_facts(name: str, board: chess.Board, lang: La
         assert set(SQUARE.findall(text)) <= allowed, (idea, text)
 
 
+MIDDLEGAME_PARAMS = {"knight", "route", "squares"}
+
+
+def _check_middlegame_param(board: chess.Board, idea: Idea, name: str, value: str) -> None:
+    """Конь — на месте, маршрут — ходы коня по свободным полям, дыры — не пешки."""
+    color = color_of(idea.side)
+    if name == "knight":
+        assert board.piece_at(chess.parse_square(value)) == chess.Piece(chess.KNIGHT, color)
+    elif name == "route":
+        squares = [chess.parse_square(sq) for sq in value.split("–")]
+        assert board.piece_at(squares[0]) == chess.Piece(chess.KNIGHT, color), idea
+        for start, end in itertools.pairwise(squares):
+            assert end in chess.SquareSet(chess.BB_KNIGHT_ATTACKS[start]), idea
+        assert all(board.piece_at(sq) is None for sq in squares[1:]), idea
+    else:
+        for square in value.split(","):
+            assert board.piece_type_at(chess.parse_square(square)) != chess.PAWN, idea
+
+
 def _check_idea(board: chess.Board, idea: Idea) -> None:
     color = color_of(idea.side)
     for name, value in idea.params.items():
@@ -121,6 +156,8 @@ def _check_idea(board: chess.Board, idea: Idea) -> None:
             mover = as_mover(board, color)
             assert mover is not None, idea
             mover.parse_san(value)  # бросит исключение, если ход нелегален
+        elif name in MIDDLEGAME_PARAMS:
+            _check_middlegame_param(board, idea, name, value)
         elif name == "bishop":
             assert board.piece_type_at(chess.parse_square(value)) == chess.BISHOP, idea
         elif name == "pieces":
@@ -250,3 +287,58 @@ def test_start_position_is_quiet() -> None:
     assert ideas.breaks == ()
     assert ideas.weaknesses == ()
     assert ideas.open_files == ()
+
+
+def _keys(fen_name: str) -> dict[tuple[str, str], dict[str, str]]:
+    ideas = position_ideas(chess.Board(MIDDLEGAME_FENS[fen_name])).ideas
+    return {(i.side, i.key): i.params for i in ideas}
+
+
+def test_king_shelter() -> None:
+    assert _keys("fianchetto_defender")[("white", "trade_king_bishop")] == {
+        "bishop": "g7",
+        "squares": "f6,h6",
+    }
+    holes = _keys("king_holes")
+    assert holes[("white", "king_holes")] == {"pawn": "g6", "squares": "f6,h6"}
+    assert ("white", "trade_king_bishop") not in holes
+    assert _keys("pawn_hook")[("white", "pawn_hook")] == {"pawn": "h6", "move": "g2–g4"}
+    text = render(position_ideas(chess.Board(MIDDLEGAME_FENS["king_holes"])), "ru").ideas[0].text
+    assert "f6 и h6" in text
+
+
+def test_pawn_hook_needs_safe_own_king() -> None:
+    """Короли на одном фланге — штурм пешками ослабил бы своего короля: зацепки нет."""
+    same_wing = "r1bq1rk1/pp2bpp1/2n1pn1p/3p4/3P4/2N1PN2/PPQ1BPPP/R4RK1 w - - 0 1"
+    keys = {i.key for i in position_ideas(chess.Board(same_wing)).ideas}
+    assert "pawn_hook" not in keys
+
+
+def test_no_shelter_ideas_without_queen() -> None:
+    queenless = "r4rk1/pbppnpbp/1pn1p1p1/4P3/3P4/2NBBN2/PPP2PPP/R4RK1 w - - 0 1"
+    keys = {i.key for i in position_ideas(chess.Board(queenless)).ideas}
+    assert not keys & {"king_holes", "trade_king_bishop", "pawn_hook"}
+
+
+def test_rook_seventh() -> None:
+    assert _keys("rook_to_seventh")[("black", "rook_to_seventh")] == {"san": "Rb2"}
+    rendered = render(position_ideas(chess.Board(MIDDLEGAME_FENS["rook_to_seventh"])), "ru")
+    assert any("…Rb2" in r.text for r in rendered.ideas)
+    on7 = _keys("rook_seventh")
+    assert on7[("white", "rook_seventh")] == {"square": "b7"}
+    assert ("white", "rook_to_seventh") not in on7
+
+
+def test_rook_seventh_square_must_be_safe() -> None:
+    """Поле вторжения под боем фигуры соперника — не предлагаем."""
+    guarded = "1r3rk1/p1p2ppp/2p5/8/8/8/P1P2PPP/R1B2RK1 b - - 0 1"
+    keys = {i.key for i in position_ideas(chess.Board(guarded)).ideas}
+    assert "rook_to_seventh" not in keys
+
+
+def test_knight_rim_route() -> None:
+    assert _keys("knight_rim")[("black", "knight_rim")] == {"knight": "a4", "route": "a4–c5"}
+    taimanov = {
+        (i.side, i.key): i.params for i in position_ideas(board_of("taimanov_maroczy")).ideas
+    }
+    assert taimanov[("white", "knight_rim")]["route"].startswith("a3–")
