@@ -8,6 +8,7 @@ import { test } from "node:test";
 
 import {
   candidatesFrom,
+  clockBudgetMs,
   decideMove,
   lineCp,
   movePrior,
@@ -202,4 +203,12 @@ test("decideMove: взятие назад — быстро", async () => {
   const d = await decideMove(engine, { fen, historyUci: ["e2e4", "d7d5", "e4d5"] }, strengthFor(2800), seeded(2));
   assert.equal(d.uci, "d8d5");
   assert.ok(d.thinkMs <= 800, `${d.thinkMs}`);
+});
+
+test("clockBudgetMs: ~1/30 остатка плюс добавка, в цейтноте быстрее, не больше половины остатка", () => {
+  assert.equal(clockBudgetMs(60_000, 0), 2000);
+  assert.equal(clockBudgetMs(180_000, 2000), 7600);
+  assert.ok(clockBudgetMs(5_000, 0) < 500);
+  assert.equal(clockBudgetMs(150, 0), 100);
+  assert.ok(clockBudgetMs(1_000, 5_000) <= 500);
 });

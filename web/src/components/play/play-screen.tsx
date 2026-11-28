@@ -1,6 +1,6 @@
 "use client";
 
-// Страница /play: выбор бота и цвета → партия; «Новая партия» и «Другой бот».
+// Страница /play: выбор бота, цвета и контроля времени → партия; «Новая партия» и «Другой бот».
 // Последний выбор — в localStorage, идущая партия — в sessionStorage (переживает перезагрузку).
 import Link from "next/link";
 import { useState } from "react";
@@ -15,14 +15,17 @@ import { Board, NO_MARKS } from "../review/board";
 import { Button } from "../ui";
 import { BotAvatar, BotPicker, levelOf } from "./bot-picker";
 import { BotGame } from "./bot-game";
+import { NO_CLOCK, presetControl, TIME_PRESETS, type TimeClass } from "./clock";
 
 type ColorChoice = Color | "random";
-type Setup = { elo: number; color: ColorChoice };
-type Active = { id: string; elo: number; color: Color };
+/** `time` — id пресета из TIME_PRESETS («3+2») или NO_CLOCK. */
+type Setup = { elo: number; color: ColorChoice; time: string };
+type Active = { id: string; elo: number; color: Color; time: string };
 
 const SETUP_KEY = "chess-review:play:setup";
 const ACTIVE_KEY = "chess-review:play:active";
-const DEFAULT_SETUP: Setup = { elo: 1200, color: "white" };
+const DEFAULT_SETUP: Setup = { elo: 1200, color: "white", time: NO_CLOCK };
+const validTime = (time: unknown): string => (typeof time === "string" && presetControl(time) ? time : NO_CLOCK);
 const BOARD_WIDTH = { maxWidth: "min(100%, calc(100dvh - 8.5rem))" };
 
 function readSetup(): Setup {
@@ -31,6 +34,7 @@ function readSetup(): Setup {
     return {
       elo: saved && BOT_ELOS.includes(saved.elo as number) ? (saved.elo as number) : DEFAULT_SETUP.elo,
       color: saved?.color === "black" || saved?.color === "random" ? saved.color : "white",
+      time: validTime(saved?.time),
     };
   } catch {
     return DEFAULT_SETUP;
@@ -42,7 +46,7 @@ function readActive(): Active | null {
     const saved = JSON.parse(sessionStorage.getItem(ACTIVE_KEY) ?? "null") as Active | null;
     if (!saved || typeof saved.id !== "string" || !BOT_ELOS.includes(saved.elo)) return null;
     if (saved.color !== "white" && saved.color !== "black") return null;
-    return saved;
+    return { ...saved, time: validTime(saved.time) };
   } catch {
     return null;
   }
@@ -69,7 +73,12 @@ export function PlayScreen() {
 
   const start = (choice: Setup) => {
     const color: Color = choice.color === "random" ? (Math.random() < 0.5 ? "white" : "black") : choice.color;
-    const next = { id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, elo: choice.elo, color };
+    const next: Active = {
+      id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
+      elo: choice.elo,
+      color,
+      time: choice.time,
+    };
     setActive(next);
     store(() => sessionStorage, ACTIVE_KEY, next);
     window.scrollTo({ top: 0 });
@@ -88,6 +97,7 @@ export function PlayScreen() {
           key={active.id}
           elo={active.elo}
           color={active.color}
+          timeControl={presetControl(active.time)}
           storageKey={`play:${active.id}`}
           // Закончилась — после перезагрузки снова экран выбора, а не пустая партия.
           onFinished={(result) => {
@@ -97,7 +107,7 @@ export function PlayScreen() {
             // короткие (< 10 полуходов) не сохраняем.
             if (result.historyUci.length >= 10) void api.importPgn(result.pgn).catch(() => undefined);
           }}
-          onNewGame={() => start({ ...setup, elo: active.elo })}
+          onNewGame={() => start({ ...setup, elo: active.elo, time: active.time })}
           onChangeBot={toSetup}
         />
       </>
@@ -130,6 +140,7 @@ export function PlayScreen() {
 
         <div className="flex flex-col gap-3 p-4 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
           <EndgamesLink />
+          <TimePicker value={setup.time} onChange={(time) => updateSetup({ ...setup, time })} />
           <h2 className="text-sm font-bold text-soft">{t.play.setup.bot}</h2>
           <BotPicker value={setup.elo} onChange={(elo) => updateSetup({ ...setup, elo })} />
         </div>
@@ -154,6 +165,41 @@ export function PlayScreen() {
           </Button>
         </div>
       </section>
+    </div>
+  );
+}
+
+const TIME_GROUPS: TimeClass[] = ["bullet", "blitz", "rapid", "classical"];
+
+/** Контроль времени: «Без часов» и пресеты по классам (пуля, блиц, рапид, классика). */
+function TimePicker({ value, onChange }: { value: string; onChange: (time: string) => void }) {
+  const { t } = useI18n();
+  const option = (id: string, label: string) => (
+    <button
+      key={id}
+      type="button"
+      role="radio"
+      aria-checked={value === id}
+      onClick={() => onChange(id)}
+      className={`min-h-10 rounded-lg px-2 text-sm font-extrabold tabular-nums ${
+        value === id ? "bg-raised text-ink ring-2 ring-green ring-inset" : "bg-raised/60 text-soft hover:bg-raised hover:text-ink"
+      }`}
+    >
+      {label}
+    </button>
+  );
+  return (
+    <div className="flex flex-col gap-2">
+      <h2 className="text-sm font-bold text-soft">{t.play.setup.time}</h2>
+      <div role="radiogroup" aria-label={t.play.setup.time} className="flex flex-col gap-2">
+        <div className="grid grid-cols-1">{option(NO_CLOCK, t.play.setup.noClock)}</div>
+        {TIME_GROUPS.map((group) => (
+          <div key={group} className="grid grid-cols-[4.75rem_repeat(4,minmax(0,1fr))] items-center gap-1.5">
+            <span className="text-xs font-bold text-muted">{t.play.setup.timeGroups[group]}</span>
+            {TIME_PRESETS.filter((preset) => preset.group === group).map((preset) => option(preset.id, preset.id))}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

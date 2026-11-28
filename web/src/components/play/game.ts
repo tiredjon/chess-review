@@ -2,6 +2,7 @@
 import { Chess } from "chess.js";
 import { START_FEN, uciSquares } from "@/lib/chess";
 import type { Color } from "@/lib/types";
+import { clkComment, pgnTimeControl, type TimeControl } from "./clock";
 import type { GameEndReason, GameResult } from "./types";
 
 export type Replay = {
@@ -127,12 +128,20 @@ export type ResultInput = {
   headers?: Record<string, string>;
   /** Партия с позиции: в PGN — заголовки SetUp / FEN (chess.js ставит их сам). */
   startFen?: string;
+  /** Партия с часами: заголовок TimeControl и остаток после каждого хода ([%clk …]). */
+  timeControl?: TimeControl | null;
+  /** Остаток на часах сходившего после каждого полухода, мс (по индексу хода). */
+  clocks?: readonly number[];
 };
 
 export function buildResult(input: ResultInput): GameResult {
   const result: GameResult["result"] = input.winner === "white" ? "1-0" : input.winner === "black" ? "0-1" : "1/2-1/2";
   const board = new Chess(input.startFen ?? START_FEN);
-  for (const uci of input.moves) board.move(uciSquares(uci));
+  input.moves.forEach((uci, index) => {
+    board.move(uciSquares(uci));
+    const clock = input.timeControl ? input.clocks?.[index] : undefined;
+    if (clock !== undefined) board.setComment(clkComment(clock));
+  });
   const white = input.color === "white" ? input.you : input.botName;
   const black = input.color === "black" ? input.you : input.botName;
   const headers: Record<string, string> = {
@@ -144,6 +153,7 @@ export function buildResult(input: ResultInput): GameResult {
     Result: result,
     ...(input.color === "white" ? { BlackElo: String(input.elo) } : { WhiteElo: String(input.elo) }),
     Termination: input.reason,
+    ...(input.timeControl ? { TimeControl: pgnTimeControl(input.timeControl) } : {}),
     ...input.headers,
   };
   headers.Result = result;
@@ -183,6 +193,12 @@ export function material(fen: string, startFen?: string): Record<Color, { captur
     white: { captured: captured("b"), advantage: Math.max(0, diff) },
     black: { captured: captured("w"), advantage: Math.max(0, -diff) },
   };
+}
+
+/** Может ли сторона в принципе поставить мат (для флага): пешка, ладья, ферзь или две лёгкие. */
+export function canMate(fen: string, side: Color): boolean {
+  const counts = countPieces(fen)[side === "white" ? "w" : "b"];
+  return counts.p + counts.r + counts.q > 0 || counts.n + counts.b >= 2;
 }
 
 /** Клетка короля под шахом в позиции или null. */

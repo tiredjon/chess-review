@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import type { Arrow } from "react-chessboard";
 import type { Color } from "@/lib/types";
+import type { TimeControl } from "./clock";
 
 /**
  * «Книга» соперника: ход бота по заданной линии (курс) или по таблицам (эндшпиль). Получает ходы
@@ -30,7 +31,9 @@ export type GameEndReason =
   | "repetition"
   | "fifty_moves"
   | "insufficient_material"
-  | "resign";
+  | "resign"
+  /** Флаг упал (партия с контролем времени); ничья, если у соперника нечем поставить мат. */
+  | "timeout";
 
 export type GameResult = {
   /** Результат в нотации PGN. */
@@ -61,6 +64,11 @@ export type BotGameProps = {
   focus?: { ply: number; key: number } | null;
   /** Прятать «Разобрать партию» в итоге (партия не из стартовой позиции и т. п.). */
   hideAnalyze?: boolean;
+  /**
+   * Контроль времени: у обеих сторон часы, флаг — поражение (ничья, если у соперника не хватает
+   * материала на мат), бот укладывает раздумье в свой остаток. null / не задан — без часов.
+   */
+  timeControl?: TimeControl | null;
   /** Рейтинг бота (один из BOT_ELOS). */
   elo: number;
   /** Цвет человека. */
