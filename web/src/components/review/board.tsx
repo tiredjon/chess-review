@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Chessboard, type Arrow, type SquareRenderer } from "react-chessboard";
 import type { ClassKey } from "@/lib/classes";
 import type { Color } from "@/lib/types";
@@ -44,6 +44,19 @@ export function Board({ fen, orientation, marks, interactive = false, onMove, on
     return () => clearTimeout(timer);
   }, [key]);
 
+  // react-chessboard берёт ключ стрелки из клеток «откуда-куда», поэтому две стрелки на одну
+  // пару клеток (например, лучший ход и угроза e4→c5) дают ошибку дублирующихся ключей.
+  // Оставляем первую: лучший ход стоит в массиве раньше угроз.
+  const shownArrows = useMemo(() => {
+    const seen = new Set<string>();
+    return marks.arrows.filter((a) => {
+      const id = `${a.startSquare}-${a.endSquare}`;
+      if (seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    });
+  }, [marks.arrows]);
+
   // squareRenderer заменяет у react-chessboard div со squareStyles — подсветка здесь же.
   const squareRenderer = useCallback<SquareRenderer>(
     ({ square, children }) => (
@@ -80,7 +93,7 @@ export function Board({ fen, orientation, marks, interactive = false, onMove, on
           id: "review-board",
           position: fen,
           boardOrientation: orientation,
-          arrows: arrowsKey === key ? marks.arrows : [],
+          arrows: arrowsKey === key ? shownArrows : [],
           squareRenderer,
           allowDragging: interactive,
           // Клик по фигуре — выбор (ход кликами), а не перетаскивание на ту же клетку.
