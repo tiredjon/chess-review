@@ -575,6 +575,23 @@ IDEAS: dict[str, T] = {
         "en": "Kings on opposite wings: storm the {wing} with pawns, where the enemy king "
         "is — speed decides.",
     },
+    "king_holes": {
+        "ru": "После {pawn} поля {squares} у короля соперника пешками не защитить, а слона "
+        "этого цвета у него нет: ведите туда ферзя и коня.",
+        "en": "After {pawn} the squares {squares} next to the enemy king can't be covered by "
+        "pawns, and the bishop of that colour is gone: bring your queen and a knight there.",
+    },
+    "trade_king_bishop": {
+        "ru": "Разменяйте слона {bishop} — главного защитника короля: без него поля {squares} "
+        "станут дырами.",
+        "en": "Trade off the {bishop} bishop, the king's key defender: without it {squares} "
+        "become holes.",
+    },
+    "pawn_hook": {
+        "ru": "Пешка {pawn} — зацепка для штурма: наступайте {move} и вскрывайте линию к королю.",
+        "en": "The {pawn} pawn is a hook for a pawn storm: advance {move} and open a file "
+        "towards the king.",
+    },
     "passed_pawn": {
         "ru": "Проходная пешка {pawn}: поддерживайте её фигурами и продвигайте.",
         "en": "Passed pawn on {pawn}: support it with pieces and push it.",
@@ -621,6 +638,24 @@ IDEAS: dict[str, T] = {
     "target_doubled": {
         "ru": "Сдвоенные пешки {pawns} малоподвижны — атакуйте их фигурами.",
         "en": "The doubled pawns {pawns} are inflexible — attack them with pieces.",
+    },
+    "knight_rim": {
+        "ru": "Конь {knight} на краю доски контролирует мало полей — переведите его в игру: "
+        "{route}.",
+        "en": "The knight on {knight} controls few squares on the rim — bring it into play: "
+        "{route}.",
+    },
+    "rook_seventh": {
+        "ru": "Ладья {square} вторглась на предпоследнюю горизонталь соперника: бейте пешки "
+        "сбоку, прижимайте короля и подключайте вторую ладью.",
+        "en": "The rook on {square} has reached the opponent's second rank: pick off pawns "
+        "from the side, pin the king back and bring the other rook.",
+    },
+    "rook_to_seventh": {
+        "ru": "Вторжение {move}: ладья на предпоследней горизонтали соперника бьёт пешки "
+        "сбоку и прижимает короля.",
+        "en": "Invade with {move}: a rook on the opponent's second rank attacks pawns from "
+        "the side and confines the king.",
     },
     "rook_open_file": {
         "ru": "Займите ладьёй открытую линию {file}.",

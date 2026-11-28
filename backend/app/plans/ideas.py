@@ -4,7 +4,8 @@
 Сначала идут планы распознанных структур (для первых `MAX_STRUCTURES`), у каждой — план
 владельца структуры раньше плана соперника: по первой идее с ключом `«структура».…`
 шаблоны узнают владельца. Дальше — общие идеи из фактов (разносторонние рокировки,
-проходная, подрыв цепи, прорывы, форпосты, слабости, открытые линии, слоны). Общая идея
+укрытие короля, проходная, подрыв цепи, прорывы, форпосты, конь на краю, 7-я
+горизонталь, слабости, открытые линии, слоны). Общая идея
 пропускается, если её клетку уже разбирает план структуры. На сторону — не больше
 `MAX_IDEAS_PER_SIDE` пунктов, без воды.
 
@@ -17,8 +18,17 @@ from dataclasses import dataclass, field
 
 import chess
 
-from app.plans.breaks import pawn_breaks, side_name
-from app.plans.pawns import PawnFacts, PawnView, is_dark, is_fixed, pawn_facts, rel_rank
+from app.plans.breaks import as_mover, pawn_breaks, side_name
+from app.plans.pawns import (
+    PawnFacts,
+    PawnView,
+    is_dark,
+    is_fixed,
+    pawn_can_attack,
+    pawn_facts,
+    rel_rank,
+    square_at,
+)
 from app.plans.structures import Match, StructureId, recognize
 from app.plans.types import Idea, Outpost, PawnBreak, PositionIdeas, Weakness
 
@@ -430,6 +440,78 @@ def _opposite_castling(ctx: _Context) -> None:
         ctx.add("opposite_castling", color, 90, {"wing": wing})
 
 
+# Файлы укрытия короля по флангу: (пешка фианкетто, соседние вертикали).
+_SHELTER_FILES = {"kingside": (6, (5, 7)), "queenside": (1, (0, 2))}
+
+
+def _king_shelter(ctx: _Context) -> None:
+    """Ослабленное укрытие рокированного короля (Ласкер, «Chess Strategy», гл. VI):
+    пешка g3/g6 оставляет поля f3/h3 (f6/h6) без защиты пешек — дыры, если слона их цвета
+    нет; если он ещё стоит на месте фианкетто — разменяйте его. Пешка h3/h6 — «зацепка»
+    для пешечного штурма, если свой король на другом фланге. Без ферзя у атакующего атаки
+    на короля нет."""
+    board = ctx.board
+    for defender in chess.COLORS:
+        attacker = not defender
+        wing = _wing_of_king(board, defender)
+        if wing is None or not board.pieces(chess.QUEEN, attacker):
+            continue
+        g_file, sides = _SHELTER_FILES[wing]
+        own = PawnView(board, defender)
+        if own.ranks(g_file) == [3] and all(own.ranks(f) == [2] for f in sides):
+            squares = [own.square(f, 3) for f in sides]
+            if not any(
+                board.piece_type_at(s) == chess.PAWN or pawn_can_attack(board, defender, s)
+                for s in squares
+            ):
+                dark = is_dark(squares[0])
+                guards = [s for s in board.pieces(chess.BISHOP, defender) if is_dark(s) == dark]
+                pawn = _sq(own.square(g_file, 3))
+                holes = _join(squares)
+                if not guards:
+                    ctx.add(
+                        "king_holes",
+                        attacker,
+                        78,
+                        {"pawn": pawn, "squares": holes},
+                        covers={_sq(s) for s in squares},
+                    )
+                elif own.square(g_file, 2) in guards and any(
+                    is_dark(s) == dark for s in board.pieces(chess.BISHOP, attacker)
+                ):
+                    # Ниже прорывов: в дебютных структурах (староиндийская, Бенони) это
+                    # побочный план, главный — у структуры.
+                    ctx.add(
+                        "trade_king_bishop",
+                        attacker,
+                        58,
+                        {"bishop": _sq(own.square(g_file, 2)), "squares": holes},
+                    )
+        h_file = sides[1] if wing == "kingside" else sides[0]
+        if own.ranks(h_file) != [3] or own.ranks(g_file) != [2]:
+            continue
+        if _wing_of_king(board, attacker) == wing:
+            continue  # штурм пешками перед своим королём — слишком рискованно
+        theirs = PawnView(board, attacker)
+        ranks = theirs.ranks(g_file)
+        if not ranks or ranks[0] > 3:
+            continue
+        start = theirs.square(g_file, ranks[0])
+        dest = theirs.square(g_file, 4)
+        path = [theirs.square(g_file, r) for r in range(ranks[0] + 1, 5)]
+        if any(board.piece_at(s) is not None for s in path):
+            continue
+        ctx.add(
+            "pawn_hook",
+            attacker,
+            74,
+            {
+                "pawn": _sq(own.square(h_file, 3)),
+                **_move_param(ctx.push_break(attacker, start, dest)),
+            },
+        )
+
+
 def _passed(ctx: _Context) -> None:
     for color in chess.COLORS:
         pawns = sorted(ctx.facts.side(color).passed, key=lambda s: -rel_rank(color, s))
@@ -511,6 +593,83 @@ def _outposts(ctx: _Context) -> None:
         )
 
 
+def _knight_hops(square: chess.Square) -> chess.SquareSet:
+    return chess.SquareSet(chess.BB_KNIGHT_ATTACKS[square])
+
+
+def _knight_square_safe(board: chess.Board, knight: chess.Square, square: chess.Square) -> bool:
+    """Поле для коня `knight`: свободно, не на краю, не ниже своей 3-й горизонтали, пешка
+    соперника его сейчас не бьёт, а фигуры соперника бьют не больше, чем защищают свои
+    (сам конь себя не защищает)."""
+    color = board.color_at(knight)
+    assert color is not None
+    enemy = not color
+    if board.piece_at(square) is not None or chess.square_file(square) in (0, 7):
+        return False
+    if rel_rank(color, square) < 3:
+        return False
+    if board.attackers_mask(enemy, square) & board.pieces_mask(chess.PAWN, enemy):
+        return False
+    defenders = board.attackers(color, square) - chess.SquareSet([knight])
+    return len(board.attackers(enemy, square)) <= len(defenders)
+
+
+def _knight_route(ctx: _Context, knight: chess.Square) -> tuple[chess.Square, ...] | None:
+    """Лучший маршрут коня в один-два хода (через свободное поле): форпост, короче,
+    ближе к центру, дальше вперёд (до 5-й горизонтали)."""
+    board = ctx.board
+    color = board.color_at(knight)
+    assert color is not None
+    outposts = set(ctx.facts.side(color).outposts)
+    routes: list[tuple[chess.Square, ...]] = []
+    for hop in _knight_hops(knight):
+        if _knight_square_safe(board, knight, hop):
+            routes.append((hop,))
+        if board.piece_at(hop) is None:
+            routes += [
+                (hop, dest)
+                for dest in _knight_hops(hop)
+                if _knight_square_safe(board, knight, dest)
+            ]
+    if not routes:
+        return None
+
+    def score(route: tuple[chess.Square, ...]) -> tuple[int, int, float, int]:
+        dest = route[-1]
+        return (
+            0 if dest in outposts else 1,
+            len(route),
+            abs(3.5 - chess.square_file(dest)),
+            -min(rel_rank(color, dest), 5),
+        )
+
+    return min(routes, key=score)
+
+
+def _knight_rim(ctx: _Context) -> None:
+    """Конь на краю доски (вертикали a/h, 2–6-я горизонтали) — худшая фигура: переведите
+    его в игру (Wikibooks «Minor pieces»: сила коня — от его горизонтали; Капабланка,
+    §24: фигура вне игры). Маршрут — `_knight_route`."""
+    board = ctx.board
+    for color in chess.COLORS:
+        for knight in sorted(board.pieces(chess.KNIGHT, color)):
+            if chess.square_file(knight) not in (0, 7) or not 2 <= rel_rank(color, knight) <= 6:
+                continue
+            if ctx.covered(_sq(knight), color):
+                continue
+            route = _knight_route(ctx, knight)
+            if route is None:
+                continue
+            ctx.add(
+                "knight_rim",
+                color,
+                46,
+                {"knight": _sq(knight), "route": "–".join(_sq(s) for s in (knight, *route))},
+                covers={_sq(knight)},
+            )
+            break
+
+
 def _weakness_targets(ctx: _Context) -> None:
     for color in chess.COLORS:
         theirs = ctx.facts.side(not color)
@@ -541,6 +700,47 @@ def _weakness_targets(ctx: _Context) -> None:
                     covers={_sq(s) for s in group},
                 )
                 break
+
+
+def _seventh(ctx: _Context) -> None:
+    """Ладья на предпоследней горизонтали соперника (7-я у белых, 2-я у чёрных): бьёт
+    пешки сбоку и прижимает короля. Вторжение — по открытой линии на свободное поле, которое
+    соперник не бьёт (Ласкер, партия Лазар — Ласкер; Wikibooks «Open lines»). Нужны цели:
+    король соперника на последней горизонтали или хотя бы две пешки на седьмой."""
+    board = ctx.board
+    for color in chess.COLORS:
+        rooks = board.pieces(chess.ROOK, color)
+        if not rooks:
+            continue
+        enemy = not color
+        king = board.king(enemy)
+        pawns = [s for s in board.pieces(chess.PAWN, enemy) if rel_rank(color, s) == 7]
+        if len(pawns) < 2 and (king is None or rel_rank(color, king) != 8):
+            continue
+        placed = [s for s in rooks if rel_rank(color, s) == 7]
+        if placed:
+            square = _sq(placed[0])
+            ctx.add("rook_seventh", color, 75, {"square": square}, covers={square[0]})
+            continue
+        mover = as_mover(board, color)
+        if mover is None:
+            continue
+        for rook in sorted(rooks, key=lambda s: abs(3.5 - chess.square_file(s))):
+            file = chess.square_file(rook)
+            if file not in ctx.facts.open_files or ctx.covered(chess.FILE_NAMES[file], color):
+                continue
+            target = square_at(color, file, 7)
+            move = chess.Move(rook, target)
+            if board.attackers_mask(enemy, target) or not mover.is_legal(move):
+                continue
+            ctx.add(
+                "rook_to_seventh",
+                color,
+                72,
+                {"san": mover.san(move)},
+                covers={chess.FILE_NAMES[file]},
+            )
+            break
 
 
 def _files(ctx: _Context) -> None:
@@ -679,11 +879,14 @@ def position_ideas(board: chess.Board) -> PositionIdeas:
     for index, match in enumerate(matches[:MAX_STRUCTURES]):
         _structure_ideas(ctx, match, 200 - 10 * index)
     _opposite_castling(ctx)
+    _king_shelter(ctx)
     _passed(ctx)
     _chain_base(ctx)
     _weakness_targets(ctx)
     _breaks(ctx)
     _outposts(ctx)
+    _knight_rim(ctx)
+    _seventh(ctx)
     _files(ctx)
     _bishops(ctx)
     _majority(ctx)
