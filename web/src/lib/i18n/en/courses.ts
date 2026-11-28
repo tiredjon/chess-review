@@ -106,6 +106,7 @@ export const courses: Dict["courses"] = {
     leaf: "The course ends here — see the master games for what comes next.",
   },
   ideas: {
+    theory: "Theory →",
     title: "Position ideas",
     fromNode: (move: string) => `From the position after ${move} — the structure hasn't changed`,
     jump: "Go there",

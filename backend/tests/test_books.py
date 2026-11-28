@@ -11,6 +11,8 @@ from app.books.build import OUTPUT, build, render
 from app.books.courses import MAX_BOOK_GAMES, MIN_PLY, book_games, book_model_games
 from app.books.descriptive import NotationError, Tracker, looks_like_move
 from app.books.extract import RawGame, capablanca_games, convert, lasker_games
+from app.books.lessons import BOOK_LESSONS, PHASE, RELATED, book_positions
+from app.coach.lessons import LESSONS
 from app.courses.types import CourseNode, CourseTree
 
 
@@ -323,3 +325,52 @@ def test_book_model_games_skip_short_lines() -> None:
     """Через «1. e4 c6 2. d4 d5» проходит много партий — до `MIN_PLY` не образец."""
     assert book_model_games(_tree("e4 c6 d4 d5")) == []
     assert book_model_games(_tree("a3 h6 b3 g6 c3 f6 d3 e6")) == []
+
+
+# --- статьи тренера по книгам ---
+
+
+def test_book_lessons_positions() -> None:
+    """У каждой статьи 3–4 позиции из партий книги, к каждой — комментарий автора."""
+    for lesson in BOOK_LESSONS:
+        assert LESSONS[lesson] == "book"
+        assert lesson in PHASE
+        positions = book_positions(lesson)
+        assert 3 <= len(positions) <= 4, lesson
+        for position in positions:
+            board = chess.Board(position.fen)
+            assert board.is_valid()
+            assert position.comment, (lesson, position.game.id, position.ply)
+            assert position.game.source == "book"
+            # Полуход и позиция согласованы с партией.
+            game = chess.pgn.read_game(io.StringIO(position.game.pgn))
+            assert game is not None
+            replay = game.board()
+            for move in list(game.mainline_moves())[: position.ply]:
+                replay.push(move)
+            assert replay.fen() == position.fen
+    assert book_positions("fork") == ()
+
+
+def test_book_lessons_related() -> None:
+    linked = {key for keys in RELATED.values() for key in keys}
+    assert linked == set(BOOK_LESSONS)
+    assert set(RELATED) <= set(LESSONS)
+
+
+def test_idea_lessons_on_web() -> None:
+    """`IDEA_LESSONS` на фронте: ключи — идеи позиции, значения — статьи по книгам."""
+    import re  # noqa: PLC0415
+    from pathlib import Path  # noqa: PLC0415
+
+    from app.plans.templates import IDEAS  # noqa: PLC0415
+
+    index = Path(__file__).resolve().parents[2] / "web/src/lib/coach-lessons/index.ts"
+    text = index.read_text()
+    block = text[text.index("IDEA_LESSONS") :]
+    block = block[: block.index("};")]
+    pairs = re.findall(r"^\s+(\w+): \"(\w+)\",$", block, flags=re.MULTILINE)
+    assert len(pairs) >= 10
+    for idea, lesson in pairs:
+        assert idea in IDEAS, idea
+        assert lesson in BOOK_LESSONS, lesson

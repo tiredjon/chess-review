@@ -7,6 +7,7 @@ import type { Lesson } from "@/lib/coach-api";
 import { lessonText } from "@/lib/coach-lessons";
 import { useI18n } from "@/lib/i18n/use-i18n";
 import { ExampleBoard } from "../insights/example-board";
+import { BookPositions } from "./book-positions";
 import { TrainButton } from "../insights/train-button";
 import { Button, ErrorText, Panel } from "../ui";
 import { BlockBody, Empty } from "./block";
@@ -64,6 +65,14 @@ function Body({ lessonKey, lesson, onRead }: { lessonKey: string; lesson: Lesson
             <h1 className="text-2xl font-extrabold leading-tight break-words sm:text-3xl">{text?.title ?? c.placeholderTitle}</h1>
             {text ? <p className="max-w-3xl text-lg text-soft">{text.summary}</p> : <p className="max-w-3xl text-soft">{c.placeholderText}</p>}
           </header>
+          {text?.source?.quote && (
+            <figure className="max-w-3xl border-l-4 border-green/60 pl-4">
+              <blockquote lang="en" className="text-lg font-semibold italic">
+                “{text.source.quote.text}”
+              </blockquote>
+              <figcaption className="mt-1 text-sm text-muted">— {text.source.quote.author}</figcaption>
+            </figure>
+          )}
           {text?.sections.map((section) => (
             <section key={section.heading} className="flex max-w-3xl flex-col gap-1.5">
               <h2 className="text-lg font-extrabold">{section.heading}</h2>
@@ -74,6 +83,11 @@ function Body({ lessonKey, lesson, onRead }: { lessonKey: string; lesson: Lesson
               ))}
             </section>
           ))}
+          {text?.source && (
+            <p className="max-w-3xl text-sm text-muted">
+              <span className="font-bold">{c.source}:</span> {text.source.ref}
+            </p>
+          )}
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
             {lesson.train && <TrainButton finding={trainFinding(lesson.kind === "motif" ? "motif" : "metric", lessonKey, lesson.train)} />}
             {lesson.read ? (
@@ -88,7 +102,16 @@ function Body({ lessonKey, lesson, onRead }: { lessonKey: string; lesson: Lesson
         </article>
       </Panel>
 
-      <Panel title={c.examplesTitle}>
+      {lesson.positions.length > 0 && (
+        <Panel title={c.bookPositions}>
+          <p className="mb-3 text-sm text-muted">{c.bookPositionsHint}</p>
+          <BookPositions positions={lesson.positions} />
+        </Panel>
+      )}
+
+      {lesson.related.length > 0 && <Related keys={lesson.related} />}
+
+      <Panel title={lesson.kind === "book" ? c.examplesPhase : c.examplesTitle}>
         {lesson.examples.length === 0 ? (
           <p className="text-soft">{c.noExamples}</p>
         ) : (
@@ -102,5 +125,32 @@ function Body({ lessonKey, lesson, onRead }: { lessonKey: string; lesson: Lesson
         )}
       </Panel>
     </div>
+  );
+}
+
+/** «Теория из книг»: статьи по книгам к уроку фазы или навыка. */
+function Related({ keys }: { keys: string[] }) {
+  const { t, lang } = useI18n();
+  const c = t.coach.lesson;
+  return (
+    <Panel title={c.related}>
+      <p className="mb-3 text-sm text-muted">{c.relatedHint}</p>
+      <ul className="grid gap-2 sm:grid-cols-2">
+        {keys.map((key) => {
+          const text = lessonText(lang, key);
+          return (
+            <li key={key}>
+              <Link
+                href={`/coach/lessons/${encodeURIComponent(key)}`}
+                className="flex h-full flex-col gap-1 rounded-lg bg-raised/60 p-3 hover:bg-raised"
+              >
+                <span className="font-extrabold">{text?.title ?? key}</span>
+                {text && <span className="text-sm leading-snug text-soft">{text.summary}</span>}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </Panel>
   );
 }

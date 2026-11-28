@@ -365,5 +365,9 @@ def test_every_lesson_has_ru_and_en_text() -> None:
     root = Path(__file__).resolve().parents[2] / "web" / "src" / "lib" / "coach-lessons"
     for lang in ("ru", "en"):
         text = (root / f"{lang}.ts").read_text()
-        missing = [key for key in LESSONS if f"  {key}: lesson(" not in text]
+        missing = [
+            key
+            for key in LESSONS
+            if f"  {key}: lesson(" not in text and f"  {key}: book(" not in text
+        ]
         assert missing == [], lang
