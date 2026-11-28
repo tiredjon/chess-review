@@ -14,7 +14,7 @@ from sqlalchemy import func, select, text
 from app.core.config import Settings
 from app.core.rates import Rate
 from app.courses.builder import course_key, parse_line
-from app.courses.types import CourseTree
+from app.courses.types import CourseTree, ModelGame
 from app.db.models import Course, CourseStatus, TrainerCard, User
 from app.db.session import Database
 from app.workers import courses as course_worker
@@ -250,6 +250,45 @@ async def test_list_get_and_build(cclient: AsyncClient, cdb: Database, settings:
     assert english["ideas_text"].keys() == texts_ru.keys()
     assert english["ideas_text"] != texts_ru
     assert (await cclient.get(f"{API}/{second['id']}", params={"lang": "de"})).status_code == 422
+
+
+async def test_book_games_added_on_read(
+    cclient: AsyncClient, cdb: Database, settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Партии книг не хранятся в дереве: API добавляет их при каждой выдаче курса
+    (и выбрасывает книжные, если бы они оказались в сохранённом дереве)."""
+    course_id = (await create(cclient)).json()["id"]
+    assert await course_worker.build_course(ctx(settings, cdb), course_id) == "ready"
+    async with cdb.sessionmaker() as session:
+        course = await session.get(Course, uuid.UUID(course_id))
+        assert course is not None
+        assert course.tree is not None
+        stored = CourseTree.model_validate(course.tree)
+    assert all(g.source == "masters" for g in stored.model_games)
+    book = ModelGame(
+        id="book:lasker-1",
+        node_id=stored.line_end,
+        white="Tartakower",
+        black="Burn",
+        result="0-1",
+        pgn="1. e4 e5 *",
+        source="book",
+        annotator="Edward Lasker",
+        book="Chess Strategy (1915)",
+    )
+    seen: list[CourseTree] = []
+
+    def fake(tree: CourseTree) -> list[ModelGame]:
+        seen.append(tree)
+        return [book]
+
+    monkeypatch.setattr("app.api.courses.book_model_games", fake)
+    for _ in range(2):
+        games = (await cclient.get(f"{API}/{course_id}")).json()["tree"]["model_games"]
+        assert [g["id"] for g in games] == [*(g.id for g in stored.model_games), "book:lasker-1"]
+    assert games[-1]["annotator"] == "Edward Lasker"
+    assert games[-1]["book"] == "Chess Strategy (1915)"
+    assert len(seen) == 2
 
 
 async def test_default_lang_is_users(

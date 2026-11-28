@@ -19,6 +19,7 @@ from sqlalchemy.dialects.postgresql import insert
 from app.api.deps import ArqDep, CurrentUser, SessionDep
 from app.api.errors import ApiError, ErrorCode
 from app.api.ratelimit import UserLimiterDep
+from app.books.courses import book_model_games
 from app.courses.builder import LineError, course_key, parse_line
 from app.courses.catalog import Catalog, catalog_payload, line_opening, line_pgn, line_san
 from app.courses.types import BUILDER_VERSION, CourseTree
@@ -252,6 +253,12 @@ async def get_course(
             tree = CourseTree.model_validate(course.tree)
         except ValidationError:
             log.exception("course.tree_invalid", course_id=str(course.id))
+    if tree is not None:
+        # Партии из книг — по позициям дерева, без пересборки курса.
+        tree.model_games = [
+            *(g for g in tree.model_games if g.source != "book"),
+            *book_model_games(tree),
+        ]
     ideas_text = (
         {node.id: render(node.ideas, chosen) for node in tree.nodes if node.ideas is not None}
         if tree is not None

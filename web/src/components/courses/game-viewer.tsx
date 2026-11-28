@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { pliesFromPgn, uciSquares } from "@/lib/chess";
+import { commentsFromPgn, pliesFromPgn, uciSquares } from "@/lib/chess";
 import type { ModelGame } from "@/lib/courses-api";
 import { useI18n } from "@/lib/i18n/use-i18n";
 import { playMove, preloadSounds } from "@/lib/sounds";
@@ -30,6 +30,7 @@ export function GameViewer({
   const { t } = useI18n();
   const l = t.courses.games;
   const { plies, startFen } = useMemo(() => pliesFromPgn(game.pgn), [game.pgn]);
+  const comments = useMemo(() => commentsFromPgn(game.pgn), [game.pgn]);
   const anchor = Math.min(startPly, plies.length);
   const [cursor, setCursor] = useState(anchor);
   const [playing, setPlaying] = useState(false);
@@ -156,6 +157,16 @@ export function GameViewer({
         {button(l.forward, cursor >= plies.length, () => go(cursor + 1), "M9 6l6 6-6 6")}
         {button(l.toEnd, cursor >= plies.length, () => go(plies.length), "M6 6l6 6-6 6M17 6v12")}
       </div>
+      {game.source === "book" && (
+        <div aria-live="polite" className="rounded-xl bg-panel p-3">
+          {game.annotator && game.book && (
+            <p className="text-xs font-bold text-muted">{l.commentary(game.annotator, game.book)}</p>
+          )}
+          <p lang="en" className="mt-1 text-sm leading-relaxed text-soft">
+            {comments.get(fen) ?? l.noComment}
+          </p>
+        </div>
+      )}
       {anchor > 0 && cursor !== anchor && (
         <button type="button" onClick={() => go(anchor)} className="self-start text-xs font-bold text-green hover:underline">
           {l.fromPosition}

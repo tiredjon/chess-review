@@ -262,6 +262,11 @@ function GameRow({ game, onPlay }: { game: ModelGame; onPlay: (game: ModelGame) 
       <span className="flex shrink-0 flex-col items-end gap-0.5">
         <span className="rounded bg-sunken px-1.5 py-0.5 text-xs font-extrabold tabular-nums">{result}</span>
         {game.year && <span className="text-[11px] text-muted">{game.year}</span>}
+        {game.source === "book" && (
+          <span title={game.book ?? undefined}>
+            <Tag tone="amber">{t.courses.games.fromBook}</Tag>
+          </span>
+        )}
       </span>
       <span className="shrink-0 rounded-md bg-green px-2.5 py-1.5 text-xs font-bold text-white shadow-[0_2px_0_0_var(--green-edge)]">
         {t.courses.games.play}

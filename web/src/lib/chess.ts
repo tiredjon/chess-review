@@ -70,6 +70,22 @@ export function pliesFromPgn(pgn: string): { plies: Ply[]; startFen: string } {
   return { plies, startFen: history[0]?.before ?? START_FEN };
 }
 
+/** Комментарии PGN по позиции после хода (FEN целиком); пустые — пропускаются. */
+export function commentsFromPgn(pgn: string): Map<string, string> {
+  const board = new Chess();
+  try {
+    board.loadPgn(pgn);
+  } catch {
+    return new Map();
+  }
+  return new Map(
+    board
+      .getComments()
+      .map(({ fen, comment }) => [fen, comment.trim()] as const)
+      .filter(([, comment]) => comment !== ""),
+  );
+}
+
 /** Позиции линии: [0] — исходная, [i] — после i-го хода; обрывается на нелегальном ходе. */
 export function lineFens(fen: string, line: LineMove[]): string[] {
   const fens = [fen];

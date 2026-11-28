@@ -148,6 +148,9 @@ export const courses: Dict["courses"] = {
     autoplay: "Play",
     pause: "Pause",
     board: "Game board",
+    fromBook: "From a book",
+    commentary: (author: string, book: string) => `Commentary: ${author}, ${book}`,
+    noComment: "No comment on this move.",
   },
   play: {
     button: "Play a bot",
