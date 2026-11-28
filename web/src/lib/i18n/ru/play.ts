@@ -12,6 +12,9 @@ export const play = {
     color: "Играть за",
     colors: { white: "Белые", black: "Чёрные", random: "Случайно" },
     start: "Играть",
+    time: "Контроль времени",
+    noClock: "Без часов",
+    timeGroups: { bullet: "Пуля", blitz: "Блиц", rapid: "Рапид", classical: "Классика" },
   },
   // Уровни ботов: подпись под рейтингом
   levels: {
@@ -25,6 +28,7 @@ export const play = {
   pickerLabel: "Выбор бота",
   // Партия
   thinking: "думает…",
+  clock: (time: string) => `Осталось ${time}`,
   loadingEngine: "Загружаю движок…",
   engineError: "Не удалось запустить движок Stockfish в браузере.",
   engineErrorHint: "Проверьте соединение и попробуйте снова.",
@@ -62,6 +66,7 @@ export const play = {
       fifty_moves: "Правило 50 ходов",
       insufficient_material: "Недостаточно материала",
       resign: "Сдача",
+      timeout: "По времени",
     },
   },
   gameOver: "Партия окончена",

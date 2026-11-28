@@ -239,7 +239,10 @@ function Attempt({
       .catch((error: unknown) => setSaveError(error instanceof ApiError ? error.message : g.saveError));
   }, [finished, goal, success, plies, target.source, target.key, onRecorded, g.saveError]);
 
-  const onFinished = useCallback((result: GameResult) => setEnd({ reason: result.reason, winner: result.winner }), []);
+  // Тренажёр играет без часов — флага («timeout») здесь не бывает.
+  const onFinished = useCallback((result: GameResult) => {
+    if (result.reason !== "timeout") setEnd({ reason: result.reason, winner: result.winner });
+  }, []);
 
   const book = useCallback(
     async (moves: readonly string[]) => {

@@ -17,6 +17,8 @@ export type BotMoveRequest = {
   /** Ходы партии с начальной позиции (UCI) — для правила трёх повторений и «книги». */
   historyUci: readonly string[];
   signal?: AbortSignal;
+  /** Часы бота в партии с контролем времени: раздумье и поиск укладываются в остаток. */
+  clock?: { remainingMs: number; incrementMs: number };
 };
 
 export type BotMove = {

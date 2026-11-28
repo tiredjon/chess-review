@@ -9,6 +9,7 @@ import { PieceImage } from "../board-theme";
 import { PlayerAvatar } from "../player-avatar";
 import { Button } from "../ui";
 import { BotAvatar } from "./bot-picker";
+import { formatClock } from "./clock";
 import type { PieceKind } from "./game";
 import type { GameResult } from "./types";
 
@@ -20,6 +21,7 @@ export function PlayerBar({
   captured,
   advantage,
   status,
+  clock,
 }: {
   name: string;
   /** Рейтинг бота; у человека — нет. */
@@ -28,6 +30,8 @@ export function PlayerBar({
   captured: PieceKind[];
   advantage: number;
   status?: ReactNode;
+  /** Часы стороны (партия с контролем времени). */
+  clock?: ReactNode;
 }) {
   // Взятые фигуры — соперника: у белых чёрные и наоборот.
   const prefix = color === "white" ? "b" : "w";
@@ -52,7 +56,23 @@ export function PlayerBar({
         </div>
       </div>
       {status}
+      {clock}
     </div>
+  );
+}
+
+/** Часы стороны: идут — светлые, мало времени (< 10 % базы, не больше 20 с) — красные. */
+export function Clock({ ms, running, low, label }: { ms: number; running: boolean; low: boolean; label: (time: string) => string }) {
+  const time = formatClock(ms);
+  const tone = low && running ? "bg-danger text-white" : running ? "bg-white text-[#2c2925]" : low ? "bg-raised text-danger" : "bg-raised/70 text-muted";
+  return (
+    <span
+      role="timer"
+      aria-label={label(time)}
+      className={`min-w-[5.5rem] shrink-0 rounded-md px-2.5 py-1 text-right font-mono text-xl font-bold tabular-nums ${tone}`}
+    >
+      {time}
+    </span>
   );
 }
 

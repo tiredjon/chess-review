@@ -244,6 +244,15 @@ export function thinkTimeMs(ctx: ThinkContext, rng: () => number): number {
   return Math.round(Math.min(3000, Math.max(600, (900 + 380 * complexity) * jitter)));
 }
 
+/** Сколько бот может думать над ходом при остатке `remainingMs` на часах и добавке
+ *  `incrementMs`: ~1/30 остатка плюс большая часть добавки, в цейтноте — ещё быстрее. */
+export function clockBudgetMs(remainingMs: number, incrementMs: number): number {
+  const remaining = Math.max(0, remainingMs);
+  let budget = remaining / 30 + incrementMs * 0.8;
+  if (remaining < 10_000) budget = Math.min(budget, remaining / 12 + incrementMs * 0.5);
+  return Math.round(Math.max(100, Math.min(budget, remaining * 0.5)));
+}
+
 // --- Ход бота целиком: поиск → выбор → время ---
 
 /** Что нужно от движка (подмножество `Stockfish` из `lib/engine/stockfish.ts`). */
@@ -302,7 +311,7 @@ const uciOf = (m: Move) => m.from + m.to + (m.promotion ?? "");
 
 export async function decideMove(
   engine: BotEngine,
-  request: { fen: string; historyUci: readonly string[]; signal?: AbortSignal },
+  request: { fen: string; historyUci: readonly string[]; signal?: AbortSignal; maxThinkMs?: number },
   s: Strength,
   rng: () => number = Math.random,
 ): Promise<Decision> {
@@ -325,7 +334,10 @@ export async function decideMove(
     fen: request.fen,
     depth: s.depth,
     multipv: Math.min(s.multipv, legal.length),
-    movetime: SEARCH_MOVETIME_MS,
+    movetime:
+      request.maxThinkMs === undefined
+        ? SEARCH_MOVETIME_MS
+        : Math.max(50, Math.min(SEARCH_MOVETIME_MS, Math.round(request.maxThinkMs * 0.7))),
     signal: request.signal,
   });
   let candidates = candidatesFrom(
@@ -357,7 +369,8 @@ export async function decideMove(
   const chosen = pickCandidate(candidates, s, rng);
   const move = byUci.get(chosen.uci)!;
   const recapture = Boolean(move.captured && move.to === history.lastCaptureSquare);
-  const thinkMs = thinkTimeMs({ legalMoves: legal.length, fullmove, recapture, candidates }, rng);
+  const natural = thinkTimeMs({ legalMoves: legal.length, fullmove, recapture, candidates }, rng);
+  const thinkMs = request.maxThinkMs === undefined ? natural : Math.min(natural, request.maxThinkMs);
   return { uci: chosen.uci, cp: chosen.cp, thinkMs };
 }
 

@@ -3,7 +3,7 @@
 // Сигнатура `createBot` и интерфейс `Bot` — контракт (`types.ts`), не меняются.
 import { Stockfish } from "@/lib/engine/stockfish";
 
-import { decideMove, strengthFor } from "./strength";
+import { clockBudgetMs, decideMove, strengthFor } from "./strength";
 import type { Bot, BotMove, BotMoveRequest } from "./types";
 
 export * from "./types";
@@ -38,14 +38,15 @@ export async function createBot(elo: number): Promise<Bot> {
 
   return {
     elo,
-    async move({ fen, historyUci, signal }: BotMoveRequest): Promise<BotMove> {
+    async move({ fen, historyUci, signal, clock }: BotMoveRequest): Promise<BotMove> {
       if (disposed) throw new Error("Бот освобождён");
       const started = performance.now();
+      const maxThinkMs = clock ? clockBudgetMs(clock.remainingMs, clock.incrementMs) : undefined;
       let reject!: (err: unknown) => void;
       const disposedWhileThinking = new Promise<never>((_, r) => (reject = r));
       rejectPending.add(reject);
       const decision = await Promise.race([
-        decideMove(engine, { fen, historyUci, signal }, strength),
+        decideMove(engine, { fen, historyUci, signal, maxThinkMs }, strength),
         disposedWhileThinking,
       ]).finally(() => rejectPending.delete(reject));
       // Поиск уже занял часть «раздумья» — ждём остаток.

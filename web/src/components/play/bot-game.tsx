@@ -17,8 +17,10 @@ import { Board, type BoardMarks } from "../review/board";
 import { CoachBubble } from "../review/summary";
 import { Button, ErrorText } from "../ui";
 import { levelOf } from "./bot-picker";
+import { isValidControl, pgnTimeControl, remainingAt, type ClockState, type TimeControl } from "./clock";
 import {
   buildResult,
+  canMate,
   checkedKing,
   isLegal,
   isPromotion,
@@ -30,7 +32,7 @@ import {
   startOf,
   targets,
 } from "./game";
-import { IconButton, MoveList, MoveNav, PlayerBar, PromotionPicker, ResultModal, Thinking } from "./parts";
+import { Clock, IconButton, MoveList, MoveNav, PlayerBar, PromotionPicker, ResultModal, Thinking } from "./parts";
 import type { BotGameProps, BotGameVerdict, GameEndReason, GameResult } from "./types";
 
 // Ход книги (линия курса) — с паузой, как будто соперник подумал; бот держит паузу сам.
@@ -46,22 +48,50 @@ const RING = "radial-gradient(circle, transparent 74%, rgba(0, 0, 0, 0.16) 76%, 
 
 const STORAGE = "chess-review:bot-game";
 // `fen` — начальная позиция партии с позиции; у партий с начала его нет (как до сессии 16).
-type Saved = { key: string; elo: number; color: Color; moves: string[]; fen?: string };
+// `tc`, `clock`, `clocks` — часы партии с контролем времени (остаток после каждого хода).
+type Saved = {
+  key: string;
+  elo: number;
+  color: Color;
+  moves: string[];
+  fen?: string;
+  tc?: string;
+  clock?: ClockState;
+  clocks?: number[];
+};
 
-function restore(key: string | undefined, elo: number, color: Color, startFen: string): string[] {
-  if (!key) return [];
+type Restored = { moves: string[]; clock: ClockState | null; clocks: number[] };
+
+const freshClock = (control: TimeControl | null): ClockState | null =>
+  control ? { white: control.initial * 1000, black: control.initial * 1000, turnStart: null } : null;
+
+const isClockState = (value: unknown): value is ClockState =>
+  typeof value === "object" &&
+  value !== null &&
+  Number.isFinite((value as ClockState).white) &&
+  Number.isFinite((value as ClockState).black) &&
+  ((value as ClockState).turnStart === null || Number.isFinite((value as ClockState).turnStart));
+
+function restore(key: string | undefined, elo: number, color: Color, startFen: string, control: TimeControl | null): Restored {
+  const empty: Restored = { moves: [], clock: freshClock(control), clocks: [] };
+  if (!key) return empty;
   try {
     const saved = JSON.parse(sessionStorage.getItem(STORAGE) ?? "null") as Saved | null;
-    if (!saved || saved.key !== key || saved.elo !== elo || saved.color !== color || !Array.isArray(saved.moves)) return [];
-    if ((saved.fen ?? START_FEN) !== startFen) return [];
+    if (!saved || saved.key !== key || saved.elo !== elo || saved.color !== color || !Array.isArray(saved.moves)) return empty;
+    if ((saved.fen ?? START_FEN) !== startFen) return empty;
+    if ((saved.tc ?? null) !== (control ? pgnTimeControl(control) : null)) return empty;
     const game = replay(
       saved.moves.filter((move) => typeof move === "string"),
       startFen,
     );
     // Законченную партию не восстанавливаем — она уже в итоге.
-    return game.end ? [] : game.moves;
+    if (game.end) return empty;
+    if (!control) return { moves: game.moves, clock: null, clocks: [] };
+    if (!isClockState(saved.clock) || !Array.isArray(saved.clocks)) return empty;
+    const clocks = saved.clocks.filter((value) => Number.isFinite(value)).slice(0, game.moves.length);
+    return { moves: game.moves, clock: saved.clock, clocks };
   } catch {
-    return [];
+    return empty;
   }
 }
 
@@ -93,6 +123,7 @@ export function BotGame({
   hideAnalyze = false,
   elo,
   color,
+  timeControl,
   book,
   onPlayerMove,
   onHistoryChange,
@@ -114,7 +145,14 @@ export function BotGame({
   const start = useMemo(() => startOf(startFen), [startFen]);
   const plyColor = useCallback((index: number): Color => plyColorFrom(start.turn, index), [start.turn]);
 
-  const [moves, setMoves] = useState<string[]>(() => restore(storageKey, elo, color, startFen));
+  const control = timeControl && isValidControl(timeControl) ? timeControl : null;
+  const incrementMs = (control?.increment ?? 0) * 1000;
+  const [restored] = useState(() => restore(storageKey, elo, color, startFen, control));
+  const [moves, setMoves] = useState<string[]>(restored.moves);
+  /** Часы (null — партия без контроля времени) и остаток сходившего после каждого хода. */
+  const [clock, setClock] = useState<ClockState | null>(restored.clock);
+  const [clockLog, setClockLog] = useState<number[]>(restored.clocks);
+  const [now, setNow] = useState(() => Date.now());
   /** Показанная позиция (число сыгранных полуходов); null — текущая. */
   const [view, setView] = useState<number | null>(null);
   const [orientation, setOrientation] = useState<Color>(color);
@@ -172,8 +210,9 @@ export function BotGame({
   useEffect(() => {
     if (!storageKey) return;
     const fen = startFenProp ? { fen: startFenProp } : {};
-    save(result || game.end || verdict ? null : { key: storageKey, elo, color, moves: game.moves, ...fen });
-  }, [storageKey, elo, color, game, result, verdict, startFenProp]);
+    const clocks = control && clock ? { tc: pgnTimeControl(control), clock, clocks: clockLog } : {};
+    save(result || game.end || verdict ? null : { key: storageKey, elo, color, moves: game.moves, ...fen, ...clocks });
+  }, [storageKey, elo, color, game, result, verdict, startFenProp, control, clock, clockLog]);
 
   // Переход к позиции по просьбе страницы (момент, где упущен выигрыш): новый `focus.key` —
   // новый переход (состояние правится во время рендера, как советует React).
@@ -187,7 +226,16 @@ export function BotGame({
   const botName = t.play.botName(elo);
 
   const finish = useCallback(
-    (history: readonly string[], reason: GameEndReason, winner: Color | null) => {
+    (history: readonly string[], reason: GameEndReason, winner: Color | null, clocks: readonly number[] = []) => {
+      // Часы встают: ходящему засчитывается время до конца партии.
+      const side = plyColor(history.length);
+      const at = Date.now();
+      setNow(at);
+      setClock((state) =>
+        state && state.turnStart !== null
+          ? { ...state, [side]: Math.max(0, remainingAt(state, side, side, at)), turnStart: null }
+          : state,
+      );
       const finished = buildResult({
         moves: history,
         reason,
@@ -199,13 +247,15 @@ export function BotGame({
         event: t.play.pgnEvent,
         headers: pgnHeaders,
         startFen: startFenProp,
+        timeControl: control,
+        clocks,
       });
       setResult(finished);
       setModalOpen(true);
       setConfirmResign(false);
       onFinished?.(finished);
     },
-    [botName, color, elo, onFinished, pgnHeaders, pgnName, startFenProp, t.play.pgnEvent],
+    [botName, color, control, elo, onFinished, plyColor, pgnHeaders, pgnName, startFenProp, t.play.pgnEvent],
   );
 
   /** Сыграть ход (человека или бота) в конце партии `history`. */
@@ -215,15 +265,27 @@ export function BotGame({
       const after = replay(next, startFen);
       if (after.moves.length !== next.length) return;
       const mover = plyColor(history.length);
+      let log = clockLog.slice(0, history.length);
+      if (clock) {
+        // Флаг упал раньше хода — ход не засчитывается (итог подведёт проверка часов).
+        const at = Date.now();
+        const left = remainingAt(clock, mover, mover, at);
+        if (left <= 0) return;
+        const after = left + incrementMs;
+        log = [...log, after];
+        setClock({ ...clock, [mover]: after, turnStart: at });
+        setClockLog(log);
+        setNow(at);
+      }
       playMove(after.sans[after.sans.length - 1], mover, color, after.end !== null);
       setMoves(next);
       setView(null);
       setSelected(null);
       setPromotion(null);
       if (mover === color) onPlayerMove?.(next);
-      if (after.end) finish(next, after.end.reason, after.end.winner);
+      if (after.end) finish(next, after.end.reason, after.end.winner, log);
     },
-    [color, finish, onPlayerMove, plyColor, startFen],
+    [clock, clockLog, color, finish, incrementMs, onPlayerMove, plyColor, startFen],
   );
 
   // Ход бота: сначала книга (линия курса, таблицы), если её ход легален, иначе — сам бот.
@@ -238,6 +300,9 @@ export function BotGame({
     }
   });
   const playBotMove = useEffectEvent((history: readonly string[], uci: string) => commit(history, uci));
+  const botClock = useEffectEvent(() =>
+    clock ? { remainingMs: remainingAt(clock, opposite(color), sideToMove(liveFen), Date.now()), incrementMs } : undefined,
+  );
   useEffect(() => {
     if (!bot || over || turn === color) return;
     const controller = new AbortController();
@@ -248,7 +313,7 @@ export function BotGame({
       let uci = await bookMove(history);
       if (signal.aborted) return;
       if (uci && isLegal(fen, uci)) await wait(BOOK_DELAY_MS, signal);
-      else uci = (await bot.move({ fen, historyUci: history, signal })).uci;
+      else uci = (await bot.move({ fen, historyUci: history, signal, clock: botClock() })).uci;
       if (signal.aborted) return;
       if (!isLegal(fen, uci)) throw new Error(`illegal bot move ${uci}`);
       playBotMove(history, uci);
@@ -259,6 +324,22 @@ export function BotGame({
     });
     return () => controller.abort();
   }, [bot, over, turn, color, game, liveFen, engineKey]);
+
+  // Часы: идут — тикаем 10 раз в секунду; у ходящего кончилось время — флаг.
+  const running = clock !== null && clock.turnStart !== null && !over;
+  const tick = useEffectEvent(() => {
+    const at = Date.now();
+    setNow(at);
+    if (!clock || over || remainingAt(clock, turn, turn, at) > 0) return;
+    const winner = opposite(turn);
+    playSound("game-end");
+    finish(game.moves, "timeout", canMate(liveFen, winner) ? winner : null, clockLog);
+  });
+  useEffect(() => {
+    if (!running) return;
+    const timer = setInterval(tick, 100);
+    return () => clearInterval(timer);
+  }, [running]);
 
   const tryMove = useCallback(
     (from: string, to: string): boolean => {
@@ -313,6 +394,13 @@ export function BotGame({
   const canTakeback = takebackTo >= 0 && result === null && game.end === null && verdict === null;
   const takeback = () => {
     if (!canTakeback) return;
+    if (clock) {
+      // Часы не откатываются: ходящему засчитано время до «взять назад», дальше идут часы человека.
+      const at = Date.now();
+      setClock({ ...clock, [turn]: remainingAt(clock, turn, turn, at), turnStart: takebackTo > 0 ? at : null });
+      setClockLog(clockLog.slice(0, takebackTo));
+      setNow(at);
+    }
     setMoves(game.moves.slice(0, takebackTo));
     setView(null);
     setSelected(null);
@@ -322,7 +410,7 @@ export function BotGame({
   const resign = () => {
     if (over) return;
     playSound("game-end");
-    finish(game.moves, "resign", opposite(color));
+    finish(game.moves, "resign", opposite(color), clockLog);
   };
 
   const go = useCallback(
@@ -393,9 +481,22 @@ export function BotGame({
   };
 
   const materials = material(game.fens[shown], startFenProp);
+  const lowMs = control ? Math.min(20_000, control.initial * 100) : 0;
+  const clockOf = (side: Color) => {
+    if (!clock) return undefined;
+    const ms = remainingAt(clock, side, turn, running ? now : (clock.turnStart ?? now));
+    const ticking = running && side === turn;
+    return <Clock ms={ms} running={ticking} low={ms < lowMs} label={t.play.clock} />;
+  };
   const bar = (side: Color) =>
     side === color ? (
-      <PlayerBar name={t.play.you} color={side} captured={materials[side].captured} advantage={materials[side].advantage} />
+      <PlayerBar
+        name={t.play.you}
+        color={side}
+        captured={materials[side].captured}
+        advantage={materials[side].advantage}
+        clock={clockOf(side)}
+      />
     ) : (
       <PlayerBar
         name={botName}
@@ -403,6 +504,7 @@ export function BotGame({
         color={side}
         captured={materials[side].captured}
         advantage={materials[side].advantage}
+        clock={clockOf(side)}
         status={
           thinking ? (
             <Thinking label={t.play.thinking} />
