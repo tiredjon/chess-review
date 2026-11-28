@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import CurrentUser, SessionDep
 from app.api.errors import ApiError, ErrorCode
 from app.api.schemas_coach import (
+    BookPositionOut,
     ForecastOut,
     GoalIn,
     GoalOut,
@@ -23,6 +24,7 @@ from app.api.schemas_coach import (
     TaskOut,
     TodayOut,
 )
+from app.books.lessons import RELATED, book_positions
 from app.coach import goal as goals
 from app.coach import lessons_api, report, tasks
 from app.coach.lessons import LESSONS
@@ -163,7 +165,19 @@ async def get_lesson(key: str, session: SessionDep, user: CurrentUser) -> Lesson
     _lesson_key(key)
     goal = await goals.active_goal(session, user.id)
     kind, read, examples, train = await lessons_api.lesson_detail(session, user.id, key, goal)
-    return LessonOut(key=key, kind=kind, read=read, examples=examples, train=train)
+    positions = [
+        BookPositionOut(game=p.game, ply=p.ply, san=p.san, fen=p.fen, comment=p.comment)
+        for p in book_positions(key)
+    ]
+    return LessonOut(
+        key=key,
+        kind=kind,
+        read=read,
+        examples=examples,
+        train=train,
+        positions=positions,
+        related=list(RELATED.get(key, ())),
+    )
 
 
 @router.post("/coach/lessons/{key}/read")

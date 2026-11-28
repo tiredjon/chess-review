@@ -9,7 +9,7 @@
   `time_management` — ошибки в цейтноте; `opening_repertoire` — первая ошибка в дебюте.
 Тренировка — как у выводов 16.1: мотив → пазлы по теме; дебют / миттельшпиль → пазлы фазы;
 эндшпиль и реализация → эндшпиль своих партий; репертуар → курс по самому частому дебюту;
-остальное — пазлы.
+остальное — пазлы. Статья по книге (`book`) — как урок своей фазы (`app/books/lessons.PHASE`).
 """
 
 import uuid
@@ -23,6 +23,7 @@ from sqlalchemy.sql.expression import CTE
 
 from app.api.schemas_coach import LessonItemOut, LessonKind
 from app.api.schemas_insights import ExampleOut, TrainOut, TrainQueryOut
+from app.books.lessons import PHASE as BOOK_PHASE
 from app.coach.lessons import LESSONS
 from app.db.models import CoachGoal, CoachLessonRead, GameSource, Move
 from app.insights.queries import ExampleRow, _available, _contested, _examples, _is_error
@@ -37,6 +38,10 @@ PHASES: dict[str, Phase] = {
 }
 WINNING = 80.0
 LOSING = 30.0
+
+
+def _phase(key: str) -> Phase:
+    return PHASES.get(key) or BOOK_PHASE[key]
 
 
 async def read_keys(session: AsyncSession, user_id: uuid.UUID) -> set[str]:
@@ -70,8 +75,8 @@ def _condition(key: str, kind: LessonKind, ug: CTE) -> tuple[ColumnElement[bool]
     if kind == "motif":
         missed = Move.motifs["missed"].contains([{"type": key}])
         return and_(Move.uci != Move.best_uci, or_(_is_error(), Move.is_miss), missed), ()
-    if kind == "phase":
-        return and_(Move.phase == PHASES[key], _is_error(), _contested(THRESHOLDS)), ()
+    if kind in {"phase", "book"}:
+        return and_(Move.phase == _phase(key), _is_error(), _contested(THRESHOLDS)), ()
     # Репертуар — первая ошибка дебюта: с неё партия и пошла не так.
     prefer = (Move.ply,) if key == "opening_repertoire" else ()
     return _skill_condition(key, ug), prefer
@@ -89,10 +94,12 @@ async def _train(
     train: Train
     if kind == "motif":
         train = Train(kind="puzzles", theme=key)
-    elif key in {"endgame_technique", "converting_advantage"}:
+    elif key in {"endgame_technique", "converting_advantage"} or (
+        kind == "book" and _phase(key) == Phase.ENDGAME
+    ):
         train = Train(kind="endgames")
-    elif kind == "phase":
-        train = Train(kind="puzzles", phase=PHASES[key])
+    elif kind in {"phase", "book"}:
+        train = Train(kind="puzzles", phase=_phase(key))
     elif key == "opening_repertoire":
         eco = await _common_eco(session, ug)
         if eco is None:

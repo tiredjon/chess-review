@@ -11,6 +11,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 from app.api.schemas_insights import ExampleOut, TrainOut
+from app.courses.types import ModelGame
 from app.review.game_rating import TimeClass
 
 # --- Цель -------------------------------------------------------------------------------------
@@ -291,7 +292,7 @@ class ForecastOut(BaseModel):
 
 # --- Уроки (17.2) -----------------------------------------------------------------------------
 
-LessonKind = Literal["motif", "phase", "skill"]
+LessonKind = Literal["motif", "phase", "skill", "book"]
 
 
 class LessonItemOut(BaseModel):
@@ -304,13 +305,27 @@ class LessonListOut(BaseModel):
     lessons: list[LessonItemOut]
 
 
+class BookPositionOut(BaseModel):
+    """Позиция статьи по книге: партия книги целиком (листать на доске), полуход, позиция
+    после хода `san` и комментарий автора к нему (на английском, как в книге)."""
+
+    game: ModelGame
+    ply: int
+    san: str
+    fen: str
+    comment: str
+
+
 class LessonOut(BaseModel):
     """`GET /coach/lessons/{key}`: текст урока — на фронте (`web/src/lib/coach-lessons/`) по
     ключу; бэкенд даёт позиции из своих партий и ссылку на тренировку. Неизвестный ключ — 404
-    `lesson_not_found`."""
+    `lesson_not_found`. У статьи по книге (`book`) — `positions` из партий книги; у уроков фаз
+    и навыков — `related`, ключи статей по книгам к теме."""
 
     key: str
     kind: LessonKind
     read: bool
     examples: list[ExampleOut]
     train: TrainOut | None
+    positions: list[BookPositionOut] = []
+    related: list[str] = []

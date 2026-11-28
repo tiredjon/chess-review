@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import type { ReactNode } from "react";
+import { IDEA_LESSONS, lessonText } from "@/lib/coach-lessons";
 import type { PawnBreak, PositionIdeas, RenderedIdeas, Side } from "@/lib/courses-api";
 import { useI18n } from "@/lib/i18n/use-i18n";
 import { ColorMark } from "./shared";
@@ -30,7 +32,7 @@ export function IdeasCard({
   learner: Side;
   compact?: boolean;
 }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const l = t.courses.ideas;
   const order = learner === "white" ? SIDES : [...SIDES].reverse();
   const plans = order
@@ -76,7 +78,21 @@ export function IdeasCard({
                         aria-hidden
                         className={`mt-[7px] size-1.5 shrink-0 rounded-full ${side === "white" ? "bg-[#f2efe9]" : "bg-[#8b8781]"}`}
                       />
-                      <span>{idea.text}</span>
+                      <span>
+                        {idea.text}
+                        {!compact && IDEA_LESSONS[idea.key] && (
+                          <>
+                            {" "}
+                            <Link
+                              href={`/coach/lessons/${IDEA_LESSONS[idea.key]}`}
+                              title={lessonText(lang, IDEA_LESSONS[idea.key])?.title}
+                              className="font-bold whitespace-nowrap text-green hover:underline"
+                            >
+                              {l.theory}
+                            </Link>
+                          </>
+                        )}
+                      </span>
                     </li>
                   ))}
                 </ul>

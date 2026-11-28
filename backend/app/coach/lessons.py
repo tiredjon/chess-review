@@ -2,14 +2,16 @@
 
 Тексты уроков — на фронте (`web/src/lib/coach-lessons/`, RU и EN, пишет 17.1), позиции и
 тренировка — `GET /coach/lessons/{key}` (17.2), ссылка из слабой стороны — `GapOut.lesson`
-(17.1). Новый урок — добавить ключ сюда и текст на фронт.
+(17.1). Статьи по книгам Ласкера и Капабланки (`book`) — с позициями из партий книг
+(`app/books/lessons.py`). Новый урок — добавить ключ сюда и текст на фронт.
 """
 
 from typing import Literal
 
+from app.books.lessons import BOOK_LESSONS
 from app.review.motifs.base import MotifType
 
-LessonKind = Literal["motif", "phase", "skill"]
+LessonKind = Literal["motif", "phase", "skill", "book"]
 
 PHASE_LESSONS: tuple[str, ...] = ("opening_principles", "middlegame_plans", "endgame_technique")
 SKILL_LESSONS: tuple[str, ...] = (
@@ -25,6 +27,7 @@ LESSONS: dict[str, LessonKind] = {
     **{m.value: "motif" for m in MotifType},
     **dict.fromkeys(PHASE_LESSONS, "phase"),
     **dict.fromkeys(SKILL_LESSONS, "skill"),
+    **dict.fromkeys(BOOK_LESSONS, "book"),  # статьи по книгам (`app/books/lessons.py`)
 }
 
 # Метрика диагностики → урок (`MetricKey` в `app/api/schemas_coach.py`).

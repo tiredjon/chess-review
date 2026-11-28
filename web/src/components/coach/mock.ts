@@ -392,9 +392,10 @@ function forecast(): Forecast {
 function lesson(key: string): Lesson {
   const read = readLessons.has(key);
   const motif = key === "fork" || key === "pin";
+  const book = key.startsWith("book_");
   return {
     key,
-    kind: motif ? "motif" : key.endsWith("principles") || key.endsWith("plans") || key.endsWith("technique") ? "phase" : "skill",
+    kind: motif ? "motif" : book ? "book" : key.endsWith("principles") || key.endsWith("plans") || key.endsWith("technique") ? "phase" : "skill",
     read,
     examples: key === "defense" ? [] : EXAMPLES,
     train: motif
@@ -402,6 +403,8 @@ function lesson(key: string): Lesson {
       : key === "endgame_technique"
         ? { kind: "endgames", query: { theme: null, phase: "endgame", eco: null }, available: 8 }
         : null,
+    positions: [],
+    related: key === "middlegame_plans" ? ["book_attack_targets", "book_open_files", "book_king_pawns"] : key === "endgame_technique" ? ["book_endgame_king", "book_rook_endings"] : [],
   };
 }
 

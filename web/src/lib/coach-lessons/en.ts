@@ -1,6 +1,6 @@
 // Coach lessons in English (session 17.1). For a 1500–2000 player: the idea, how to spot it,
 // common club-player mistakes, an exercise. No invented games or concrete variations.
-import type { LessonText, LessonTexts } from "./index";
+import type { LessonSource, LessonText, LessonTexts } from "./index";
 
 const lesson = (
   title: string,
@@ -18,6 +18,17 @@ const lesson = (
     { heading: "Common mistakes", body: mistakes },
     { heading: "Exercise", body: exercise },
   ],
+});
+
+// Book articles: a condensed retelling of Ed. Lasker's "Chess Strategy" (1915) and Capablanca's
+// "Chess Fundamentals" (1921), sections by topic. Positions come from the backend.
+const LASKER = "Edward Lasker, Chess Strategy (1915)";
+const CAPABLANCA = "J. R. Capablanca, Chess Fundamentals (1921)";
+const book = (title: string, summary: string, sections: [string, string][], source: LessonSource): LessonText => ({
+  title,
+  summary,
+  sections: sections.map(([heading, body]) => ({ heading, body })),
+  source,
 });
 
 export const EN: LessonTexts = {
@@ -212,5 +223,189 @@ export const EN: LessonTexts = {
     "Look at your opening statistics: where you score worse than usual, there is a problem — not knowing the plan, a typical trap, an awkward structure. Those lines are the ones to learn first.",
     "Changing openings after every loss. Learning moves without ideas and getting lost at the first deviation. Choosing an opening whose positions you don’t enjoy. Never reviewing your own games in that opening.",
     "Pick the opening where your results are worst and go through the course built from your own games. Then play 5 games with it against a bot and compare your moves with the course after each one.",
+  ),
+  book_attack_targets: book(
+    "What to attack: targets that cannot run",
+    "An attack only makes sense if its target cannot step aside. A piece retreats; a weak pawn stays where it is — that is what you play against.",
+    [
+      [
+        "The target must not run",
+        "Attacking something that can simply move away wastes time. Lasker shows the typical mistake: chasing a bishop with queenside pawns (a3, b4, a4, a5). The bishop calmly steps to the next square and is just as good there, while the pawns are advanced and weakened — five moves spent against three.\n\nA piece can only be held in place by a pin. A pawn can be held by a blockade (a piece right in front of it) or by controlling the square in front of it with more force than the opponent has.",
+      ],
+      [
+        "Don't chase pieces with pawns",
+        "When an enemy queen or knight is annoying, it is tempting to kick it with a pawn. The piece will find another good square, and if the pawn move left a backward pawn behind, that weakness stays for the rest of the game. Lasker calls such short-lived pawn attacks on pieces always doubtful. The same goes for pieces: don't send your own pieces far away just to drive off an enemy one.",
+      ],
+      [
+        "Playing against a backward pawn",
+        "Lasker's scheme: keep the pawn from advancing (occupy or control the square in front of it), double rooks on the half-open file, bring up the queen and bishop. The defender can protect the pawn as many times as it is attacked, but the pawn cannot move, and the attacker still has a reserve — bringing up a pawn of his own. It is even easier when the defender has no bishop of the pawn's colour. The square in front of a backward pawn is a ready-made outpost for a knight.",
+      ],
+      [
+        "In the games",
+        "Blackburne–Nimzowitsch (1914): Black's centralised knight forced c3, leaving White a backward pawn on d3. Teichmann–Amateurs (1902): after Black's pawn advance a white knight settled on d6 and paralysed Black's whole game. Chajes–Capablanca (1916): a knight on d5 that nothing can dislodge — in Capablanca's words, the game is won strategically.",
+      ],
+    ],
+    { ref: `${LASKER}, ch. VI "The Middle Game"`, quote: { text: "Attacks should only be directed to objects which cannot be moved away.", author: "Edward Lasker" } },
+  ),
+  book_king_pawns: book(
+    "Pawns in front of the castled king",
+    "Every pawn move in front of your own king leaves squares unguarded. Lasker explains when that is fatal and when it is bearable.",
+    [
+      [
+        "Why pawn moves are dangerous",
+        "A pawn that has advanced no longer guards the squares it used to — and in front of a castled king, those are exactly the squares enemy pieces come in through. The advanced pawn also becomes a target: the opponent brings up a pawn on the next file to open lines for his rooks, or sacrifices a piece for the pawns of the shelter.",
+      ],
+      [
+        "h3 against a pin, and the holes after g3",
+        "To prevent a pin with Bg5, beginners play h3 (h6) in advance. That loses time and weakens the king. The pin on a knight on f6 is only dangerous if nothing is done against Nd5 and a doubled attack on f6; the normal defence is to develop the bishop to e6.\n\nAfter g3 (g6) the squares f3 and h3 (f6 and h6) are weak. The opponent's plan: Qd2 and Bh6, trading off the defending bishop, then queen and knight break in on f6 or h6. The weakness only matters while the opponent has pieces that can use it: once that bishop is traded, the holes are nearly harmless.",
+      ],
+      [
+        "When to attack with pawns",
+        "When both kings are castled on the same side, starting an attack by pushing the pawns in front of your own king is rarely right — only when overwhelming force can be gathered quickly, before a counter-attack. Marshall–Burn (1907): h4–h5 against g6, while Black's queenside was still undeveloped, ripped open the h-file. If the rook has already left the h-file, the plan with Bh6 is better.",
+      ],
+      [
+        "In the games",
+        "Tarrasch–Capablanca (1911): g3, with no direct threat to meet, weakened f3 and h3. Tarrasch–Spielmann (1914): Black prepares Qc8 and Bh3 to trade bishops and leave holes on f3 and h3. Capablanca–Alekhine (1913): to cover the weak h6 square Alekhine brought his knight back to g8 — and it never got back into play.",
+      ],
+    ],
+    { ref: `${LASKER}, ch. VI "The Middle Game"`, quote: { text: "Pawn moves always create weaknesses.", author: "Edward Lasker" } },
+  ),
+  book_open_files: book(
+    "Open files and the seventh rank",
+    "Whoever occupies the open files first dictates the game. Lasker shows the road from owning a file to winning a pawn.",
+    [
+      [
+        "A file is a road for the rooks",
+        "In Lazard–Lasker (Paris, 1914) both pawn structures are broken, and the game is decided by who takes the open files first. Lasker (Black) did not defend a pawn passively with his bishop but doubled rooks on the b-file: now he could enter the seventh or eighth rank and attack the pawns from the side and from behind.",
+      ],
+      [
+        "A rook on the seventh",
+        "Even the threat of invasion paralyses: the opponent's pieces have to guard the pawns and lose mobility. But for the invasion to achieve something, the pawns must be deprived of support — Lasker played c5–c4 and f5. Then he traded one pair of rooks so that the remaining enemy rook could not break in along its own file, and guarded its entry squares with the king. And don't forget a loophole for your own king (h3), or the rook can never leave the back rank.",
+      ],
+      [
+        "A file has to be held",
+        "Opening a file is not enough. Lasker's note to Tartakower–Asztalos (1913): the capture that opens the a-file is premature — first the rooks and queen must be placed on that file. The reverse trick: a piece covering the entry square (a bishop on e6 against a rook on d7) makes the opponent's file worthless.",
+      ],
+      [
+        "In the games",
+        "Salwe–Marshall (1908): Black already has two open files for his rooks. Capablanca–Alekhine (1913): White takes the seventh rank and Black's position collapses quickly. Griffith–Gunston (1902): White has open files and diagonals for every piece while Black's pieces are tied up.",
+      ],
+    ],
+    { ref: `${LASKER}, ch. VI "The Middle Game" (Lazard–Lasker)`, quote: { text: "The player that occupies the open files first, gets a decisive advantage.", author: "Edward Lasker" } },
+  ),
+  book_pawn_weaknesses: book(
+    "Doubled and broken pawns",
+    "A doubled pawn is not always a weakness. What matters is which pieces remain and where the game is heading — an attack or an endgame.",
+    [
+      [
+        "A doubled pawn is also a file",
+        "A capture that doubles your pawns opens a file for a rook and can support a pawn advance in the centre. A doubled pawn that is not isolated is not necessarily weak; the truly bad one is a doubled isolated pawn. Lasker adds that it does become a weakness if the king castles behind it.",
+      ],
+      [
+        "Middlegame or endgame",
+        "Lasker compares two structures. Without the g-pawn, f6 and h6 are weak — dangerous in the middlegame, but hardly a problem in the endgame, since the f- and h-pawns are near the king. Without the b-pawn there is nothing to attack in the middlegame, but the a- and c-pawns are weak in the endgame because the king cannot reach them — especially in rook endings. The compensation is an open file for the rooks; the weak a-pawn can be pushed and traded off.",
+      ],
+      [
+        "What you get in return",
+        "Yates–Esser (1914): Black accepts doubled pawns to keep the two bishops. Em. Lasker–Capablanca (1914): White captures on c6 to head for an endgame with four pawns against three on the kingside, while Black's queenside majority is devalued by the doubled pawn.",
+      ],
+      [
+        "Capablanca on pawns",
+        "Pawns are strongest side by side on the same rank; advancing a centre pawn to the fifth rank decides the character of the whole game. A passed pawn is either very weak or very strong, and its strength grows as pieces come off. In Marshall–Capablanca (1918) a doubled, isolated pawn on h4 exerts enormous pressure.",
+      ],
+    ],
+    { ref: `${LASKER}, ch. VI; ${CAPABLANCA}, § 31 "Some Salient Points about Pawns"`, quote: { text: "Two or more Pawns are strongest when they are in the same rank next to one another.", author: "J. R. Capablanca" } },
+  ),
+  book_initiative: book(
+    "The initiative",
+    "The right to move is the initiative. Keep it as long as possible and give it up only for a material or positional gain.",
+    [
+      [
+        "What the initiative is",
+        "In the starting position material and placement are equal, but White has the move — that is, the initiative. While developing, you should also hinder the opponent's development, applying pressure wherever possible, above all in the centre. Give up the initiative only when you get something for it and are sure you can withstand the counter-attack and then, thanks to your extra material, take the initiative back.",
+      ],
+      [
+        "Three kinds of positions",
+        "Once the pieces are developed, Capablanca distinguishes three cases. A direct attack on the king — carried out with sufficient force. Improving a position — if the opponent has no weaknesses, create some. Winning material at the cost of the initiative for a while — then you weather the attack and, once it is repulsed, act quickly with all your forces.",
+      ],
+      [
+        "The threat is stronger than its execution",
+        "Threatening is always useful, but carry a threat out only if it gains something at once. While the threat hangs, the opponent must keep forces ready to meet it and may overlook a blow elsewhere; once executed, the threat no longer exists. The best manoeuvre: a demonstration on one wing to draw the opponent's forces there, then a quick switch to the other wing and a breakthrough before the defenders can come over. The same principle works in the endgame.",
+      ],
+      [
+        "In the games",
+        "Barasz–Mieses (1912): White let Black develop the queenside undisturbed, and the initiative passed to Black. Capablanca–Marshall (1914): Black gives up a pawn to free his game and seize the initiative. Chajes–Capablanca (1916): Capablanca admits he tried to take the initiative too early. Marshall–Capablanca (1918): White cannot bear the slow pressure and gives up pawns for counterplay.",
+      ],
+    ],
+    { ref: `${CAPABLANCA}, § 20–23, § 26`, quote: { text: "It is always an advantage to threaten something.", author: "J. R. Capablanca" } },
+  ),
+  book_cut_off_pieces: book(
+    "Pieces out of play",
+    "Cutting an enemy piece off from the fight is almost as good as winning it: in the battle you are a piece up.",
+    [
+      [
+        "An extra piece where it matters",
+        "Capablanca writes that a master often plays only to cut off one of the opponent's pieces from the scene of action. If a bishop or knight is completely shut out, the game can be considered practically won: for all practical purposes one side has an extra piece.",
+      ],
+      [
+        "How pieces fall out of play",
+        "A knight goes to the rim to cover a weak square; a rook is locked in by its own pawns; a bishop bites on its own pawn chain. Lasker calls the middlegame the pieces' own hunting ground: the first rule is to avoid moves that reduce your pieces' mobility, and not to send pieces far away just to drive off an enemy piece.",
+      ],
+      [
+        "Material without play",
+        "Extra material is worth nothing if it is out of play. Capablanca–Bernstein (1914): Black is a whole rook up, but it is as cut off as his entire queenside, and the king is driven into a mating net. Nimzowitsch–Tarrasch (1912): as long as Black's h8 rook stays out of play, every exchange favours White.",
+      ],
+      [
+        "Check your own games",
+        "For each of your pieces, ask: is it taking part in the fight on the important wing? If not — by which route does it come back, and how many moves will that take? And the other way round: which enemy piece can be shut out with one pawn move or exchange?",
+      ],
+    ],
+    { ref: `${CAPABLANCA}, § 24 "Cutting off Pieces from the Scene of Action"; ${LASKER}, ch. VI`, quote: { text: "Often a Bishop or a Knight is completely put out of action.", author: "J. R. Capablanca" } },
+  ),
+  book_endgame_king: book(
+    "Heading for the endgame, and an active king",
+    "Once your advantage is enough to win the endgame, trade pieces. In the endgame the king is a strong piece.",
+    [
+      [
+        "Exchanges are not dull",
+        "Lasker notes that beginners avoid exchanges, especially of queens, thinking the game will become dull. But if your advantage is enough to win the endgame, you should exchange down to the familiar elementary cases — that is the shortest way to victory. That is also why in the middlegame you must keep a healthy pawn structure at all times: an exchange can turn the game into an endgame at any moment.",
+      ],
+      [
+        "The king goes forward",
+        "In the endgame the king attacks pawns and escorts its own passed pawns. Leonhardt–Marshall (1911): Black's king marches irresistibly towards White's weakened pawns. In his game with Em. Lasker (1914) Capablanca reasons that the king should stay on the wing where the opponent has a pawn majority, to stop its advance later.",
+      ],
+      [
+        "“A unit that holds two”",
+        "Capablanca: in pawn endings, advance the pawn that has no enemy pawn facing it. And the key principle: one unit holds two — a single well-placed pawn stops two enemy pawns. Capablanca calls this one of the principal weapons of a master.",
+      ],
+      [
+        "Passed pawns",
+        "A passed pawn grows stronger with every exchange. Berlin–Riga (1908–09): Black no longer fears a trade of rooks — the king will go for the queenside pawns while the passed pawns keep White's pieces busy. Janowski–Capablanca (1913): Black found no defence against White's two passed pawns.",
+      ],
+    ],
+    { ref: `${LASKER}, ch. VI "General Remarks"; ${CAPABLANCA}, § 9, § 13, § 31`, quote: { text: "A unit that holds two.", author: "J. R. Capablanca" } },
+  ),
+  book_rook_endings: book(
+    "Rook endings",
+    "The most common endings and among the hardest: even a “simple” position with an extra pawn demands accuracy.",
+    [
+      [
+        "The most common ending",
+        "Capablanca: endings with one rook and pawns occur more often than any other kind, yet few players have mastered them. His example is Marshall–Rosenthal (1909–10): there was a simple win with a rook check, but an inaccurate pawn move gave the opponent a single drawing move, which he failed to find.",
+      ],
+      [
+        "The danger of a safe position",
+        "Marshall–Kupchik (Havana, 1913): Black, a pawn up, felt so sure of his position that he made three careless moves — took a pawn instead of giving an active check, did not make room for his king — and lost. The lesson: with an extra pawn, look for the most active move first, not the greediest.",
+      ],
+      [
+        "Active rook, active king",
+        "Rubinstein–Capablanca (1911): Lasker thinks Black should first have brought his king up and kept the enemy rook off its active square. Marshall–Capablanca (1918): an active rook move is “much better than taking pawns” — it forces the opponent onto the defensive. In his game with Em. Lasker (1914) Capablanca reproaches himself for irresolution: once a plan is made, carry it out.",
+      ],
+      [
+        "A passed pawn on the majority side",
+        "Lasker: in a rook ending with an extra pawn, advance the pawns on the wing where you have the majority, to get a passed pawn as soon as possible. The farther it is from the enemy king, the stronger it is.",
+      ],
+    ],
+    { ref: `${CAPABLANCA}, § 27–28; ${LASKER}, game notes`, quote: { text: "When a plan is made, it must be carried out if at all possible.", author: "J. R. Capablanca" } },
   ),
 };

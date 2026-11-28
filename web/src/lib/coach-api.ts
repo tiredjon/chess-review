@@ -1,6 +1,7 @@
 // Клиент тренера (сессия 17) — зеркало `backend/app/api/schemas_coach.py` (общий контракт
 // 17.1–17.3). Менять поля — только согласованно со SPEC «Сессия 17» и схемами бэкенда.
 import { request } from "./api";
+import type { ModelGame } from "./courses-api";
 import type { FindingExample, Severity, Train } from "./insights-api";
 import type { TimeClass } from "./types";
 
@@ -191,9 +192,21 @@ export type Forecast = {
 
 // --- Уроки (17.2; тексты — `lib/coach-lessons/`) ---
 
-export type LessonKind = "motif" | "phase" | "skill";
+export type LessonKind = "motif" | "phase" | "skill" | "book";
 export type LessonItem = { key: string; kind: LessonKind; read: boolean };
-export type Lesson = { key: string; kind: LessonKind; read: boolean; examples: FindingExample[]; train: Train | null };
+/** Позиция статьи по книге: партия книги, полуход, позиция после хода и комментарий автора. */
+export type BookPosition = { game: ModelGame; ply: number; san: string; fen: string; comment: string };
+export type Lesson = {
+  key: string;
+  kind: LessonKind;
+  read: boolean;
+  examples: FindingExample[];
+  train: Train | null;
+  /** Только у статей по книгам (`book`). */
+  positions: BookPosition[];
+  /** Статьи по книгам к уроку фазы или навыка. */
+  related: string[];
+};
 
 const send = <T>(path: string, method: string, body?: unknown) =>
   request<T>(path, { method, body: body === undefined ? undefined : JSON.stringify(body) });

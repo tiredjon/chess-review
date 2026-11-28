@@ -657,6 +657,21 @@ async def test_lessons(client: AsyncClient, db: Database, user: uuid.UUID) -> No
     endgame = (await client.get("/api/v1/coach/lessons/endgame_technique")).json()
     assert endgame["examples"] == []
     assert endgame["train"]["kind"] == "endgames"
+    assert endgame["related"] == ["book_endgame_king", "book_rook_endings"]
+    assert fork["positions"] == fork["related"] == []
+
+    # Статья по книге: позиции из партий книги, свои примеры и тренировка — по фазе.
+    assert keys["book_open_files"]["kind"] == "book"
+    article = (await client.get("/api/v1/coach/lessons/book_open_files")).json()
+    assert article["kind"] == "book"
+    assert article["train"]["query"]["phase"] == "middlegame"
+    first = article["positions"][0]
+    assert first["game"]["id"] == "book:lasker-9"
+    assert first["game"]["source"] == "book"
+    assert (first["ply"], first["san"]) == (42, "Qxb5")
+    assert "two open files" in first["comment"]
+    rooks = (await client.get("/api/v1/coach/lessons/book_rook_endings")).json()
+    assert rooks["train"]["kind"] == "endgames"
 
     missing = await client.get("/api/v1/coach/lessons/nope")
     assert missing.status_code == 404
