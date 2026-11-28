@@ -8,8 +8,10 @@ import chess.pgn
 import pytest
 
 from app.books.build import OUTPUT, build, render
+from app.books.courses import MAX_BOOK_GAMES, MIN_PLY, book_games, book_model_games
 from app.books.descriptive import NotationError, Tracker, looks_like_move
 from app.books.extract import RawGame, capablanca_games, convert, lasker_games
+from app.courses.types import CourseNode, CourseTree
 
 
 def _play(*moves: str) -> list[str]:
@@ -260,3 +262,64 @@ def test_build_checks_diagrams() -> None:
     broken = LASKER_SNIPPET.replace("|    |    | ^Q |", "| ^Q |    |    |")
     _, problems = build(broken, CAPABLANCA_SNIPPET)
     assert problems == ["lasker 1: диаграмма после полухода 5"]
+
+
+# --- партии книг в курсах ---
+
+
+def _tree(line: str) -> CourseTree:
+    """Курс-цепочка по линии SAN (узел на каждый полуход), без статистики и идей."""
+    board = chess.Board()
+    nodes = [
+        CourseNode(
+            id=0, parent=None, ply=0, uci=None, san=None, mover=None, fen=board.fen(), book=True
+        )
+    ]
+    for san in line.split():
+        move = board.parse_san(san)
+        board.push(move)
+        index = len(nodes)
+        nodes[-1].children.append(index)
+        nodes.append(
+            CourseNode(
+                id=index,
+                parent=index - 1,
+                ply=index,
+                uci=move.uci(),
+                san=san,
+                mover="learner" if index % 2 else "opponent",
+                fen=board.fen(),
+                book=True,
+            )
+        )
+    return CourseTree(color="white", line_end=len(nodes) - 1, nodes=nodes)
+
+
+RETI = "e4 c6 d4 d5 Nc3 dxe4 Nxe4 Nf6 Qd3"
+
+
+def test_book_games_load() -> None:
+    games = book_games()
+    assert len(games) == 60
+    reti = next(g for g in games if g.key == "lasker-35")
+    assert (reti.white, reti.black, reti.year, reti.result) == ("Reti", "Tartakower", 1910, "1-0")
+    assert "{" in reti.pgn  # комментарии Ласкера на месте
+    assert len(reti.positions) == 21
+
+
+def test_book_model_games_deepest_node() -> None:
+    games = book_model_games(_tree(RETI))
+    assert games[0].id == "book:lasker-35"
+    assert games[0].node_id == 9  # 5. Qd3 — дальше других партий книги
+    assert games[0].source == "book"
+    assert games[0].annotator == "Edward Lasker"
+    assert games[0].book == "Chess Strategy (1915)"
+    assert len(games) <= MAX_BOOK_GAMES
+    assert [g.node_id for g in games] == sorted((g.node_id for g in games), reverse=True)
+    assert all(g.node_id >= MIN_PLY for g in games)
+
+
+def test_book_model_games_skip_short_lines() -> None:
+    """Через «1. e4 c6 2. d4 d5» проходит много партий — до `MIN_PLY` не образец."""
+    assert book_model_games(_tree("e4 c6 d4 d5")) == []
+    assert book_model_games(_tree("a3 h6 b3 g6 c3 f6 d3 e6")) == []

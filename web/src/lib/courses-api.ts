@@ -83,7 +83,13 @@ export type ModelGame = {
   black_rating: number | null;
   year: number | null;
   result: string;
+  /** PGN; у партий из книг — с комментариями автора (на английском). */
   pgn: string;
+  /** "masters" — база мастеров Lichess, "book" — партия из открытой книги. Старые ответы — без поля. */
+  source?: "masters" | "book";
+  /** Автор комментариев и название книги — у партий из книг. */
+  annotator?: string | null;
+  book?: string | null;
 };
 
 export type CourseTree = {

@@ -67,7 +67,11 @@ class CourseNode(BaseModel):
 
 
 class ModelGame(BaseModel):
-    """Образцовая партия мастеров, прошедшая через позицию `node_id`."""
+    """Образцовая партия мастеров, прошедшая через позицию `node_id`.
+
+    `source`: "masters" — база мастеров Lichess (выбрана при сборке, хранится в дереве);
+    "book" — партия из открытой книги с комментариями автора (`app/books/courses.py`,
+    подмешивается при выдаче курса, в дереве не хранится). Комментарии — в `pgn`."""
 
     id: str
     node_id: int
@@ -78,6 +82,9 @@ class ModelGame(BaseModel):
     year: int | None = None
     result: str
     pgn: str
+    source: Literal["masters", "book"] = "masters"
+    annotator: str | None = None  # автор комментариев (книги)
+    book: str | None = None  # название книги
 
 
 class CourseTree(BaseModel):

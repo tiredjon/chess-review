@@ -149,6 +149,9 @@ export const courses = {
     autoplay: "Проиграть",
     pause: "Пауза",
     board: "Доска партии",
+    fromBook: "Из книги",
+    commentary: (author: string, book: string) => `Комментарий: ${author}, «${book}» (на английском)`,
+    noComment: "К этому ходу комментария нет.",
   },
   // Сессия 14.3: партия с ботом по линии курса.
   play: {
